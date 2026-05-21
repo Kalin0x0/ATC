@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS atc_territories (
+  id                    VARCHAR(26)   NOT NULL,
+  territory_id          VARCHAR(128)  NOT NULL,
+  label                 VARCHAR(255)  NOT NULL,
+  territory_type        ENUM('district','zone','building','intersection','highway','port','airport','other') NOT NULL DEFAULT 'zone',
+  controlling_faction_id VARCHAR(26)  NULL,
+  influence_level       INT           NOT NULL DEFAULT 0,
+  is_contested          TINYINT(1)    NOT NULL DEFAULT 0,
+  center_x              FLOAT         NULL,
+  center_y              FLOAT         NULL,
+  center_z              FLOAT         NULL,
+  radius                FLOAT         NULL,
+  tax_rate              DECIMAL(5,4)  NOT NULL DEFAULT 0.0500,
+  last_capture_at       DATETIME(3)   NULL,
+  created_at            DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at            DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_territory_id (territory_id),
+  INDEX idx_territory_controlling_faction (controlling_faction_id),
+  INDEX idx_territory_contested (is_contested)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

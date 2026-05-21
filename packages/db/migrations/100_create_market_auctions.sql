@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS atc_market_auctions (
+  id                          VARCHAR(26)   NOT NULL,
+  seller_principal_id         VARCHAR(26)   NOT NULL,
+  item_name                   VARCHAR(255)  NOT NULL,
+  item_category               VARCHAR(128)  NULL,
+  quantity                    INT UNSIGNED  NOT NULL DEFAULT 1,
+  starting_bid                BIGINT        NOT NULL,
+  minimum_bid_increment       BIGINT        NOT NULL DEFAULT 1,
+  current_bid                 BIGINT        NOT NULL,
+  current_bidder_principal_id VARCHAR(26)   NULL,
+  reserve_price               BIGINT        NULL,
+  status                      ENUM('active','completed','cancelled','no_sale') NOT NULL DEFAULT 'active',
+  auction_nonce               VARCHAR(128)  NOT NULL,
+  ends_at                     DATETIME(3)   NOT NULL,
+  completed_at                DATETIME(3)   NULL,
+  created_at                  DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at                  DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_auction_nonce (auction_nonce),
+  INDEX idx_auction_seller (seller_principal_id),
+  INDEX idx_auction_status_ends (status, ends_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

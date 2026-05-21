@@ -1,0 +1,21 @@
+CREATE TABLE atc_weapon_registry (
+  id                      CHAR(26)      NOT NULL,
+  owner_id                VARCHAR(128)  NULL,
+  organization_id         VARCHAR(128)  NULL,
+  model                   VARCHAR(128)  NOT NULL,
+  category                ENUM('pistol','rifle','shotgun','smg','sniper','melee','explosive','thrown','unarmed') NOT NULL,
+  serial                  VARCHAR(64)   NOT NULL,
+  durability              TINYINT UNSIGNED NOT NULL DEFAULT 100,
+  is_locked               TINYINT(1)   NOT NULL DEFAULT 0,
+  status                  ENUM('registered','active','lost','seized','destroyed') NOT NULL DEFAULT 'registered',
+  registered_by_principal_id VARCHAR(128) NULL,
+  seized_by_principal_id  VARCHAR(128)  NULL,
+  seized_at               DATETIME(3)   NULL,
+  created_at              DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at              DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_serial (serial),
+  INDEX idx_owner (owner_id),
+  INDEX idx_organization (organization_id),
+  INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

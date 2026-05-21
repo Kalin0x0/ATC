@@ -1,0 +1,38 @@
+{
+  "name": "atc",
+  "private": true,
+  "description": "Atlantic Core — ATC FiveM MMO Framework",
+  "version": "0.1.0",
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "test:unit": "turbo run test:unit",
+    "test:integration": "turbo run test:integration",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md}\" --ignore-path .gitignore",
+    "format:check": "prettier --check \"**/*.{ts,tsx,json,md}\" --ignore-path .gitignore",
+    "db:migrate": "turbo run db:migrate --filter=@atc/db",
+    "db:migrate:status": "turbo run db:migrate:status --filter=@atc/db",
+    "db:migrate:rollback": "turbo run db:migrate:rollback --filter=@atc/db",
+    "db:seed": "turbo run db:seed --filter=@atc/db",
+    "locale:check": "node tools/scripts/locale-check.js",
+    "generate:plugin": "plop plugin",
+    "generate:service": "plop service",
+    "clean": "turbo run clean && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "@atc/eslint-config": "workspace:*",
+    "@atc/tsconfig": "workspace:*",
+    "prettier": "^3.3.0",
+    "turbo": "^2.0.0",
+    "plop": "^4.0.1",
+    "typescript": "^5.5.0"
+  },
+  "packageManager": "pnpm@9.0.0"
+}

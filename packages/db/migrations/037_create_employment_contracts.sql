@@ -1,0 +1,26 @@
+-- Phase 23 — Jobs: employment contracts linking characters to jobs/organizations
+CREATE TABLE IF NOT EXISTS atc_employment_contracts (
+  id                      CHAR(26)      NOT NULL,
+  character_id            CHAR(26)      NOT NULL,
+  organization_id         CHAR(26)      NULL     COMMENT 'NULL for civilian/freelance jobs',
+  job_id                  CHAR(26)      NOT NULL,
+  grade_id                CHAR(26)      NOT NULL,
+  status                  VARCHAR(20)   NOT NULL DEFAULT 'active',
+  salary_amount           DECIMAL(15,4) NOT NULL DEFAULT '0.0000',
+  salary_currency         VARCHAR(16)   NOT NULL DEFAULT 'USD',
+  started_at              DATETIME(3)   NOT NULL,
+  ends_at                 DATETIME(3)   NULL     COMMENT 'NULL = no expiry',
+  terminated_at           DATETIME(3)   NULL,
+  termination_reason      TEXT          NULL,
+  created_by_principal_id CHAR(26)      NOT NULL,
+  created_at              DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at              DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  KEY idx_contracts_character  (character_id),
+  KEY idx_contracts_org        (organization_id),
+  KEY idx_contracts_job        (job_id),
+  KEY idx_contracts_status     (status),
+  KEY idx_contracts_char_org   (character_id, organization_id, status),
+  CONSTRAINT chk_contracts_status CHECK (status IN ('active','suspended','terminated','expired')),
+  CONSTRAINT chk_contracts_salary CHECK (salary_amount >= 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS atc_vehicle_traffic_violations (
+  id                       VARCHAR(26)  NOT NULL,
+  vehicle_id               VARCHAR(26)  NOT NULL,
+  vehicle_runtime_id       VARCHAR(26)  NULL,
+  principal_id             VARCHAR(26)  NOT NULL,
+  violation_type           ENUM('speeding','reckless_driving','running_red_light','wrong_way','illegal_parking','hit_and_run','dui','other') NOT NULL,
+  speed_recorded           DECIMAL(7,2) NULL,
+  speed_limit              DECIMAL(7,2) NULL,
+  location_x               FLOAT        NULL,
+  location_y               FLOAT        NULL,
+  location_z               FLOAT        NULL,
+  recorded_by_principal_id VARCHAR(26)  NULL,
+  fine_amount              DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  is_paid                  TINYINT(1)   NOT NULL DEFAULT 0,
+  paid_at                  DATETIME(3)  NULL,
+  created_at               DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  INDEX idx_violation_principal (principal_id),
+  INDEX idx_violation_vehicle (vehicle_id),
+  INDEX idx_violation_is_paid (is_paid)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

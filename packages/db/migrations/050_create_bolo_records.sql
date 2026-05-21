@@ -1,0 +1,28 @@
+-- Phase 25 — Dispatch: Be-On-Lookout records
+CREATE TABLE IF NOT EXISTS atc_bolo_records (
+  id                      CHAR(26)     NOT NULL,
+  agency_id               CHAR(26)     NOT NULL,
+  created_by_principal_id CHAR(26)     NOT NULL,
+  severity                VARCHAR(20)  NOT NULL DEFAULT 'misdemeanor',
+  description             TEXT         NOT NULL,
+  linked_warrant_id       CHAR(26)     NULL,
+  linked_character_id     CHAR(26)     NULL,
+  linked_vehicle_id       CHAR(26)     NULL,
+  notes                   JSON         NOT NULL DEFAULT (JSON_ARRAY()),
+  status                  VARCHAR(20)  NOT NULL DEFAULT 'active',
+  expires_at              DATETIME(3)  NULL,
+  expired_at              DATETIME(3)  NULL,
+  archived_at             DATETIME(3)  NULL,
+  created_at              DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at              DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  KEY idx_bolo_agency    (agency_id),
+  KEY idx_bolo_status    (status),
+  KEY idx_bolo_character (linked_character_id),
+  KEY idx_bolo_warrant   (linked_warrant_id),
+  KEY idx_bolo_expires   (expires_at),
+  KEY idx_bolo_created   (created_at),
+  CONSTRAINT chk_bolo_status   CHECK (status   IN ('active','expired','archived')),
+  CONSTRAINT chk_bolo_severity CHECK (severity IN ('infraction','misdemeanor','felony')),
+  CONSTRAINT fk_bolo_agency    FOREIGN KEY (agency_id) REFERENCES atc_agencies (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

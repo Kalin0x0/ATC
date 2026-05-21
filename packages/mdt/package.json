@@ -1,0 +1,32 @@
+{
+  "name": "@atc/mdt",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ATC MDT (Mobile Data Terminal) read-only aggregation service",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@atc/shared-types": "workspace:*",
+    "@atc/law": "workspace:*",
+    "@atc/dispatch": "workspace:*",
+    "@atc/entity-graph": "workspace:*"
+  },
+  "devDependencies": {
+    "@atc/tsconfig": "workspace:*",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.0"
+  }
+}

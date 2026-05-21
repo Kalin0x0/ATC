@@ -1,0 +1,37 @@
+-- Phase 22 — Commerce: orders (append-only, idempotency-keyed)
+-- Orders are the durable record of every commerce transaction attempt.
+-- Completed orders always have a journal_id. Failed orders may not.
+CREATE TABLE IF NOT EXISTS atc_commerce_orders (
+  id               CHAR(26)        NOT NULL,
+  idempotency_key  VARCHAR(256)    NOT NULL,
+  order_type       VARCHAR(10)     NOT NULL  COMMENT 'purchase | sell',
+  status           VARCHAR(10)     NOT NULL  DEFAULT 'pending',
+  character_id     VARCHAR(128)    NOT NULL,
+  shop_id          CHAR(26)        NOT NULL,
+  payer_account_id CHAR(26)        NOT NULL  COMMENT 'Account debited',
+  payee_account_id CHAR(26)        NOT NULL  COMMENT 'Account credited',
+  item_id          VARCHAR(64)     NOT NULL,
+  quantity         INT UNSIGNED    NOT NULL  DEFAULT 1,
+  unit_price       DECIMAL(20,4)   NOT NULL,
+  subtotal_amount  DECIMAL(20,4)   NOT NULL,
+  tax_amount       DECIMAL(20,4)   NOT NULL  DEFAULT '0.0000',
+  fee_amount       DECIMAL(20,4)   NOT NULL  DEFAULT '0.0000',
+  total_amount     DECIMAL(20,4)   NOT NULL,
+  currency         VARCHAR(16)     NOT NULL,
+  journal_id       CHAR(26)        NULL,
+  failure_reason   VARCHAR(512)    NULL,
+  created_at       DATETIME(3)     NOT NULL  DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at       DATETIME(3)     NOT NULL  DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_order_idempotency (idempotency_key),
+  KEY idx_orders_character  (character_id),
+  KEY idx_orders_shop       (shop_id),
+  KEY idx_orders_status     (status),
+  KEY idx_orders_type       (order_type),
+  KEY idx_orders_created    (created_at),
+  CONSTRAINT chk_orders_type     CHECK (order_type IN ('purchase','sell')),
+  CONSTRAINT chk_orders_status   CHECK (status     IN ('pending','completed','failed','refunded')),
+  CONSTRAINT chk_orders_qty      CHECK (quantity >= 1),
+  CONSTRAINT chk_orders_unit     CHECK (unit_price > 0),
+  CONSTRAINT chk_orders_subtotal CHECK (subtotal_amount > 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

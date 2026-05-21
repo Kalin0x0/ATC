@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS atc_faction_conflicts (
+  id                      VARCHAR(26)   NOT NULL,
+  territory_id            VARCHAR(26)   NOT NULL,
+  attacker_faction_id     VARCHAR(26)   NOT NULL,
+  defender_faction_id     VARCHAR(26)   NULL,
+  initiating_principal_id VARCHAR(26)   NOT NULL,
+  conflict_type           ENUM('territory_capture','resource_dispute','retaliation','war','skirmish') NOT NULL,
+  status                  ENUM('active','resolved','aborted','stalemate') NOT NULL DEFAULT 'active',
+  outcome                 ENUM('attacker_won','defender_won','stalemate','aborted') NULL,
+  conflict_nonce          VARCHAR(128)  NOT NULL,
+  participants            JSON          NOT NULL,
+  started_at              DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  ended_at                DATETIME(3)   NULL,
+  notes                   TEXT          NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_conflict_nonce (conflict_nonce),
+  INDEX idx_conflict_territory_status (territory_id, status),
+  INDEX idx_conflict_attacker (attacker_faction_id),
+  INDEX idx_conflict_started (started_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

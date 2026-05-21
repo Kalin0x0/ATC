@@ -1,0 +1,23 @@
+CREATE TABLE atc_world_entities (
+  id                      CHAR(26)     NOT NULL,
+  entity_type             ENUM('vehicle','object','ped','pickup','blip','zone','other') NOT NULL,
+  owner_principal_id      VARCHAR(128) NULL,
+  network_id              INT          NULL,
+  model                   VARCHAR(128) NOT NULL,
+  x                       FLOAT        NOT NULL DEFAULT 0,
+  y                       FLOAT        NOT NULL DEFAULT 0,
+  z                       FLOAT        NOT NULL DEFAULT 0,
+  heading                 FLOAT        NOT NULL DEFAULT 0,
+  spawn_nonce             VARCHAR(64)  NOT NULL,
+  status                  ENUM('registered','active','despawned','cleanup_pending','cleaned') NOT NULL DEFAULT 'registered',
+  scene_id                VARCHAR(128) NULL,
+  spawned_at              DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  despawned_at            DATETIME(3)  NULL,
+  created_at              DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_spawn_nonce (owner_principal_id, spawn_nonce),
+  INDEX idx_owner (owner_principal_id),
+  INDEX idx_scene (scene_id),
+  INDEX idx_status (status),
+  INDEX idx_network (network_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
