@@ -75,6 +75,7 @@ import { runtimeSustainmentRoutes } from './routes/runtime-sustainment.js'
 import { developerPlatformRoutes } from './routes/developer-platform.js'
 import { releaseGovernanceRoutes } from './routes/release-governance.js'
 import { enterpriseReadinessRoutes } from './routes/enterprise-readiness.js'
+import { coreClosureRoutes } from './routes/core-closure.js'
 import { config } from './config.js'
 
 const BODY_LIMIT = 64 * 1024 // 64 KB — sufficient for all current payloads
@@ -184,6 +185,7 @@ export function buildServer(ctx: AppContext) {
   fastify.register(developerPlatformRoutes, { ctx })
   fastify.register(releaseGovernanceRoutes, { ctx })
   fastify.register(enterpriseReadinessRoutes, { ctx })
+  fastify.register(coreClosureRoutes, { ctx })
 
   // Return a clean 404 for any unknown route — no stack trace, no route details
   fastify.setNotFoundHandler((_req, reply) => {

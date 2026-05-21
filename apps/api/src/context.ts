@@ -760,6 +760,20 @@ import type {
   DistributedAuditRepository,
   EnterpriseAuditRepository,
 } from '@atc/enterprise-readiness-runtime'
+import type {
+  CoreClosureService,
+  ProductionImmutabilityService,
+  RuntimeFreezeCoordinator,
+  DistributedClosureOrchestrator,
+  DeterministicCompletionValidator,
+  FinalRecoveryCoordinator,
+  CoreClosureRepository,
+  RuntimeImmutabilityRepository,
+  ProductionFreezeRepository,
+  DistributedClosureRepository,
+  FinalValidationRepository,
+  CoreClosureAuditRepository,
+} from '@atc/core-closure-runtime'
 import type { Logger } from './logger.js'
 
 export interface PrincipalStore {
@@ -1444,5 +1458,18 @@ export interface AppContext {
   productionReadinessRepo?: ProductionReadinessRepository
   distributedAuditRepo?: DistributedAuditRepository
   enterpriseAuditRepo?: EnterpriseAuditRepository
+  // Phase 80
+  coreClosureService?: CoreClosureService
+  productionImmutabilityService?: ProductionImmutabilityService
+  runtimeFreezeCoordinator?: RuntimeFreezeCoordinator
+  distributedClosureOrchestrator?: DistributedClosureOrchestrator
+  deterministicCompletionValidator?: DeterministicCompletionValidator
+  finalRecoveryCoordinator?: FinalRecoveryCoordinator
+  coreClosureRepo?: CoreClosureRepository
+  runtimeImmutabilityRepo?: RuntimeImmutabilityRepository
+  productionFreezeRepo?: ProductionFreezeRepository
+  distributedClosureRepo?: DistributedClosureRepository
+  finalValidationRepo?: FinalValidationRepository
+  coreClosureAuditRepo?: CoreClosureAuditRepository
   logger: Logger
 }

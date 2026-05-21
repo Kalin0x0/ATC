@@ -1252,3 +1252,21 @@ export type {
   RegisterAuditNodeRequest,
   CleanupEnterpriseReadinessRequest,
 } from './schemas.js'
+
+// ── Phase 80: ATC Core Closure & Production Immutability ──────────────────────
+export {
+  initiateCoreClosureSchema,
+  createImmutabilitySchema,
+  initiateFreezeSchema,
+  registerClosureNodeSchema,
+  createFinalValidationSchema,
+  cleanupCoreClosureSchema,
+} from './schemas.js'
+export type {
+  InitiateCoreClosureRequest,
+  CreateImmutabilityRequest,
+  InitiateFreezeRequest,
+  RegisterClosureNodeRequest,
+  CreateFinalValidationRequest,
+  CleanupCoreClosureRequest,
+} from './schemas.js'
