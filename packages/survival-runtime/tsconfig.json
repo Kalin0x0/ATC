@@ -1,0 +1,6 @@
+{
+  "extends": "@atc/tsconfig/node.json",
+  "compilerOptions": { "outDir": "./dist", "rootDir": "./src", "composite": true, "types": ["node"] },
+  "references": [{ "path": "../events" }],
+  "include": ["src/**/*.ts"]
+}

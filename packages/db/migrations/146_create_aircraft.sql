@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS atc_aircraft (
+  id                    VARCHAR(26)    NOT NULL,
+  aircraft_id           VARCHAR(128)   NOT NULL,
+  aircraft_name         VARCHAR(255)   NOT NULL,
+  aircraft_type         VARCHAR(64)    NOT NULL,
+  owned_by_principal_id VARCHAR(128)   NULL,
+  status                VARCHAR(32)    NOT NULL DEFAULT 'on_ground',
+  position_x            DECIMAL(12,4)  NULL,
+  position_y            DECIMAL(12,4)  NULL,
+  position_z            DECIMAL(12,4)  NULL,
+  heading               DECIMAL(8,4)   NULL,
+  altitude_m            DECIMAL(10,2)  NULL,
+  speed_kmh             DECIMAL(10,3)  NULL,
+  current_zone_id       VARCHAR(128)   NULL,
+  last_tick_at          DATETIME(3)    NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  created_at            DATETIME(3)    NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at            DATETIME(3)    NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_aircraft_id (aircraft_id),
+  INDEX idx_aircraft_status (status),
+  INDEX idx_aircraft_owner (owned_by_principal_id),
+  INDEX idx_aircraft_zone (current_zone_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

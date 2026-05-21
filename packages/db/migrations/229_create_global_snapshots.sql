@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS atc_global_snapshots (
+  id              VARCHAR(26)   NOT NULL,
+  snapshot_id     VARCHAR(128)  NOT NULL,
+  snapshot_type   VARCHAR(64)   NOT NULL,
+  entity_id       VARCHAR(128)  NULL,
+  status          VARCHAR(32)   NOT NULL DEFAULT 'pending',
+  owner_server_id VARCHAR(128)  NOT NULL,
+  snapshot_nonce  VARCHAR(128)  NOT NULL,
+  snapshot_data   TEXT          NOT NULL DEFAULT '{}',
+  taken_at        DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  completed_at    DATETIME(3)   NULL,
+  created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_snapshot_nonce (snapshot_nonce),
+  KEY idx_snapshot_status (status),
+  KEY idx_snapshot_owner (owner_server_id),
+  KEY idx_snapshot_entity (entity_id),
+  KEY idx_snapshot_updated (updated_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

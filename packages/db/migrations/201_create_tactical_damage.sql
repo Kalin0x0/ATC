@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS atc_tactical_damage (
+  id                VARCHAR(26)   NOT NULL,
+  session_id        VARCHAR(128)  NOT NULL,
+  entity_id         VARCHAR(128)  NOT NULL,
+  attacker_id       VARCHAR(128)  NULL,
+  damage_type       VARCHAR(64)   NOT NULL,
+  damage_amount     FLOAT         NOT NULL DEFAULT 0,
+  armor_penetration FLOAT         NOT NULL DEFAULT 0,
+  body_zone         VARCHAR(64)   NOT NULL DEFAULT 'torso',
+  is_processed      TINYINT(1)    NOT NULL DEFAULT 0,
+  damage_data       TEXT          NOT NULL DEFAULT '{}',
+  owner_server_id   VARCHAR(128)  NOT NULL,
+  processed_at      DATETIME(3)   NULL,
+  created_at        DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at        DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  KEY idx_damage_session (session_id),
+  KEY idx_damage_entity (entity_id),
+  KEY idx_damage_processed (is_processed),
+  KEY idx_damage_server (owner_server_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

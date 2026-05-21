@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS atc_flight_runtime (
+  id                  VARCHAR(26)    NOT NULL,
+  flight_id           VARCHAR(128)   NOT NULL,
+  flight_nonce        VARCHAR(128)   NOT NULL,
+  aircraft_id         VARCHAR(128)   NOT NULL,
+  origin_zone_id      VARCHAR(128)   NOT NULL,
+  destination_zone_id VARCHAR(128)   NOT NULL,
+  status              VARCHAR(32)    NOT NULL DEFAULT 'pending',
+  departed_at         DATETIME(3)    NULL,
+  landed_at           DATETIME(3)    NULL,
+  created_at          DATETIME(3)    NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at          DATETIME(3)    NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_flight_id (flight_id),
+  UNIQUE KEY uq_flight_nonce (flight_nonce),
+  INDEX idx_flight_status (status),
+  INDEX idx_flight_aircraft (aircraft_id),
+  INDEX idx_flight_origin (origin_zone_id),
+  INDEX idx_flight_destination (destination_zone_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -33,6 +33,48 @@ import { medicalIntelligenceRoutes } from './routes/medical-intelligence.js'
 import { vehicleSimulationRoutes } from './routes/vehicle-simulation.js'
 import { marketRoutes } from './routes/market.js'
 import { factionRoutes } from './routes/factions.js'
+import { housingRoutes } from './routes/housing.js'
+import { npcRoutes } from './routes/npc.js'
+import { cityRoutes } from './routes/city.js'
+import { survivalRoutes } from './routes/survival.js'
+import { craftingRoutes } from './routes/crafting.js'
+import { logisticsRoutes } from './routes/logistics.js'
+import { transportRoutes } from './routes/transport.js'
+import { commsRoutes } from './routes/comms.js'
+import { disasterRoutes } from './routes/disaster.js'
+import { missionRoutes } from './routes/missions.js'
+import { reputationRoutes } from './routes/reputation.js'
+import { aiRoutes } from './routes/ai.js'
+import { replicationRoutes } from './routes/replication.js'
+import { reconciliationRoutes } from './routes/reconciliation.js'
+import { orchestratorRoutes } from './routes/orchestrator.js'
+import { combatSimulationRoutes } from './routes/combat-simulation.js'
+import { narrativeRoutes } from './routes/narrative.js'
+import { resilienceRoutes } from './routes/resilience.js'
+import { observabilityRoutes } from './routes/observability.js'
+import { clusterRoutes } from './routes/cluster.js'
+import { persistenceRoutes } from './routes/persistence.js'
+import { federationRoutes } from './routes/federation.js'
+import { securityRuntimeRoutes } from './routes/security-runtime.js'
+import { economyRegulationRoutes } from './routes/economy-regulation.js'
+import { governanceRoutes } from './routes/governance.js'
+import { ecologyRoutes } from './routes/ecology.js'
+import { metaRuntimeRoutes } from './routes/meta-runtime.js'
+import { runtimeProtocolRoutes } from './routes/runtime-protocol.js'
+import { evolutionRoutes } from './routes/evolution.js'
+import { worldIntegrityRoutes } from './routes/world-integrity.js'
+import { globalGovernanceRoutes } from './routes/global-governance.js'
+import { continuityRoutes } from './routes/continuity.js'
+import { lockdownRoutes } from './routes/lockdown.js'
+import { runtimeCertificationRoutes } from './routes/runtime-certification.js'
+import { runtimeSovereigntyRoutes } from './routes/runtime-sovereignty.js'
+import { coreFinalizationRoutes } from './routes/core-finalization.js'
+import { runtimeGatewayRoutes } from './routes/runtime-gateway.js'
+import { runtimeHardeningRoutes } from './routes/runtime-hardening.js'
+import { runtimeSustainmentRoutes } from './routes/runtime-sustainment.js'
+import { developerPlatformRoutes } from './routes/developer-platform.js'
+import { releaseGovernanceRoutes } from './routes/release-governance.js'
+import { enterpriseReadinessRoutes } from './routes/enterprise-readiness.js'
 import { config } from './config.js'
 
 const BODY_LIMIT = 64 * 1024 // 64 KB — sufficient for all current payloads
@@ -100,6 +142,48 @@ export function buildServer(ctx: AppContext) {
   fastify.register(vehicleSimulationRoutes, { ctx })
   fastify.register(marketRoutes, { ctx })
   fastify.register(factionRoutes, { ctx })
+  fastify.register(housingRoutes, { ctx })
+  fastify.register(npcRoutes, { ctx })
+  fastify.register(cityRoutes, { ctx })
+  fastify.register(survivalRoutes, { ctx })
+  fastify.register(craftingRoutes, { ctx })
+  fastify.register(logisticsRoutes, { ctx })
+  fastify.register(transportRoutes, { ctx })
+  fastify.register(commsRoutes, { ctx })
+  fastify.register(disasterRoutes, { ctx })
+  fastify.register(missionRoutes, { ctx })
+  fastify.register(reputationRoutes, { ctx })
+  fastify.register(aiRoutes, { ctx })
+  fastify.register(replicationRoutes, { ctx })
+  fastify.register(reconciliationRoutes, { ctx })
+  fastify.register(orchestratorRoutes, { ctx })
+  fastify.register(combatSimulationRoutes, { ctx })
+  fastify.register(narrativeRoutes, { ctx })
+  fastify.register(resilienceRoutes, { ctx })
+  fastify.register(observabilityRoutes, { ctx })
+  fastify.register(clusterRoutes, { ctx })
+  fastify.register(persistenceRoutes, { ctx })
+  fastify.register(federationRoutes, { ctx })
+  fastify.register(securityRuntimeRoutes, { ctx })
+  fastify.register(economyRegulationRoutes, { ctx })
+  fastify.register(governanceRoutes, { ctx })
+  fastify.register(ecologyRoutes, { ctx })
+  fastify.register(metaRuntimeRoutes, { ctx })
+  fastify.register(runtimeProtocolRoutes, { ctx })
+  fastify.register(evolutionRoutes, { ctx })
+  fastify.register(worldIntegrityRoutes, { ctx })
+  fastify.register(globalGovernanceRoutes, { ctx })
+  fastify.register(continuityRoutes, { ctx })
+  fastify.register(lockdownRoutes, { ctx })
+  fastify.register(runtimeCertificationRoutes, { ctx })
+  fastify.register(runtimeSovereigntyRoutes, { ctx })
+  fastify.register(coreFinalizationRoutes, { ctx })
+  fastify.register(runtimeGatewayRoutes, { ctx })
+  fastify.register(runtimeHardeningRoutes, { ctx })
+  fastify.register(runtimeSustainmentRoutes, { ctx })
+  fastify.register(developerPlatformRoutes, { ctx })
+  fastify.register(releaseGovernanceRoutes, { ctx })
+  fastify.register(enterpriseReadinessRoutes, { ctx })
 
   // Return a clean 404 for any unknown route — no stack trace, no route details
   fastify.setNotFoundHandler((_req, reply) => {

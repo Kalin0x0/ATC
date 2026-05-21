@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS atc_campaign_runtime (
+  id              VARCHAR(26)   NOT NULL,
+  campaign_id     VARCHAR(128)  NOT NULL,
+  campaign_type   VARCHAR(64)   NOT NULL,
+  status          VARCHAR(32)   NOT NULL DEFAULT 'active',
+  owner_server_id VARCHAR(128)  NOT NULL,
+  region_id       VARCHAR(128)  NULL,
+  campaign_nonce  VARCHAR(128)  NOT NULL,
+  campaign_data   TEXT          NOT NULL DEFAULT '{}',
+  started_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  completed_at    DATETIME(3)   NULL,
+  created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_campaign_id (campaign_id),
+  UNIQUE KEY uk_campaign_nonce (campaign_nonce),
+  KEY idx_campaign_status (status),
+  KEY idx_campaign_server (owner_server_id),
+  KEY idx_campaign_updated (updated_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

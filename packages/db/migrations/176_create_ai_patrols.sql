@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS atc_ai_patrols (
+  id              VARCHAR(26)   NOT NULL,
+  patrol_id       VARCHAR(26)   NOT NULL,
+  patrol_nonce    VARCHAR(128)  NOT NULL,
+  entity_id       VARCHAR(128)  NOT NULL,
+  patrol_type     VARCHAR(32)   NOT NULL,
+  status          VARCHAR(32)   NOT NULL DEFAULT 'pending',
+  route_data      TEXT          NOT NULL DEFAULT '{}',
+  owner_server_id VARCHAR(128)  NULL,
+  started_at      DATETIME(3)   NULL,
+  completed_at    DATETIME(3)   NULL,
+  created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_ai_patrols_patrol_id (patrol_id),
+  UNIQUE KEY uq_ai_patrols_nonce (patrol_nonce),
+  KEY idx_ai_patrols_entity (entity_id),
+  KEY idx_ai_patrols_status (status),
+  KEY idx_ai_patrols_updated (updated_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

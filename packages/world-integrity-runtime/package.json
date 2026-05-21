@@ -1,0 +1,21 @@
+{
+  "name": "@atc/world-integrity-runtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": { "import": "./dist/index.js", "types": "./dist/index.d.ts" } },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": { "mysql2": "^3.9.0", "ulidx": "^2.3.0" },
+  "devDependencies": {
+    "@atc/tsconfig": "workspace:*",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.0"
+  }
+}

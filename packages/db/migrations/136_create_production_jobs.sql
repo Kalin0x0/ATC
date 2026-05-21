@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS atc_production_jobs (
+  id                        VARCHAR(26)   NOT NULL,
+  job_id                    VARCHAR(128)  NOT NULL,
+  queue_id                  VARCHAR(128)  NOT NULL,
+  recipe_id                 VARCHAR(128)  NOT NULL,
+  initiated_by_principal_id VARCHAR(128)  NOT NULL,
+  status                    VARCHAR(32)   NOT NULL DEFAULT 'pending',
+  quantity_ordered          INT           NOT NULL DEFAULT 1,
+  quantity_produced         INT           NOT NULL DEFAULT 0,
+  job_nonce                 VARCHAR(128)  NOT NULL,
+  started_at                DATETIME(3)   NULL,
+  completed_at              DATETIME(3)   NULL,
+  failed_reason             TEXT          NULL,
+  created_at                DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at                DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_job_id (job_id),
+  UNIQUE KEY uq_job_nonce (job_nonce),
+  INDEX idx_job_queue (queue_id),
+  INDEX idx_job_status (status),
+  INDEX idx_job_recipe (recipe_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

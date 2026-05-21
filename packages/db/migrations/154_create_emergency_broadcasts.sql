@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS atc_emergency_broadcasts (
+  id                       VARCHAR(26)    NOT NULL,
+  broadcast_id             VARCHAR(128)   NOT NULL,
+  broadcast_nonce          VARCHAR(128)   NOT NULL,
+  initiated_by_principal_id VARCHAR(128)  NOT NULL,
+  message                  TEXT           NOT NULL,
+  severity                 VARCHAR(32)    NOT NULL DEFAULT 'info',
+  status                   VARCHAR(32)    NOT NULL DEFAULT 'active',
+  target_zone_id           VARCHAR(128)   NULL,
+  expires_at               DATETIME(3)    NULL,
+  created_at               DATETIME(3)    NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at               DATETIME(3)    NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_broadcast_id (broadcast_id),
+  UNIQUE KEY uq_broadcast_nonce (broadcast_nonce),
+  INDEX idx_broadcast_status (status),
+  INDEX idx_broadcast_severity (severity),
+  INDEX idx_broadcast_zone (target_zone_id),
+  INDEX idx_broadcast_expires (expires_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

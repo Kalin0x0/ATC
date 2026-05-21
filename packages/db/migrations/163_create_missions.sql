@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS atc_missions (
+  id             VARCHAR(26)   NOT NULL,
+  mission_id     VARCHAR(26)   NOT NULL,
+  mission_nonce  VARCHAR(128)  NOT NULL,
+  mission_type   VARCHAR(64)   NOT NULL,
+  mission_name   VARCHAR(255)  NOT NULL,
+  status         VARCHAR(32)   NOT NULL DEFAULT 'pending',
+  owner_server_id    VARCHAR(128) NULL,
+  owner_principal_id VARCHAR(128) NULL,
+  config_data    TEXT          NOT NULL DEFAULT '{}',
+  started_at     DATETIME(3)   NULL,
+  completed_at   DATETIME(3)   NULL,
+  failed_at      DATETIME(3)   NULL,
+  created_at     DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at     DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_missions_mission_id (mission_id),
+  UNIQUE KEY uq_missions_nonce (mission_nonce),
+  KEY idx_missions_status (status),
+  KEY idx_missions_owner_server (owner_server_id),
+  KEY idx_missions_updated_at (updated_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
