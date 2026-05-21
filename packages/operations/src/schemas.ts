@@ -4003,3 +4003,50 @@ export type InitiateProductionReadinessRequest   = z.infer<typeof initiateProduc
 export type RegisterAuditNodeRequest             = z.infer<typeof registerAuditNodeSchema>
 export type CleanupEnterpriseReadinessRequest    = z.infer<typeof cleanupEnterpriseReadinessSchema>
 export type CleanupRuntimeSustainmentRequest     = z.infer<typeof cleanupRuntimeSustainmentSchema>
+
+// ── Phase 80: ATC Core Closure & Production Immutability ──────────────────────
+export const initiateCoreClosureSchema = z.object({
+  closureType:   z.enum(['final', 'partial', 'emergency', 'scheduled', 'custom']),
+  ownerServerId: z.string().min(1).max(128),
+  closureNonce:  z.string().min(1).max(128),
+  closureData:   z.record(z.unknown()).optional(),
+})
+
+export const createImmutabilitySchema = z.object({
+  immutabilityType:  z.enum(['full', 'partial', 'runtime', 'data', 'custom']),
+  ownerServerId:     z.string().min(1).max(128),
+  immutabilityNonce: z.string().min(1).max(128),
+  immutabilityData:  z.record(z.unknown()).optional(),
+})
+
+export const initiateFreezeSchema = z.object({
+  freezeId:      z.string().min(1).max(128),
+  freezeType:    z.enum(['hard', 'soft', 'partial', 'total', 'custom']),
+  ownerServerId: z.string().min(1).max(128),
+  freezeData:    z.record(z.unknown()).optional(),
+})
+
+export const registerClosureNodeSchema = z.object({
+  closureNodeId:   z.string().min(1).max(128),
+  nodeType:        z.enum(['primary', 'secondary', 'observer', 'arbiter', 'custom']),
+  ownerServerId:   z.string().min(1).max(128),
+  closureNodeData: z.record(z.unknown()).optional(),
+})
+
+export const createFinalValidationSchema = z.object({
+  validationType:  z.enum(['deterministic', 'consensus', 'hash', 'signature', 'custom']),
+  ownerServerId:   z.string().min(1).max(128),
+  validationNonce: z.string().min(1).max(128),
+  validationData:  z.record(z.unknown()).optional(),
+})
+
+export const cleanupCoreClosureSchema = z.object({
+  thresholdMs: z.number().int().positive(),
+})
+
+export type InitiateCoreClosureRequest    = z.infer<typeof initiateCoreClosureSchema>
+export type CreateImmutabilityRequest     = z.infer<typeof createImmutabilitySchema>
+export type InitiateFreezeRequest         = z.infer<typeof initiateFreezeSchema>
+export type RegisterClosureNodeRequest    = z.infer<typeof registerClosureNodeSchema>
+export type CreateFinalValidationRequest  = z.infer<typeof createFinalValidationSchema>
+export type CleanupCoreClosureRequest     = z.infer<typeof cleanupCoreClosureSchema>

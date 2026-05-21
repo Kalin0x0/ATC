@@ -91,7 +91,8 @@
     "@atc/runtime-sustainment": "workspace:*",
     "@atc/developer-platform": "workspace:*",
     "@atc/release-governance-runtime": "workspace:*",
-    "@atc/enterprise-readiness-runtime": "workspace:*"
+    "@atc/enterprise-readiness-runtime": "workspace:*",
+    "@atc/core-closure-runtime": "workspace:*"
   },
   "devDependencies": {
     "@atc/tsconfig": "workspace:*",

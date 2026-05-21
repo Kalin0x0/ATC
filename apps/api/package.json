@@ -91,6 +91,7 @@
     "@atc/developer-platform": "workspace:*",
     "@atc/release-governance-runtime": "workspace:*",
     "@atc/enterprise-readiness-runtime": "workspace:*",
+    "@atc/core-closure-runtime": "workspace:*",
     "@atc/task-runtime": "workspace:*",
     "@atc/event-store": "workspace:*",
     "@atc/operations": "workspace:*",

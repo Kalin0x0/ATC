@@ -88,6 +88,7 @@ server_scripts {
     'server/developer_platform.lua',
     'server/release_governance.lua',
     'server/enterprise_readiness.lua',
+    'server/core_closure.lua',
     'server/main.lua',
 }
 

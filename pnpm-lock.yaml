@@ -59,6 +59,9 @@ importers:
       '@atc/continuity-runtime':
         specifier: workspace:*
         version: link:../../packages/continuity-runtime
+      '@atc/core-closure-runtime':
+        specifier: workspace:*
+        version: link:../../packages/core-closure-runtime
       '@atc/core-finalization-runtime':
         specifier: workspace:*
         version: link:../../packages/core-finalization-runtime
@@ -488,6 +491,25 @@ importers:
         version: 5.9.3
 
   packages/continuity-runtime:
+    dependencies:
+      mysql2:
+        specifier: ^3.9.0
+        version: 3.22.3(@types/node@22.19.19)
+      ulidx:
+        specifier: ^2.3.0
+        version: 2.4.1
+    devDependencies:
+      '@atc/tsconfig':
+        specifier: workspace:*
+        version: link:../../tools/tsconfig
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.19
+      typescript:
+        specifier: ^5.5.0
+        version: 5.9.3
+
+  packages/core-closure-runtime:
     dependencies:
       mysql2:
         specifier: ^3.9.0
@@ -1941,6 +1963,9 @@ importers:
       '@atc/continuity-runtime':
         specifier: workspace:*
         version: link:../continuity-runtime
+      '@atc/core-closure-runtime':
+        specifier: workspace:*
+        version: link:../core-closure-runtime
       '@atc/core-finalization-runtime':
         specifier: workspace:*
         version: link:../core-finalization-runtime
