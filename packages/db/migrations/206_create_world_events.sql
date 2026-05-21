@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS atc_world_events (
+  id                VARCHAR(26)   NOT NULL,
+  event_id          VARCHAR(128)  NOT NULL,
+  event_type        VARCHAR(64)   NOT NULL,
+  status            VARCHAR(32)   NOT NULL DEFAULT 'active',
+  owner_server_id   VARCHAR(128)  NOT NULL,
+  region_id         VARCHAR(128)  NULL,
+  trigger_condition VARCHAR(256)  NOT NULL DEFAULT '',
+  event_data        TEXT          NOT NULL DEFAULT '{}',
+  started_at        DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  expires_at        DATETIME(3)   NULL,
+  created_at        DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at        DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_world_event_id (event_id),
+  KEY idx_world_event_status (status),
+  KEY idx_world_event_server (owner_server_id),
+  KEY idx_world_event_expires (expires_at),
+  KEY idx_world_event_type (event_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

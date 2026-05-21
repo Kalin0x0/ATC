@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS atc_shipments (
+  id                   VARCHAR(26)    NOT NULL,
+  shipment_id          VARCHAR(128)   NOT NULL,
+  shipment_nonce       VARCHAR(128)   NOT NULL,
+  origin_id            VARCHAR(128)   NOT NULL,
+  destination_id       VARCHAR(128)   NOT NULL,
+  carrier_principal_id VARCHAR(128)   NULL,
+  status               VARCHAR(32)    NOT NULL DEFAULT 'pending',
+  cargo_manifest       TEXT           NOT NULL DEFAULT '[]',
+  departed_at          DATETIME(3)    NULL,
+  arrived_at           DATETIME(3)    NULL,
+  created_at           DATETIME(3)    NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at           DATETIME(3)    NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_shipment_id (shipment_id),
+  UNIQUE KEY uq_shipment_nonce (shipment_nonce),
+  INDEX idx_shipment_status (status),
+  INDEX idx_shipment_carrier (carrier_principal_id),
+  INDEX idx_shipment_origin (origin_id),
+  INDEX idx_shipment_destination (destination_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS atc_legislative_runtime (
+  id                  VARCHAR(26)  NOT NULL,
+  legislation_id      VARCHAR(26)  NOT NULL,
+  legislation_type    ENUM('law','regulation','ordinance','decree','custom') NOT NULL,
+  status              ENUM('active','repealed','expired','draft') NOT NULL DEFAULT 'active',
+  owner_server_id     VARCHAR(128) NOT NULL,
+  region_id           VARCHAR(128) NULL,
+  legislation_nonce   VARCHAR(128) NOT NULL,
+  legislation_data    JSON         NOT NULL,
+  enacted_at          DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  expires_at          DATETIME(3)  NULL,
+  created_at          DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at          DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_legislation_id (legislation_id),
+  UNIQUE KEY uq_legislation_nonce (legislation_nonce, owner_server_id),
+  KEY idx_legislation_status (status),
+  KEY idx_legislation_region (region_id),
+  KEY idx_legislation_updated (updated_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

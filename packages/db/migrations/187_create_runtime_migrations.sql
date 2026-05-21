@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS atc_runtime_migrations (
+  id              VARCHAR(26)   NOT NULL,
+  migration_id    VARCHAR(26)   NOT NULL,
+  migration_nonce VARCHAR(128)  NOT NULL,
+  entity_id       VARCHAR(128)  NOT NULL,
+  from_server_id  VARCHAR(128)  NOT NULL,
+  to_server_id    VARCHAR(128)  NOT NULL,
+  status          VARCHAR(32)   NOT NULL DEFAULT 'pending',
+  migration_data  TEXT          NULL,
+  failure_reason  TEXT          NULL,
+  completed_at    DATETIME(3)   NULL,
+  failed_at       DATETIME(3)   NULL,
+  created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_migration_id (migration_id),
+  UNIQUE KEY uk_migration_nonce (migration_nonce),
+  KEY idx_runtime_migration_entity (entity_id),
+  KEY idx_runtime_migration_status (status),
+  KEY idx_runtime_migration_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

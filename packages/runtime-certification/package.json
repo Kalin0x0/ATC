@@ -1,0 +1,11 @@
+{
+  "name": "@atc/runtime-certification",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": { "import": "./dist/index.js", "types": "./dist/index.d.ts" } },
+  "scripts": { "build": "tsc --project tsconfig.json", "typecheck": "tsc --noEmit" },
+  "dependencies": { "mysql2": "^3.11.5", "ulidx": "^2.3.0" },
+  "devDependencies": { "@atc/tsconfig": "workspace:*", "typescript": "^5.7.3" }
+}

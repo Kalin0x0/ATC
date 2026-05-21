@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS atc_federation_nodes (
+  id              VARCHAR(26)  NOT NULL,
+  node_id         VARCHAR(26)  NOT NULL,
+  node_type       ENUM('game_server','api_server','edge_node','hub_node','relay_node','custom') NOT NULL,
+  status          ENUM('active','draining','offline','maintenance') NOT NULL DEFAULT 'active',
+  owner_server_id VARCHAR(128) NOT NULL,
+  region_id       VARCHAR(128) NULL,
+  address         VARCHAR(256) NULL,
+  node_nonce      VARCHAR(128) NOT NULL,
+  node_data       JSON         NOT NULL,
+  joined_at       DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  left_at         DATETIME(3)  NULL,
+  created_at      DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at      DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_federation_node_id (node_id),
+  UNIQUE KEY uq_federation_node_nonce (node_nonce, owner_server_id),
+  KEY idx_federation_nodes_status (status),
+  KEY idx_federation_nodes_region (region_id),
+  KEY idx_federation_nodes_updated (updated_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

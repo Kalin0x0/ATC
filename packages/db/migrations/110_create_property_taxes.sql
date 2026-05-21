@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS atc_property_taxes (
+  id                      VARCHAR(26)    NOT NULL,
+  property_id             VARCHAR(128)   NOT NULL,
+  principal_id            VARCHAR(128)   NOT NULL,
+  amount                  VARCHAR(24)    NOT NULL DEFAULT '0',
+  period_label            VARCHAR(64)    NOT NULL,
+  status                  VARCHAR(32)    NOT NULL DEFAULT 'assessed',
+  assessed_at             DATETIME(3)    NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  due_at                  DATETIME(3)    NOT NULL,
+  paid_at                 DATETIME(3)    NULL,
+  paid_by_principal_id    VARCHAR(128)   NULL,
+  created_at              DATETIME(3)    NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at              DATETIME(3)    NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_property_tax_period (property_id, period_label),
+  INDEX idx_tax_property (property_id),
+  INDEX idx_tax_principal (principal_id),
+  INDEX idx_tax_status (status),
+  INDEX idx_tax_due (due_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

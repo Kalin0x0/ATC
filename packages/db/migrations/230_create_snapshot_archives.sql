@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS atc_snapshot_archives (
+  id                 VARCHAR(26)   NOT NULL,
+  archive_id         VARCHAR(128)  NOT NULL,
+  source_snapshot_id VARCHAR(128)  NOT NULL,
+  archive_type       VARCHAR(64)   NOT NULL,
+  compression_type   VARCHAR(32)   NULL,
+  status             VARCHAR(32)   NOT NULL DEFAULT 'pending',
+  owner_server_id    VARCHAR(128)  NOT NULL,
+  archive_nonce      VARCHAR(128)  NOT NULL,
+  archive_data       TEXT          NOT NULL DEFAULT '{}',
+  archived_at        DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  completed_at       DATETIME(3)   NULL,
+  created_at         DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at         DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_archive_nonce (archive_nonce),
+  KEY idx_archive_source (source_snapshot_id),
+  KEY idx_archive_status (status),
+  KEY idx_archive_updated (updated_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

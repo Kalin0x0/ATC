@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS atc_runtime_intrusions (
+  id              VARCHAR(26)  NOT NULL,
+  intrusion_id    VARCHAR(26)  NOT NULL,
+  intrusion_type  ENUM('unauthorized_access','rate_limit_breach','replay_attack','injection','tampering','custom') NOT NULL,
+  status          ENUM('active','investigating','resolved','false_positive') NOT NULL DEFAULT 'active',
+  owner_server_id VARCHAR(128) NOT NULL,
+  entity_id       VARCHAR(128) NULL,
+  source_node     VARCHAR(256) NULL,
+  intrusion_nonce VARCHAR(128) NOT NULL,
+  resolved_at     DATETIME(3)  NULL,
+  intrusion_data  JSON         NOT NULL,
+  created_at      DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at      DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_runtime_intrusion_id (intrusion_id),
+  UNIQUE KEY uq_runtime_intrusion_nonce (intrusion_nonce, owner_server_id),
+  KEY idx_runtime_intrusions_status (status),
+  KEY idx_runtime_intrusions_entity (entity_id),
+  KEY idx_runtime_intrusions_updated (updated_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

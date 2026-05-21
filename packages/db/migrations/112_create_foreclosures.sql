@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS atc_foreclosures (
+  id                      VARCHAR(26)    NOT NULL,
+  property_id             VARCHAR(128)   NOT NULL,
+  contract_id             VARCHAR(26)    NULL,
+  initiated_by_principal_id VARCHAR(128) NOT NULL,
+  status                  VARCHAR(32)    NOT NULL DEFAULT 'initiated',
+  reason                  VARCHAR(500)   NOT NULL,
+  foreclosure_nonce       VARCHAR(128)   NOT NULL,
+  initiated_at            DATETIME(3)    NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  completed_at            DATETIME(3)    NULL,
+  cancelled_at            DATETIME(3)    NULL,
+  notes                   TEXT           NULL,
+  created_at              DATETIME(3)    NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at              DATETIME(3)    NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_foreclosure_nonce (foreclosure_nonce),
+  INDEX idx_foreclosure_property (property_id),
+  INDEX idx_foreclosure_status (status),
+  INDEX idx_foreclosure_initiated_at (initiated_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS atc_policy_runtime (
+  id               VARCHAR(26)  NOT NULL,
+  policy_id        VARCHAR(26)  NOT NULL,
+  policy_type      ENUM('economic','social','military','environmental','governance','custom') NOT NULL,
+  status           ENUM('active','revoked','expired','pending') NOT NULL DEFAULT 'active',
+  owner_server_id  VARCHAR(128) NOT NULL,
+  region_id        VARCHAR(128) NULL,
+  policy_nonce     VARCHAR(128) NOT NULL,
+  policy_data      JSON         NOT NULL,
+  applied_at       DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  expires_at       DATETIME(3)  NULL,
+  created_at       DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at       DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_policy_id (policy_id),
+  UNIQUE KEY uq_policy_nonce (policy_nonce, owner_server_id),
+  KEY idx_policy_status (status),
+  KEY idx_policy_region (region_id),
+  KEY idx_policy_updated (updated_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

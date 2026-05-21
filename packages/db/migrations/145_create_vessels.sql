@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS atc_vessels (
+  id                    VARCHAR(26)    NOT NULL,
+  vessel_id             VARCHAR(128)   NOT NULL,
+  vessel_name           VARCHAR(255)   NOT NULL,
+  vessel_type           VARCHAR(64)    NOT NULL,
+  owned_by_principal_id VARCHAR(128)   NULL,
+  status                VARCHAR(32)    NOT NULL DEFAULT 'docked',
+  position_x            DECIMAL(12,4)  NULL,
+  position_y            DECIMAL(12,4)  NULL,
+  position_z            DECIMAL(12,4)  NULL,
+  heading               DECIMAL(8,4)   NULL,
+  speed_knots           DECIMAL(8,3)   NULL,
+  current_zone_id       VARCHAR(128)   NULL,
+  last_tick_at          DATETIME(3)    NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  created_at            DATETIME(3)    NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at            DATETIME(3)    NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_vessel_id (vessel_id),
+  INDEX idx_vessel_status (status),
+  INDEX idx_vessel_owner (owned_by_principal_id),
+  INDEX idx_vessel_zone (current_zone_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

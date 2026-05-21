@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS atc_disaster_events (
+  id                       VARCHAR(26)    NOT NULL,
+  disaster_id              VARCHAR(128)   NOT NULL,
+  disaster_nonce           VARCHAR(128)   NOT NULL,
+  disaster_type            VARCHAR(64)    NOT NULL,
+  disaster_name            VARCHAR(255)   NOT NULL,
+  severity                 DECIMAL(5,2)   NOT NULL DEFAULT 50.00,
+  status                   VARCHAR(32)    NOT NULL DEFAULT 'active',
+  affected_zone_ids        TEXT           NOT NULL DEFAULT '[]',
+  initiated_by_principal_id VARCHAR(128)  NULL,
+  owner_server_id          VARCHAR(128)   NULL,
+  contained_at             DATETIME(3)    NULL,
+  resolved_at              DATETIME(3)    NULL,
+  created_at               DATETIME(3)    NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at               DATETIME(3)    NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_disaster_id (disaster_id),
+  UNIQUE KEY uq_disaster_nonce (disaster_nonce),
+  INDEX idx_disaster_status (status),
+  INDEX idx_disaster_type (disaster_type),
+  INDEX idx_disaster_updated (updated_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

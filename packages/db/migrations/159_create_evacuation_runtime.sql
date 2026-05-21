@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS atc_evacuation_runtime (
+  id               VARCHAR(26)    NOT NULL,
+  evacuation_id    VARCHAR(128)   NOT NULL,
+  evacuation_nonce VARCHAR(128)   NOT NULL,
+  disaster_id      VARCHAR(128)   NULL,
+  zone_id          VARCHAR(128)   NOT NULL,
+  evacuation_type  VARCHAR(64)    NOT NULL,
+  evacuated_count  INT            NOT NULL DEFAULT 0,
+  target_count     INT            NULL,
+  status           VARCHAR(32)    NOT NULL DEFAULT 'initiated',
+  completed_at     DATETIME(3)    NULL,
+  created_at       DATETIME(3)    NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at       DATETIME(3)    NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_evacuation_id (evacuation_id),
+  UNIQUE KEY uq_evacuation_nonce (evacuation_nonce),
+  INDEX idx_evacuation_disaster (disaster_id),
+  INDEX idx_evacuation_zone (zone_id),
+  INDEX idx_evacuation_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

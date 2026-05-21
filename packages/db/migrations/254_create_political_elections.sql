@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS atc_political_elections (
+  id              VARCHAR(26)  NOT NULL,
+  election_id     VARCHAR(26)  NOT NULL,
+  election_type   ENUM('general','regional','emergency','referendum','custom') NOT NULL,
+  status          ENUM('open','closed','cancelled','counting') NOT NULL DEFAULT 'open',
+  owner_server_id VARCHAR(128) NOT NULL,
+  region_id       VARCHAR(128) NOT NULL,
+  election_nonce  VARCHAR(128) NOT NULL,
+  candidate_data  JSON         NOT NULL,
+  result_data     JSON         NULL,
+  closed_at       DATETIME(3)  NULL,
+  created_at      DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at      DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_election_id (election_id),
+  UNIQUE KEY uq_election_nonce (election_nonce, owner_server_id),
+  KEY idx_election_status (status),
+  KEY idx_election_region (region_id),
+  KEY idx_election_updated (updated_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
