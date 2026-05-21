@@ -1,0 +1,23 @@
+CREATE TABLE atc_damage_events (
+  id                      CHAR(26)      NOT NULL,
+  session_id              CHAR(26)      NULL,
+  attacker_principal_id   VARCHAR(128)  NOT NULL,
+  victim_principal_id     VARCHAR(128)  NOT NULL,
+  weapon_id               CHAR(26)      NULL,
+  weapon_model            VARCHAR(128)  NOT NULL,
+  hit_bone                ENUM('head','chest','abdomen','left_arm','right_arm','left_leg','right_leg','back','unknown') NOT NULL DEFAULT 'unknown',
+  damage_amount           SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  mitigated_amount        SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  net_damage              SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  hit_x                   FLOAT         NULL,
+  hit_y                   FLOAT         NULL,
+  hit_z                   FLOAT         NULL,
+  replay_nonce            VARCHAR(64)   NOT NULL,
+  created_at              DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_replay_nonce (attacker_principal_id, victim_principal_id, replay_nonce),
+  INDEX idx_session (session_id),
+  INDEX idx_victim (victim_principal_id),
+  INDEX idx_attacker (attacker_principal_id),
+  INDEX idx_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

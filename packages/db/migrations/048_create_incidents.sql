@@ -1,0 +1,28 @@
+-- Phase 25 — Dispatch: incident records linking evidence, arrests, citations
+CREATE TABLE IF NOT EXISTS atc_incidents (
+  id                      CHAR(26)     NOT NULL,
+  call_id                 CHAR(26)     NULL,
+  agency_id               CHAR(26)     NOT NULL,
+  status                  VARCHAR(20)  NOT NULL DEFAULT 'open',
+  priority                VARCHAR(20)  NOT NULL DEFAULT 'medium',
+  title                   VARCHAR(512) NOT NULL,
+  location                VARCHAR(512) NULL,
+  notes                   JSON         NOT NULL DEFAULT (JSON_ARRAY()),
+  evidence_ids            JSON         NOT NULL DEFAULT (JSON_ARRAY()),
+  arrest_ids              JSON         NOT NULL DEFAULT (JSON_ARRAY()),
+  citation_ids            JSON         NOT NULL DEFAULT (JSON_ARRAY()),
+  created_by_principal_id CHAR(26)     NOT NULL,
+  resolved_at             DATETIME(3)  NULL,
+  archived_at             DATETIME(3)  NULL,
+  created_at              DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at              DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  KEY idx_incident_agency   (agency_id),
+  KEY idx_incident_status   (status),
+  KEY idx_incident_priority (priority),
+  KEY idx_incident_call     (call_id),
+  KEY idx_incident_created  (created_at),
+  CONSTRAINT chk_incident_status   CHECK (status   IN ('open','active','resolved','archived')),
+  CONSTRAINT chk_incident_priority CHECK (priority IN ('low','medium','high','critical')),
+  CONSTRAINT fk_incident_agency    FOREIGN KEY (agency_id) REFERENCES atc_agencies (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

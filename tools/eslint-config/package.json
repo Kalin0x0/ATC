@@ -1,0 +1,8 @@
+{
+  "name": "@atc/eslint-config",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared ESLint configuration for ATC packages",
+  "main": "./index.js",
+  "files": ["index.js"]
+}

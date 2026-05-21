@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS atc_bank_transactions (
+  id                VARCHAR(26)   NOT NULL,
+  from_account_id   VARCHAR(26)   NULL,
+  to_account_id     VARCHAR(26)   NULL,
+  transaction_type  ENUM('transfer','deposit','withdrawal','tax','refund','auction_payment','marketplace_payment','escrow_in','escrow_out') NOT NULL,
+  amount            BIGINT        NOT NULL,
+  idempotency_key   VARCHAR(128)  NOT NULL,
+  description       VARCHAR(500)  NULL,
+  metadata          JSON          NULL,
+  status            ENUM('pending','completed','failed','reversed') NOT NULL DEFAULT 'pending',
+  completed_at      DATETIME(3)   NULL,
+  failed_at         DATETIME(3)   NULL,
+  created_at        DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_bank_tx_idempotency (idempotency_key),
+  INDEX idx_bank_tx_from (from_account_id),
+  INDEX idx_bank_tx_to (to_account_id),
+  INDEX idx_bank_tx_status (status),
+  INDEX idx_bank_tx_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

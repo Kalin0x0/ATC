@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(if \\(Test-Path apps\\) { Write-Output 'apps exists'; Get-ChildItem apps -Directory | ForEach-Object { $_.Name } } else { Write-Output 'no apps dir' })",
+      "PowerShell(pnpm *)",
+      "PowerShell(Get-ChildItem packages\\\\db\\\\migrations | Select-Object -Last 10 Name; Write-Output '---'; Get-ChildItem packages\\\\db\\\\src | ForEach-Object { $_.Name })",
+      "PowerShell(Test-Path packages\\\\events\\\\tsconfig.json; \\(Get-Content packages\\\\events\\\\tsconfig.json\\) -join \"`n\")"
+    ]
+  }
+}

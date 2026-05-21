@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS atc_market_listings (
+  id                   VARCHAR(26)   NOT NULL,
+  seller_principal_id  VARCHAR(26)   NOT NULL,
+  item_name            VARCHAR(255)  NOT NULL,
+  item_category        VARCHAR(128)  NULL,
+  quantity             INT UNSIGNED  NOT NULL DEFAULT 1,
+  price_per_unit       BIGINT        NOT NULL,
+  total_price          BIGINT        NOT NULL,
+  description          TEXT          NULL,
+  status               ENUM('active','sold','cancelled','expired') NOT NULL DEFAULT 'active',
+  listing_nonce        VARCHAR(128)  NOT NULL,
+  buyer_principal_id   VARCHAR(26)   NULL,
+  sold_at              DATETIME(3)   NULL,
+  expires_at           DATETIME(3)   NOT NULL,
+  created_at           DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at           DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_listing_nonce (listing_nonce),
+  INDEX idx_listing_seller (seller_principal_id),
+  INDEX idx_listing_status_expires (status, expires_at),
+  INDEX idx_listing_category (item_category)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

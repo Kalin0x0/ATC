@@ -1,0 +1,36 @@
+CREATE TABLE IF NOT EXISTS atc_vehicles (
+  id              CHAR(26)       NOT NULL,
+  owner_id        CHAR(26)       NULL,
+  organization_id CHAR(26)       NULL,
+  plate           VARCHAR(8)     NOT NULL,
+  vin             VARCHAR(17)    NOT NULL,
+  model           VARCHAR(64)    NOT NULL,
+  category        ENUM('civilian','police','ems','fire','government','other')
+                                 NOT NULL DEFAULT 'civilian',
+  status          ENUM('stored','spawned','active','impounded','destroyed')
+                                 NOT NULL DEFAULT 'stored',
+  fuel            TINYINT UNSIGNED NOT NULL DEFAULT 100,
+  body_health     SMALLINT UNSIGNED NOT NULL DEFAULT 1000,
+  engine_health   SMALLINT UNSIGNED NOT NULL DEFAULT 1000,
+  mileage         INT UNSIGNED   NOT NULL DEFAULT 0,
+  garage_id       VARCHAR(64)    NULL,
+  last_x          DOUBLE         NULL,
+  last_y          DOUBLE         NULL,
+  last_z          DOUBLE         NULL,
+  last_heading    FLOAT          NULL,
+  is_locked       TINYINT(1)     NOT NULL DEFAULT 1,
+  is_engine_on    TINYINT(1)     NOT NULL DEFAULT 0,
+  color_primary   VARCHAR(16)    NULL,
+  color_secondary VARCHAR(16)    NULL,
+  mod_hash        VARCHAR(64)    NULL,
+  created_at      DATETIME(3)    NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at      DATETIME(3)    NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
+                                 ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_vehicle_plate (plate),
+  UNIQUE KEY uq_vehicle_vin   (vin),
+  INDEX idx_vehicle_owner        (owner_id),
+  INDEX idx_vehicle_organization (organization_id),
+  INDEX idx_vehicle_status       (status),
+  INDEX idx_vehicle_garage       (garage_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

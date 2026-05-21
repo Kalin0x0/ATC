@@ -1,0 +1,27 @@
+-- Phase 21 — Economy Core: invoices issued between characters or organizations
+CREATE TABLE IF NOT EXISTS atc_invoices (
+    id                  CHAR(26)        NOT NULL,
+    issuer_id           VARCHAR(128)    NOT NULL,
+    issuer_type         VARCHAR(20)     NOT NULL,
+    recipient_id        VARCHAR(128)    NOT NULL,
+    recipient_type      VARCHAR(20)     NOT NULL,
+    amount              DECIMAL(20,4)   NOT NULL,
+    currency            VARCHAR(16)     NOT NULL DEFAULT 'USD',
+    description         VARCHAR(512)    NOT NULL,
+    status              VARCHAR(20)     NOT NULL DEFAULT 'draft',
+    due_at              DATETIME(3)     NULL,
+    paid_at             DATETIME(3)     NULL,
+    cancelled_at        DATETIME(3)     NULL,
+    payment_journal_id  CHAR(26)        NULL,
+    metadata            JSON            NULL,
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+    PRIMARY KEY (id),
+    KEY idx_invoice_issuer    (issuer_type, issuer_id),
+    KEY idx_invoice_recipient (recipient_type, recipient_id),
+    KEY idx_invoice_status    (status),
+    CONSTRAINT chk_inv_issuer_type    CHECK (issuer_type    IN ('character', 'organization')),
+    CONSTRAINT chk_inv_recipient_type CHECK (recipient_type IN ('character', 'organization')),
+    CONSTRAINT chk_inv_status         CHECK (status         IN ('draft', 'issued', 'paid', 'cancelled', 'overdue')),
+    CONSTRAINT chk_inv_amount         CHECK (amount > 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -1,0 +1,17 @@
+{
+  "extends": "@atc/tsconfig/node.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "composite": true,
+    "types": ["node"]
+  },
+  "references": [
+    { "path": "../../packages/shared-types" },
+    { "path": "../../packages/events" },
+    { "path": "../../packages/telemetry" },
+    { "path": "../../packages/medical" }
+  ],
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
