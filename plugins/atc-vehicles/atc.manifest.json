@@ -1,0 +1,8 @@
+{
+  "id": "atc-vehicles",
+  "version": "1.0.0",
+  "description": "Vehicle spawning, garage management and impound system for Atlantic Core.",
+  "author": "Atlantic Community",
+  "dependencies": ["atc-core"],
+  "permissions": ["vehicle:read", "vehicle:write"]
+}

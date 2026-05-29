@@ -1,0 +1,9 @@
+{
+  "id": "atc-admin",
+  "version": "1.0.0",
+  "description": "ATC Admin plugin — in-game admin commands (kick, ban, bring, goto, freeze, spectate)",
+  "author": "Atlantic Community",
+  "dependencies": ["atc-core"],
+  "permissions": ["admin:*"],
+  "fivemResource": "atc-admin"
+}

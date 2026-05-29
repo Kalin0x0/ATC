@@ -1,0 +1,9 @@
+{
+  "id": "atc-combat",
+  "version": "1.0.0",
+  "description": "ATC Combat plugin — death, revive, respawn, and EMS dispatch bridge",
+  "author": "Atlantic Community",
+  "dependencies": ["atc-core"],
+  "permissions": ["combat:read", "combat:write"],
+  "fivemResource": "atc-combat"
+}

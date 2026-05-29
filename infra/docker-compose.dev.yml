@@ -1,0 +1,45 @@
+version: "3.9"
+
+# Development overrides — use with:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  db:
+    ports:
+      - "3306:3306"
+
+  redis:
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+
+  api:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+      target: base
+    command: ["node", "--watch", "apps/api/src/index.ts"]
+    volumes:
+      - ../apps/api/src:/app/apps/api/src:ro
+      - ../packages:/app/packages:ro
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: mysql://atc:${DB_PASSWORD:-changeme_db}@db:3306/atc
+      REDIS_URL: redis://redis:6379
+      ATC_API_TOKEN: ${ATC_API_TOKEN:-dev_token}
+      ATC_SERVER_TOKEN: ${ATC_SERVER_TOKEN:-dev_server_token}
+      ATC_SERVER_ID: ${ATC_SERVER_ID:-atc-dev-01}
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # Nginx not included in dev — API exposed directly on port 3000
+  nginx:
+    profiles:
+      - disabled

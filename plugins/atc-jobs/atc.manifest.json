@@ -1,0 +1,8 @@
+{
+  "id": "atc-jobs",
+  "version": "1.0.0",
+  "description": "Job assignment, duty toggling and payroll tick system for Atlantic Core.",
+  "author": "Atlantic Community",
+  "dependencies": ["atc-core"],
+  "permissions": ["job:read", "job:write"]
+}

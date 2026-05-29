@@ -1,0 +1,8 @@
+{
+  "id": "atc-identity",
+  "name": "ATC Identity",
+  "version": "0.1.0",
+  "description": "Character creation and customization",
+  "dependencies": ["atc-core"],
+  "permissions": ["character:read", "character:write"]
+}

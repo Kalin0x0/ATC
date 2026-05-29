@@ -1,0 +1,8 @@
+{
+  "id": "atc-economy",
+  "name": "ATC Economy",
+  "version": "0.1.0",
+  "description": "Money handling, ATM, shops integration",
+  "dependencies": ["atc-core"],
+  "permissions": ["economy:read", "economy:write"]
+}

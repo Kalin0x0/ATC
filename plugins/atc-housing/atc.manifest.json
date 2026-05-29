@@ -1,0 +1,8 @@
+{
+  "id": "atc-housing",
+  "version": "1.0.0",
+  "description": "Property ownership, access control and lock management for Atlantic Core.",
+  "author": "Atlantic Community",
+  "dependencies": ["atc-core"],
+  "permissions": ["property:read", "property:write"]
+}

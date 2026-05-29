@@ -1,0 +1,9 @@
+{
+  "id": "atc-dispatch",
+  "version": "1.0.0",
+  "description": "ATC Dispatch plugin — 911 calls, internal dispatch routing, LEO notifications",
+  "author": "Atlantic Community",
+  "dependencies": ["atc-core"],
+  "permissions": ["dispatch:read", "dispatch:write"],
+  "fivemResource": "atc-dispatch"
+}

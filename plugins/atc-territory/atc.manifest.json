@@ -1,0 +1,9 @@
+{
+  "id": "atc-territory",
+  "version": "1.0.0",
+  "description": "ATC Territory plugin — faction zone control, capture and broadcast",
+  "author": "Atlantic Community",
+  "dependencies": ["atc-core"],
+  "permissions": ["faction:read", "faction:write"],
+  "fivemResource": "atc-territory"
+}

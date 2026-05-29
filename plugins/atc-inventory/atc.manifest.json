@@ -1,0 +1,8 @@
+{
+  "id": "atc-inventory",
+  "name": "ATC Inventory",
+  "version": "0.1.0",
+  "description": "Item use effects and inventory management",
+  "dependencies": ["atc-core"],
+  "permissions": ["inventory:read", "inventory:write"]
+}
