@@ -94,5 +94,23 @@ server_scripts {
 
 client_scripts {
     'client/locale.lua',
+    'client/sdk.lua',
+    'client/characters.lua',
+    'client/economy.lua',
+    'client/vitals.lua',
+    'client/status_effects.lua',
+    'client/inventory.lua',
+    'client/combat.lua',
+    'client/vehicles.lua',
+    'client/jobs.lua',
+    'client/hud.lua',
     'client/main.lua',
+}
+
+ui_page 'ui/index.html'
+
+files {
+    'ui/index.html',
+    'ui/css/*.css',
+    'ui/js/*.js',
 }

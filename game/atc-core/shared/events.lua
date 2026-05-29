@@ -77,3 +77,49 @@ ATC.Events.LOCALE = {
     REQUEST = 'atc:locale:request',
     LOADED  = 'atc:locale:loaded',
 }
+
+-- ── Combat (client) ───────────────────────────────────────────────────────────
+ATC.Events.COMBAT = {
+    DAMAGE_REQUEST  = 'atc:combat:damage:request',
+    DAMAGE_RESPONSE = 'atc:combat:damage:response',
+    WEAPON_EQUIP    = 'atc:combat:weapon:equip:request',
+    WEAPON_UNEQUIP  = 'atc:combat:weapon:unequip:request',
+    PLAYER_DIED     = 'atc:combat:player:died',
+    REVIVE          = 'atc:combat:revive',
+    REVIVE_ATTEMPT  = 'atc:combat:revive:attempt',
+}
+
+-- ── Jobs ─────────────────────────────────────────────────────────────────────
+ATC.Events.JOBS = {
+    DUTY_TOGGLE    = 'atc:jobs:duty:toggle',
+    DUTY_UPDATE    = 'atc:jobs:duty:update',
+    JOB_CHANGED    = 'atc:jobs:job:changed',
+    STATE_REQUEST  = 'atc:jobs:state:request',
+    STATE_RESPONSE = 'atc:jobs:state:response',
+}
+
+-- ── Vehicles ─────────────────────────────────────────────────────────────────
+ATC.Events.VEHICLE = {
+    CLIENT_ENTERED = 'atc:vehicle:client:entered',
+    CLIENT_EXITED  = 'atc:vehicle:client:exited',
+    LOCK_REQUEST   = 'atc:vehicle:lock:request',
+    LOCK_RESPONSE  = 'atc:vehicle:lock:response',
+}
+
+-- ── Dispatch ─────────────────────────────────────────────────────────────────
+ATC.Events.DISPATCH = {
+    CALL_RECEIVED = 'atc:dispatch:call:received',
+    CALL_ACCEPTED = 'atc:dispatch:call:accepted',
+}
+
+-- ── HUD ──────────────────────────────────────────────────────────────────────
+ATC.Events.HUD = {
+    TOGGLE = 'atc:hud:toggle',
+    SHOW   = 'atc:hud:show',
+    HIDE   = 'atc:hud:hide',
+}
+
+-- ── Notification ─────────────────────────────────────────────────────────────
+ATC.Events.NOTIFY = {
+    SHOW = 'atc:notify:show',
+}

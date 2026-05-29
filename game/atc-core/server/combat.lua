@@ -187,8 +187,11 @@ end
 
 --- Client requests a damage event be recorded.
 --- Client provides nonce; server validates and deduplicates.
-AddEventHandler('atc:combat:damage:request', function(params)
-  local source = source
+ATC.Firewall.On(ATC.Events.COMBAT.DAMAGE_REQUEST, {
+  clientAllowed  = true,
+  requireSession = true,
+  rateLimit      = { window = 1000, max = 30 },
+}, function(src, params)
   if type(params) ~= 'table' then return end
   -- Sanitize all numeric fields — never trust client damage values raw
   local safeParams = {
@@ -204,28 +207,40 @@ AddEventHandler('atc:combat:damage:request', function(params)
     hitZ            = tonumber(params.hitZ),
   }
   if not safeParams.victimSource or safeParams.replayNonce == '' then return end
-  ATC.Combat.ApplyDamage(source, safeParams, function(status, data)
-    TriggerClientEvent('atc:combat:damage:response', source, status, data)
+  ATC.Combat.ApplyDamage(src, safeParams, function(status, data)
+    TriggerClientEvent('atc:combat:damage:response', src, status, data)
   end)
 end)
 
 --- Client requests weapon equip state sync.
-AddEventHandler('atc:combat:weapon:equip:request', function(weaponId, currentAmmo, maxAmmo)
-  local source = source
+ATC.Firewall.On(ATC.Events.COMBAT.WEAPON_EQUIP, {
+  clientAllowed  = true,
+  requireSession = true,
+  rateLimit      = { window = 5000, max = 10 },
+}, function(src, params)
+  if type(params) ~= 'table' then return end
+  local weaponId   = params.weaponId
+  local currentAmmo = params.currentAmmo
+  local maxAmmo    = params.maxAmmo
   if type(weaponId) ~= 'string' then return end
-  ATC.Combat.EquipWeapon(source, weaponId,
+  ATC.Combat.EquipWeapon(src, weaponId,
     math.min(tonumber(currentAmmo) or 0, 9999),
     math.min(tonumber(maxAmmo)     or 0, 9999),
     function(status, data)
-      TriggerClientEvent('atc:combat:weapon:equip:response', source, status, data)
+      TriggerClientEvent('atc:combat:weapon:equip:response', src, status, data)
     end)
 end)
 
 --- Client requests weapon unequip.
-AddEventHandler('atc:combat:weapon:unequip:request', function(weaponId)
-  local source = source
+ATC.Firewall.On(ATC.Events.COMBAT.WEAPON_UNEQUIP, {
+  clientAllowed  = true,
+  requireSession = true,
+  rateLimit      = { window = 5000, max = 10 },
+}, function(src, params)
+  if type(params) ~= 'table' then return end
+  local weaponId = params.weaponId
   if type(weaponId) ~= 'string' then return end
-  ATC.Combat.UnequipWeapon(source, weaponId, function(status, data)
-    TriggerClientEvent('atc:combat:weapon:unequip:response', source, status, data)
+  ATC.Combat.UnequipWeapon(src, weaponId, function(status, data)
+    TriggerClientEvent('atc:combat:weapon:unequip:response', src, status, data)
   end)
 end)

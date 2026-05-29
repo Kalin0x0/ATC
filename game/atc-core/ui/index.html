@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ATC — Atlantic Core NUI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/main.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════
+       HUD LAYER — always visible during gameplay
+  ═══════════════════════════════════════════════ -->
+  <div id="atc-hud">
+
+    <!-- VITALS BAR — bottom-left -->
+    <div id="vitals-bar">
+      <div class="vital-row" id="vital-health">
+        <div class="vital-header">
+          <span class="vital-icon">❤</span>
+          <span class="vital-label" data-i18n="hud.health">Health</span>
+          <span class="vital-value" id="vital-health-val">100</span>
+        </div>
+        <div class="vital-track">
+          <div class="vital-fill vital-health-fill" id="vital-health-fill" style="width:100%"></div>
+        </div>
+      </div>
+
+      <div class="vital-row" id="vital-armor">
+        <div class="vital-header">
+          <span class="vital-icon">🛡</span>
+          <span class="vital-label" data-i18n="hud.armor">Armor</span>
+          <span class="vital-value" id="vital-armor-val">0</span>
+        </div>
+        <div class="vital-track">
+          <div class="vital-fill vital-armor-fill" id="vital-armor-fill" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div class="vital-row" id="vital-hunger">
+        <div class="vital-header">
+          <span class="vital-icon">🍖</span>
+          <span class="vital-label" data-i18n="hud.hunger">Hunger</span>
+          <span class="vital-value" id="vital-hunger-val">100</span>
+        </div>
+        <div class="vital-track">
+          <div class="vital-fill vital-hunger-fill" id="vital-hunger-fill" style="width:100%"></div>
+        </div>
+      </div>
+
+      <div class="vital-row" id="vital-thirst">
+        <div class="vital-header">
+          <span class="vital-icon">💧</span>
+          <span class="vital-label" data-i18n="hud.thirst">Thirst</span>
+          <span class="vital-value" id="vital-thirst-val">100</span>
+        </div>
+        <div class="vital-track">
+          <div class="vital-fill vital-thirst-fill" id="vital-thirst-fill" style="width:100%"></div>
+        </div>
+      </div>
+
+      <div class="vital-row" id="vital-stamina">
+        <div class="vital-header">
+          <span class="vital-icon">⚡</span>
+          <span class="vital-label" data-i18n="hud.stamina">Stamina</span>
+          <span class="vital-value" id="vital-stamina-val">100</span>
+        </div>
+        <div class="vital-track">
+          <div class="vital-fill vital-stamina-fill" id="vital-stamina-fill" style="width:100%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WALLET DISPLAY — bottom-right -->
+    <div id="wallet-display">
+      <div class="wallet-row wallet-cash">
+        <span class="wallet-icon">💵</span>
+        <div class="wallet-content">
+          <span class="wallet-label" data-i18n="hud.cash">Cash</span>
+          <span class="wallet-amount cash-amount" id="wallet-cash">$0</span>
+        </div>
+      </div>
+      <div class="wallet-row wallet-bank">
+        <span class="wallet-icon">🏦</span>
+        <div class="wallet-content">
+          <span class="wallet-label" data-i18n="hud.bank">Bank</span>
+          <span class="wallet-amount bank-amount" id="wallet-bank">$0</span>
+        </div>
+      </div>
+      <div class="wallet-row wallet-dirty" id="wallet-dirty-row">
+        <span class="wallet-icon">⚠</span>
+        <div class="wallet-content">
+          <span class="wallet-label" data-i18n="hud.dirty">Dirty</span>
+          <span class="wallet-amount dirty-amount" id="wallet-dirty">$0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- JOB DISPLAY — bottom-right below wallet -->
+    <div id="job-display">
+      <div class="job-header">
+        <span class="duty-dot" id="duty-dot"></span>
+        <span class="job-name" id="job-name" data-i18n="hud.unemployed">Unemployed</span>
+      </div>
+      <div class="job-rank" id="job-rank"></div>
+    </div>
+
+    <!-- VEHICLE HUD — bottom-center -->
+    <div id="vehicle-hud" class="hidden">
+      <div class="vehicle-hud-inner">
+        <div class="vehicle-seatbelt" id="vehicle-seatbelt" title="Seatbelt">
+          <span class="seatbelt-icon" id="seatbelt-icon">🔒</span>
+        </div>
+        <div class="vehicle-speed-block">
+          <span class="speed-number" id="vehicle-speed">0</span>
+          <span class="speed-unit">km/h</span>
+        </div>
+        <div class="vehicle-gear-block">
+          <span class="gear-label" data-i18n="hud.gear">GEAR</span>
+          <span class="gear-number" id="vehicle-gear">N</span>
+        </div>
+        <div class="vehicle-fuel-block">
+          <div class="fuel-header">
+            <span class="fuel-icon">⛽</span>
+            <span class="fuel-label" data-i18n="hud.fuel">Fuel</span>
+            <span class="fuel-value" id="vehicle-fuel-val">100</span>
+          </div>
+          <div class="fuel-track">
+            <div class="fuel-fill" id="vehicle-fuel-fill" style="width:100%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATUS EFFECTS — top-right -->
+    <div id="status-effects"></div>
+
+  </div>
+  <!-- /#atc-hud -->
+
+
+  <!-- ═══════════════════════════════════════════════
+       CHARACTER SELECT SCREEN
+  ═══════════════════════════════════════════════ -->
+  <div id="character-select" class="screen hidden">
+    <div class="modal character-select-modal">
+      <div class="modal-header">
+        <div class="atc-logo">
+          <span class="logo-atlantic">ATLANTIC</span>
+          <span class="logo-core">CORE</span>
+        </div>
+        <p class="modal-subtitle" data-i18n="charselect.subtitle">Select your character to enter the world</p>
+      </div>
+
+      <div class="character-list" id="character-list">
+        <!-- Populated by character-select.js -->
+        <div class="character-list-empty" id="character-list-empty">
+          <span class="empty-icon">👤</span>
+          <p data-i18n="charselect.noCharacters">No characters found</p>
+        </div>
+      </div>
+
+      <div class="character-select-error hidden" id="character-select-error">
+        <span data-i18n="charselect.error">Failed to select character. Please try again.</span>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" id="btn-create-character" data-i18n="charselect.createButton">
+          + Create Character
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════
+       INVENTORY PANEL
+  ═══════════════════════════════════════════════ -->
+  <div id="inventory-panel" class="panel hidden">
+    <div class="inventory-inner">
+      <div class="inventory-header">
+        <h2 class="inventory-title" data-i18n="inventory.title">Inventory</h2>
+        <button class="btn-icon inventory-close" id="inventory-close" title="Close" data-i18n-title="inventory.close">
+          ✕
+        </button>
+      </div>
+
+      <div class="inventory-body">
+        <!-- Slot grid: 5 columns × 10 rows = 50 slots -->
+        <div class="inventory-grid" id="inventory-grid">
+          <!-- Populated by inventory.js -->
+        </div>
+
+        <!-- Item detail panel -->
+        <div class="item-detail-panel hidden" id="item-detail-panel">
+          <div class="item-detail-icon" id="item-detail-icon"></div>
+          <div class="item-detail-info">
+            <h3 class="item-detail-name" id="item-detail-name"></h3>
+            <p class="item-detail-description" id="item-detail-description"></p>
+            <div class="item-detail-meta" id="item-detail-meta"></div>
+          </div>
+          <div class="item-detail-actions">
+            <button class="btn btn-primary item-use-btn" id="item-use-btn" data-i18n="inventory.use">Use</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════
+       DEATH SCREEN
+  ═══════════════════════════════════════════════ -->
+  <div id="death-screen" class="screen hidden">
+    <div class="death-content">
+      <div class="death-skull">☠</div>
+      <h1 class="death-title" data-i18n="death.title">You Are Dead</h1>
+      <p class="death-subtitle" data-i18n="death.subtitle">Waiting for respawn...</p>
+      <div class="death-timer-block" id="death-timer-block">
+        <span class="death-timer-label" data-i18n="death.timerLabel">Respawn in</span>
+        <span class="death-timer" id="death-timer">--</span>
+      </div>
+      <button
+        class="btn btn-primary btn-respawn"
+        id="btn-respawn"
+        disabled
+        data-i18n="death.respawnButton"
+      >Respawn</button>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════
+       NOTIFICATIONS CONTAINER
+  ═══════════════════════════════════════════════ -->
+  <div id="notifications" aria-live="polite" aria-atomic="false"></div>
+
+
+  <!-- ═══════════════════════════════════════════════
+       SCRIPTS — order matters
+  ═══════════════════════════════════════════════ -->
+  <script src="js/core.js"></script>
+  <script src="js/hud.js"></script>
+  <script src="js/character-select.js"></script>
+  <script src="js/inventory.js"></script>
+  <script src="js/notifications.js"></script>
+
+</body>
+</html>
