@@ -20,6 +20,7 @@ server_scripts {
     'server/security.lua',
     'server/event_firewall.lua',
     'server/sessions.lua',
+    'server/accounts.lua',
     'server/plugins.lua',
     'server/http.lua',
     'server/tasks.lua',

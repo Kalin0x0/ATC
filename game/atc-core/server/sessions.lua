@@ -118,3 +118,12 @@ function ATC.Sessions.ConsumePending(source)
     _pending[source] = nil
     return data
 end
+
+--- Return the characterId currently selected by this player.
+--- Alias for plugins that prefer the Sessions namespace.
+--- @param source number
+--- @return string|nil
+function ATC.Sessions.GetCharacterId(source)
+    local session = _sessions[source]
+    return session and session.characterId or nil
+end

@@ -1,0 +1,67 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# ATC — Atlantic Core  |  FiveM server.cfg example
+# Copy to your FiveM server root as server.cfg and fill in the values.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Server identity ───────────────────────────────────────────────────────────
+sv_hostname "Atlantic Core — [ATC]"
+sv_maxclients 64
+sets tags "atc,roleplay,mmo"
+
+# ── License ───────────────────────────────────────────────────────────────────
+# Get yours at https://keymaster.fivem.net
+sv_licenseKey "YOUR_FIVEM_LICENSE_KEY"
+
+# ── ATC Core convars (REQUIRED) ───────────────────────────────────────────────
+
+# URL where the ATC API is running (must be reachable from the FiveM server)
+set atc_api_url "http://localhost:3000"
+
+# API bearer token — must match ATC_API_TOKEN in infra/.env
+set atc_api_token "changeme_api_token_min32chars"
+
+# Server token for inter-service authentication
+set atc_server_token "changeme_server_token"
+
+# Unique server identifier (used for multi-server setups)
+set atc_server_id "atc-main-01"
+
+# Default locale: en | de | fa
+set atc_locale "en"
+
+# Fail-open: if true players can join even when the API is unreachable
+# false = safer default (block on API failure)
+set atc_fail_open "false"
+
+# API request timeout in milliseconds
+set atc_api_timeout_ms "5000"
+
+# Debug logging (verbose — disable in production)
+set atc_debug "false"
+
+# ── ATC Admin ACE (required for /atckick, /atcban, /atcbring, etc.) ───────────
+# Replace steam:XXXXXXXXXXXXXXXX with your Steam hex identifier
+add_ace identifier.steam:XXXXXXXXXXXXXXXX atc.admin allow
+
+# ── Resources ─────────────────────────────────────────────────────────────────
+# Core (must be first)
+start atc-core
+
+# SDK (required for external plugins)
+start atc-sdk
+
+# First-party plugins (order matters — identity before others)
+start atc-identity
+start atc-inventory
+start atc-economy
+start atc-housing
+start atc-vehicles
+start atc-jobs
+start atc-combat
+start atc-territory
+start atc-dispatch
+start atc-admin
+
+# Compatibility bridges (only enable if you use these frameworks)
+# start atc-bridge-qb
+# start atc-bridge-esx
