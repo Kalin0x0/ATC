@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ATC Dispatch Terminal</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: transparent; font-family: Inter, system-ui, sans-serif; color: var(--text-primary); overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; height: 100vh; }
+
+:root {
+  --bg-base:     #0d0d1a;
+  --bg-card:     #1a1a2e;
+  --bg-elevated: #16213e;
+  --bg-hover:    #1e2a4a;
+  --gold:        #d4af37;
+  --gold-light:  #e8c547;
+  --gold-dim:    rgba(212,175,55,0.15);
+  --gold-border: rgba(212,175,55,0.25);
+  --text-primary:#e8e8f0;
+  --text-muted:  #8888aa;
+  --text-dim:    #5566aa;
+  --success:     #52c052;
+  --danger:      #e05252;
+  --warning:     #e0a052;
+  --info:        #5288e0;
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--gold-border); border-radius: 2px; }
+
+.badge { display:inline-flex; align-items:center; padding:2px 8px; border-radius:20px; font-size:clamp(9px,0.9vw,11px); font-weight:700; }
+.badge-success { background:rgba(82,192,82,0.15); color:var(--success); }
+.badge-danger  { background:rgba(224,82,82,0.15); color:var(--danger); }
+.badge-warning { background:rgba(224,160,82,0.15); color:var(--warning); }
+.badge-info    { background:rgba(82,136,224,0.15); color:var(--info); }
+.badge-gold    { background:var(--gold-dim); color:var(--gold); }
+.badge-muted   { background:rgba(85,102,170,0.15); color:var(--text-dim); }
+
+/* ── Bottom panel ── */
+#dispatch-panel {
+  display: none;
+  width: 100vw;
+  height: clamp(220px, 35vh, 320px);
+  background: var(--bg-base);
+  border-top: 2px solid var(--gold-border);
+  transform: translateY(100%);
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+#dispatch-panel.visible {
+  display: block;
+  transform: translateY(0);
+}
+/* slide-in when made visible */
+#dispatch-panel.slide-in {
+  transform: translateY(0);
+}
+
+.panel-inner {
+  display: flex;
+  height: 100%;
+  gap: 0;
+}
+
+/* ── Left: Call List (65%) ── */
+.call-list-col {
+  width: 65%;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--gold-border);
+  overflow: hidden;
+}
+
+.col-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: clamp(6px,0.8vw,10px) clamp(10px,1.2vw,16px);
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--gold-border);
+  flex-shrink: 0;
+}
+.col-header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: clamp(11px,1.2vw,14px);
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 0.04em;
+}
+.col-header-title .icon { font-size: clamp(13px,1.4vw,16px); }
+
+.call-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(18px,2vw,24px);
+  height: clamp(18px,2vw,24px);
+  border-radius: 50%;
+  background: var(--danger);
+  color: #fff;
+  font-size: clamp(9px,0.9vw,11px);
+  font-weight: 700;
+  animation: callBadgePulse 2s ease infinite;
+}
+.call-count.empty { background: var(--text-dim); animation: none; }
+
+@keyframes callBadgePulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(224,82,82,0.5); }
+  50%      { box-shadow: 0 0 0 5px rgba(224,82,82,0); }
+}
+
+.call-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: clamp(4px,0.5vw,8px) 0;
+}
+
+/* ── Call Row ── */
+.call-row {
+  display: grid;
+  grid-template-columns: 10px clamp(18px,2vw,24px) 1fr auto clamp(50px,6vw,72px) auto;
+  align-items: center;
+  gap: clamp(6px,0.8vw,12px);
+  padding: clamp(5px,0.7vw,9px) clamp(10px,1.2vw,16px);
+  border-bottom: 1px solid rgba(212,175,55,0.08);
+  transition: background 0.12s;
+  animation: callFlash 0.4s ease;
+}
+.call-row:hover { background: var(--bg-card); }
+
+@keyframes callFlash {
+  0%,100% { background: transparent; }
+  30%      { background: rgba(212,175,55,0.08); }
+}
+.call-row.new-call { animation: newCallFlash 0.6s ease; }
+@keyframes newCallFlash {
+  0%   { background: rgba(224,82,82,0.12); }
+  100% { background: transparent; }
+}
+
+.priority-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.priority-dot.p1 { background: var(--danger); animation: pulse-p1 1s ease infinite; }
+.priority-dot.p2 { background: var(--warning); }
+.priority-dot.p3 { background: var(--info); }
+
+@keyframes pulse-p1 {
+  0%,100% { box-shadow: 0 0 0 0 rgba(224,82,82,0.8); }
+  50%      { box-shadow: 0 0 0 4px rgba(224,82,82,0); }
+}
+
+.call-type-icon {
+  font-size: clamp(13px,1.4vw,17px);
+  text-align: center;
+}
+
+.call-info { overflow: hidden; }
+.call-desc {
+  font-size: clamp(10px,1.1vw,13px);
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.call-location {
+  font-size: clamp(9px,0.9vw,11px);
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.call-time {
+  font-size: clamp(9px,0.9vw,11px);
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.respond-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 clamp(8px,0.9vw,12px);
+  border-radius: 6px;
+  font-size: clamp(9px,0.95vw,11px);
+  font-weight: 700;
+  cursor: pointer;
+  background: transparent;
+  color: var(--gold);
+  border: 1px solid var(--gold-border);
+  white-space: nowrap;
+  transition: all 0.12s;
+}
+.respond-btn:hover { background: var(--gold-dim); border-color: var(--gold); }
+
+/* ── Empty state ── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 8px;
+  color: var(--text-dim);
+  font-size: clamp(10px,1.1vw,13px);
+  padding: 20px;
+}
+.empty-state .icon { font-size: clamp(28px,4vw,40px); opacity: 0.4; }
+
+/* ── Right: Unit Board (35%) ── */
+.unit-board-col {
+  width: 35%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.unit-scroll { flex: 1; overflow-y: auto; padding: clamp(4px,0.5vw,8px) 0; }
+
+.unit-row {
+  display: flex;
+  align-items: center;
+  gap: clamp(6px,0.8vw,10px);
+  padding: clamp(5px,0.6vw,8px) clamp(10px,1.2vw,16px);
+  border-bottom: 1px solid rgba(212,175,55,0.06);
+  transition: background 0.12s;
+}
+.unit-row:hover { background: var(--bg-card); }
+
+.unit-status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.unit-status-dot.available  { background: var(--success); }
+.unit-status-dot.responding { background: var(--warning); }
+.unit-status-dot.off-duty   { background: var(--text-dim); }
+
+.unit-info { flex: 1; overflow: hidden; }
+.unit-name {
+  font-size: clamp(10px,1.1vw,13px);
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.unit-badge {
+  font-size: clamp(9px,0.9vw,11px);
+  color: var(--text-muted);
+}
+
+.unit-board-footer {
+  padding: clamp(5px,0.7vw,9px) clamp(10px,1.2vw,16px);
+  background: var(--bg-card);
+  border-top: 1px solid var(--gold-border);
+  font-size: clamp(9px,0.95vw,11px);
+  color: var(--text-muted);
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.unit-count-stat { display: flex; align-items: center; gap: 5px; }
+.unit-count-stat .dot { width: 6px; height: 6px; border-radius: 50%; }
+</style>
+</head>
+<body>
+
+<div id="dispatch-panel">
+  <div class="panel-inner">
+
+    <!-- LEFT: Active Calls -->
+    <div class="call-list-col">
+      <div class="col-header">
+        <div class="col-header-title">
+          <span class="icon">🚨</span>
+          <span>Active Calls</span>
+        </div>
+        <span class="call-count empty" id="callCountBadge">0</span>
+      </div>
+
+      <div class="call-scroll" id="callList">
+        <!-- Empty state shown by default -->
+        <div class="empty-state" id="emptyState">
+          <div class="icon">🚔</div>
+          <div>No active calls</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Unit Board -->
+    <div class="unit-board-col">
+      <div class="col-header">
+        <div class="col-header-title">
+          <span class="icon">📡</span>
+          <span>Unit Board</span>
+        </div>
+        <span class="badge badge-gold" id="onlineCount">0 Online</span>
+      </div>
+
+      <div class="unit-scroll" id="unitList">
+        <!-- Populated by JS -->
+      </div>
+
+      <div class="unit-board-footer">
+        <div class="unit-count-stat">
+          <div class="dot" style="background:var(--success)"></div>
+          <span id="availableCount">0</span> Available
+        </div>
+        <div class="unit-count-stat">
+          <div class="dot" style="background:var(--warning)"></div>
+          <span id="respondingCount">0</span> Responding
+        </div>
+        <div class="unit-count-stat">
+          <div class="dot" style="background:var(--text-dim)"></div>
+          <span id="offDutyCount">0</span> Off Duty
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+const state = {
+  visible: false,
+  calls: [],
+  units: [],
+  callTimers: {},
+};
+
+// ── Helpers ──────────────────────────────────────────────────────────────
+function nuiFetch(action, data) {
+  return fetch('https://atc-dispatch/' + action, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data || {}),
+  }).catch(() => {});
+}
+
+function formatElapsed(seconds) {
+  const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+  const s = String(seconds % 60).padStart(2, '0');
+  return m + ':' + s;
+}
+
+// ── Panel lifecycle ──────────────────────────────────────────────────────
+function openPanel(data) {
+  const panel = document.getElementById('dispatch-panel');
+  panel.style.display = 'block';
+  requestAnimationFrame(() => panel.classList.add('visible'));
+  state.visible = true;
+
+  if (data) {
+    if (data.calls)  populateCalls(data.calls);
+    if (data.units)  populateUnits(data.units);
+  } else {
+    // Demo data for dev
+    populateCalls([
+      { id:'c1', priority:'p1', icon:'🔫', desc:'Armed robbery in progress', location:'Fleeca Bank, Rockford Hills', elapsed:75  },
+      { id:'c2', priority:'p2', icon:'🚨', desc:'Shots fired, multiple suspects', location:'Grove Street, Strawberry',    elapsed:132 },
+      { id:'c3', priority:'p3', icon:'🏥', desc:'Vehicle accident, injuries reported', location:'Vinewood Blvd',          elapsed:45  },
+      { id:'c4', priority:'p2', icon:'🚗', desc:'Vehicle pursuit, suspect fleeing', location:'Palomino Freeway',          elapsed:18  },
+    ]);
+    populateUnits([
+      { name:'Officer Hayes',   badge:'#1042', status:'available'  },
+      { name:'Officer Kovic',   badge:'#2218', status:'responding' },
+      { name:'Sgt. Mercer',     badge:'#0501', status:'available'  },
+      { name:'Officer Pratt',   badge:'#3317', status:'off-duty'   },
+      { name:'Officer Bell',    badge:'#2890', status:'responding' },
+      { name:'Deputy Marshal',  badge:'#0044', status:'off-duty'   },
+    ]);
+  }
+
+  // Start elapsed timers
+  clearInterval(state._globalTimer);
+  state._globalTimer = setInterval(tickTimers, 1000);
+}
+
+function closePanel() {
+  const panel = document.getElementById('dispatch-panel');
+  panel.classList.remove('visible');
+  setTimeout(() => { panel.style.display = 'none'; }, 300);
+  state.visible = false;
+  clearInterval(state._globalTimer);
+  nuiFetch('atc:dispatch:close', {});
+}
+
+// ── Calls ────────────────────────────────────────────────────────────────
+function populateCalls(calls) {
+  state.calls = calls.map(c => ({ ...c, elapsed: c.elapsed || 0 }));
+  renderCalls();
+  updateCallCount();
+}
+
+function renderCalls() {
+  const list = document.getElementById('callList');
+  const empty = document.getElementById('emptyState');
+
+  if (state.calls.length === 0) {
+    list.innerHTML = '';
+    list.appendChild(empty);
+    empty.style.display = 'flex';
+    return;
+  }
+  empty.style.display = 'none';
+
+  const rows = state.calls.map(call => buildCallRow(call)).join('');
+  list.innerHTML = rows;
+  // Re-insert empty state (hidden)
+  empty.style.display = 'none';
+  list.appendChild(empty);
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function buildCallRow(call) {
+  const priorityClass = call.priority || 'p3';
+  const safeId       = escHtml(String(call.id || ''));
+  const safeIcon     = escHtml(call.icon || '🚨');
+  const safeDesc     = escHtml(call.desc || 'Unknown Call');
+  const safeLoc      = escHtml(call.location || 'Unknown');
+  return `
+    <div class="call-row" id="call-${safeId}">
+      <div class="priority-dot ${priorityClass}"></div>
+      <div class="call-type-icon">${safeIcon}</div>
+      <div class="call-info">
+        <div class="call-desc">${safeDesc}</div>
+        <div class="call-location">📍 ${safeLoc}</div>
+      </div>
+      <span class="badge ${priorityClass === 'p1' ? 'badge-danger' : priorityClass === 'p2' ? 'badge-warning' : 'badge-info'}" style="font-size:clamp(8px,0.8vw,10px)">
+        ${escHtml(priorityClass.toUpperCase())}
+      </span>
+      <div class="call-time" id="timer-${safeId}">${formatElapsed(call.elapsed)}</div>
+      <button class="respond-btn" onclick="respondToCall('${safeId}')">Respond</button>
+    </div>`;
+}
+
+function prependCall(call) {
+  state.calls.unshift({ ...call, elapsed: 0 });
+  const list = document.getElementById('callList');
+  const empty = document.getElementById('emptyState');
+  empty.style.display = 'none';
+  const tmp = document.createElement('div');
+  tmp.innerHTML = buildCallRow(call);
+  const row = tmp.firstElementChild;
+  row.classList.add('new-call');
+  list.insertBefore(row, list.firstChild);
+  updateCallCount();
+}
+
+function tickTimers() {
+  state.calls.forEach(call => {
+    call.elapsed++;
+    const el = document.getElementById('timer-' + call.id);
+    if (el) el.textContent = formatElapsed(call.elapsed);
+  });
+}
+
+function updateCallCount() {
+  const badge = document.getElementById('callCountBadge');
+  badge.textContent = state.calls.length;
+  badge.classList.toggle('empty', state.calls.length === 0);
+}
+
+function respondToCall(callId) {
+  nuiFetch('atc:dispatch:respond', { callId });
+  const row = document.getElementById('call-' + callId);
+  if (row) {
+    row.style.opacity = '0.4';
+    row.style.pointerEvents = 'none';
+    const btn = row.querySelector('.respond-btn');
+    if (btn) { btn.textContent = 'Responding'; btn.style.color = 'var(--success)'; btn.style.borderColor = 'var(--success)'; }
+  }
+}
+
+// ── Units ────────────────────────────────────────────────────────────────
+function populateUnits(units) {
+  state.units = units;
+  renderUnits();
+}
+
+function renderUnits() {
+  const list = document.getElementById('unitList');
+  list.innerHTML = state.units.map(u => {
+    const safeName  = escHtml(u.name || '');
+    const safeBadge = escHtml(u.badge || '');
+    const statusCls = u.status === 'available' ? 'badge-success' : u.status === 'responding' ? 'badge-warning' : 'badge-muted';
+    const statusLbl = u.status === 'available' ? 'On Duty' : u.status === 'responding' ? 'Responding' : 'Off Duty';
+    return `
+    <div class="unit-row">
+      <div class="unit-status-dot ${escHtml(u.status || '')}"></div>
+      <div class="unit-info">
+        <div class="unit-name">${safeName}</div>
+        <div class="unit-badge">${safeBadge}</div>
+      </div>
+      <span class="badge ${statusCls}">${statusLbl}</span>
+    </div>`;
+  }).join('');
+
+  const available  = state.units.filter(u => u.status === 'available').length;
+  const responding = state.units.filter(u => u.status === 'responding').length;
+  const offDuty    = state.units.filter(u => u.status === 'off-duty').length;
+  const online     = available + responding;
+
+  document.getElementById('availableCount').textContent  = available;
+  document.getElementById('respondingCount').textContent = responding;
+  document.getElementById('offDutyCount').textContent    = offDuty;
+  document.getElementById('onlineCount').textContent     = online + ' Online';
+}
+
+// ── NUI message handler ───────────────────────────────────────────────────
+window.addEventListener('message', function(event) {
+  const { type, payload } = event.data || {};
+  switch (type) {
+    case 'ATC_DISPATCH_OPEN':
+      openPanel(payload || null);
+      break;
+    case 'ATC_DISPATCH_CALL_NEW':
+      if (!state.visible) openPanel(null);
+      if (payload) prependCall(payload);
+      break;
+    case 'ATC_DISPATCH_CLOSE':
+      closePanel();
+      break;
+  }
+});
+
+// ── ESC to close ──────────────────────────────────────────────────────────
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && state.visible) closePanel();
+});
+
+// ── Dev: auto-open for testing ────────────────────────────────────────────
+// openPanel(null);
+</script>
+</body>
+</html>

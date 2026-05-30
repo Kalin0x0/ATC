@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Criminal Operations</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: transparent; font-family: Inter, system-ui, sans-serif; color: var(--text-primary); overflow: hidden; display: flex; align-items: center; justify-content: center; height: 100vh; }
+
+:root {
+  --bg-base:     #0d0d1a;
+  --bg-card:     #1a1a2e;
+  --bg-elevated: #16213e;
+  --bg-hover:    #1e2a4a;
+  --gold:        #d4af37;
+  --gold-light:  #e8c547;
+  --gold-dim:    rgba(212,175,55,0.15);
+  --gold-border: rgba(212,175,55,0.25);
+  --text-primary:#e8e8f0;
+  --text-muted:  #8888aa;
+  --text-dim:    #5566aa;
+  --success:     #52c052;
+  --danger:      #e05252;
+  --warning:     #e0a052;
+  --info:        #5288e0;
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--gold-border); border-radius: 2px; }
+
+.btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:40px; padding:0 clamp(12px,1.5vw,20px); border-radius:8px; font-size:clamp(11px,1.1vw,13px); font-weight:600; cursor:pointer; transition:all 0.15s; border:none; }
+.btn-primary { background:var(--gold); color:#0d0d1a; }
+.btn-primary:hover { background:var(--gold-light); transform:translateY(-1px); }
+.btn-primary:active { transform:scale(0.97); }
+.btn-danger  { background:var(--danger); color:#fff; }
+.btn-danger:hover  { background:#c94444; }
+.btn-ghost   { background:transparent; color:var(--text-muted); border:1px solid var(--gold-border); }
+.btn-ghost:hover   { color:var(--gold); border-color:var(--gold); background:var(--gold-dim); }
+.btn-sm { min-height:34px; padding:0 clamp(8px,1vw,14px); font-size:clamp(10px,1vw,12px); }
+
+.input { width:100%; background:var(--bg-elevated); border:1px solid var(--gold-border); border-radius:8px; padding:10px 14px; color:var(--text-primary); font-size:clamp(11px,1.1vw,13px); outline:none; transition:border-color 0.15s; }
+.input:focus { border-color:var(--gold); }
+
+.badge { display:inline-flex; align-items:center; padding:2px 8px; border-radius:20px; font-size:clamp(9px,0.9vw,11px); font-weight:700; }
+.badge-success { background:rgba(82,192,82,0.15); color:var(--success); }
+.badge-danger  { background:rgba(224,82,82,0.15); color:var(--danger); }
+.badge-warning { background:rgba(224,160,82,0.15); color:var(--warning); }
+.badge-info    { background:rgba(82,136,224,0.15); color:var(--info); }
+.badge-gold    { background:var(--gold-dim); color:var(--gold); }
+
+.panel { background:var(--bg-card); border:1px solid var(--gold-border); border-radius:clamp(10px,1.5vw,16px); padding:clamp(14px,2vw,24px); }
+.panel-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:clamp(12px,1.5vw,20px); }
+.panel-title { color:var(--gold); font-weight:700; font-size:clamp(13px,1.4vw,16px); }
+.close-btn { width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:6px; cursor:pointer; color:var(--text-muted); background:transparent; border:none; font-size:16px; }
+.close-btn:hover { background:rgba(224,82,82,0.15); color:var(--danger); }
+
+/* ── Modal wrapper ── */
+#app {
+  display: none;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) translateY(30px);
+  opacity: 0;
+  width: clamp(340px, 92vw, 680px);
+  max-height: 85vh;
+  background: var(--bg-card);
+  border: 1px solid var(--gold-border);
+  border-radius: clamp(10px, 1.5vw, 16px);
+  overflow: hidden;
+  flex-direction: column;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+#app.visible {
+  display: flex;
+  opacity: 1;
+  transform: translate(-50%, -50%) translateY(0);
+}
+
+/* ── Header ── */
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: clamp(12px,1.6vw,20px) clamp(14px,2vw,24px);
+  border-bottom: 1px solid var(--gold-border);
+  background: var(--bg-base);
+  flex-shrink: 0;
+}
+.modal-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--gold);
+  font-weight: 700;
+  font-size: clamp(14px,1.6vw,18px);
+  letter-spacing: 0.04em;
+}
+.modal-title .icon { font-size: clamp(16px,1.8vw,22px); }
+
+/* ── Tabs ── */
+.tabs {
+  display: flex;
+  gap: 2px;
+  padding: 0 clamp(14px,2vw,24px);
+  background: var(--bg-base);
+  border-bottom: 1px solid var(--gold-border);
+  overflow-x: auto;
+  flex-shrink: 0;
+}
+.tabs::-webkit-scrollbar { height: 0; }
+.tab {
+  padding: clamp(8px,1vw,12px) clamp(10px,1.2vw,16px);
+  font-size: clamp(10px,1.1vw,13px);
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: all 0.15s;
+  user-select: none;
+}
+.tab:hover { color: var(--text-primary); }
+.tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+/* ── Content area ── */
+.tab-content {
+  overflow-y: auto;
+  padding: clamp(14px,2vw,24px);
+  flex: 1;
+}
+.tab-panel { display: none; }
+.tab-panel.active { display: block; animation: fadeIn 0.18s ease; }
+
+@keyframes fadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+
+/* ── Active Robbery Banner ── */
+.robbery-banner {
+  display: flex;
+  align-items: center;
+  gap: clamp(8px,1vw,14px);
+  padding: clamp(10px,1.2vw,16px);
+  background: rgba(224,82,82,0.1);
+  border: 1px solid rgba(224,82,82,0.35);
+  border-radius: 10px;
+  margin-bottom: clamp(12px,1.5vw,18px);
+}
+.robbery-banner.inactive {
+  background: rgba(212,175,55,0.06);
+  border-color: var(--gold-border);
+}
+.pulse-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--danger);
+  flex-shrink: 0;
+  animation: pulse-red 1.2s ease infinite;
+}
+.pulse-dot.gold { background: var(--gold); animation: pulse-gold 2s ease infinite; }
+@keyframes pulse-red {
+  0%,100% { box-shadow: 0 0 0 0 rgba(224,82,82,0.7); }
+  50%      { box-shadow: 0 0 0 6px rgba(224,82,82,0); }
+}
+@keyframes pulse-gold {
+  0%,100% { box-shadow: 0 0 0 0 rgba(212,175,55,0.6); }
+  50%      { box-shadow: 0 0 0 6px rgba(212,175,55,0); }
+}
+.banner-info { flex: 1; }
+.banner-label { font-size: clamp(11px,1.1vw,13px); color: var(--text-muted); }
+.banner-value { font-size: clamp(12px,1.3vw,15px); font-weight: 700; color: var(--text-primary); }
+.timer { font-variant-numeric: tabular-nums; color: var(--danger); font-weight:700; font-size: clamp(13px,1.4vw,16px); }
+
+/* ── Location Grid ── */
+.location-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(clamp(120px,22vw,210px), 1fr));
+  gap: clamp(8px,1vw,14px);
+}
+.location-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--gold-border);
+  border-radius: 10px;
+  padding: clamp(10px,1.2vw,16px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.location-card:hover { border-color: var(--gold); background: var(--bg-hover); }
+.location-icon { font-size: clamp(22px,2.5vw,30px); }
+.location-name { font-weight: 700; font-size: clamp(11px,1.2vw,14px); color: var(--text-primary); }
+.location-payout { font-size: clamp(10px,1vw,12px); color: var(--success); font-weight: 600; }
+.location-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
+
+/* ── Drug Recipe Cards ── */
+.recipe-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(clamp(140px,25vw,220px), 1fr));
+  gap: clamp(8px,1vw,14px);
+}
+.recipe-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--gold-border);
+  border-radius: 10px;
+  padding: clamp(10px,1.2vw,16px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.recipe-name { font-weight: 700; font-size: clamp(11px,1.2vw,14px); color: var(--text-primary); }
+.recipe-ingredients { font-size: clamp(9px,0.95vw,11px); color: var(--text-muted); line-height: 1.5; }
+.recipe-meta { display: flex; justify-content: space-between; align-items: center; font-size: clamp(9px,0.95vw,11px); }
+.recipe-time { color: var(--text-dim); }
+.recipe-price { color: var(--gold); font-weight: 700; }
+
+/* ── Craft Progress ── */
+.craft-progress {
+  display: none;
+  margin-top: 8px;
+  background: var(--bg-base);
+  border-radius: 20px;
+  height: 5px;
+  overflow: hidden;
+}
+.craft-progress.active { display: block; }
+.craft-progress-bar {
+  height: 100%;
+  background: var(--gold);
+  border-radius: 20px;
+  width: 0%;
+  animation: craftFill 3s linear forwards;
+}
+@keyframes craftFill { from { width:0%; } to { width:100%; } }
+
+/* ── Gang Section ── */
+.gang-info-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--gold-border);
+  border-radius: 10px;
+  padding: clamp(12px,1.5vw,18px);
+  margin-bottom: clamp(10px,1.2vw,16px);
+  display: flex;
+  align-items: center;
+  gap: clamp(10px,1.2vw,16px);
+}
+.gang-avatar {
+  width: clamp(40px,5vw,56px);
+  height: clamp(40px,5vw,56px);
+  border-radius: 10px;
+  background: var(--gold-dim);
+  border: 1px solid var(--gold-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(18px,2.2vw,26px);
+  flex-shrink: 0;
+}
+.gang-meta { flex: 1; }
+.gang-name { font-size: clamp(13px,1.5vw,17px); font-weight: 700; color: var(--gold); }
+.gang-stats { display: flex; gap: 12px; margin-top: 4px; }
+.gang-stat { font-size: clamp(10px,1vw,12px); color: var(--text-muted); }
+.gang-stat span { color: var(--text-primary); font-weight: 600; }
+
+.member-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: clamp(10px,1.2vw,16px); }
+.member-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: clamp(7px,0.9vw,11px) clamp(10px,1.2vw,14px);
+  background: var(--bg-elevated);
+  border-radius: 8px;
+  transition: background 0.12s;
+}
+.member-row:hover { background: var(--bg-hover); }
+.online-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.online-dot.online  { background: var(--success); }
+.online-dot.offline { background: var(--text-dim); }
+.member-name { flex:1; font-size: clamp(11px,1.1vw,13px); font-weight: 500; }
+.member-rank { font-size: clamp(9px,0.9vw,11px); color: var(--text-muted); }
+
+.gang-actions { display: flex; gap: clamp(8px,1vw,12px); align-items: center; }
+.invite-wrap { display: flex; gap: 8px; flex: 1; }
+
+/* ── Black Market ── */
+.market-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(clamp(130px,24vw,200px), 1fr));
+  gap: clamp(8px,1vw,14px);
+}
+.market-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--gold-border);
+  border-radius: 10px;
+  padding: clamp(12px,1.5vw,18px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  text-align: center;
+  transition: border-color 0.15s, background 0.15s;
+}
+.market-card:hover { border-color: var(--gold); background: var(--bg-hover); }
+.market-icon { font-size: clamp(24px,3vw,36px); }
+.market-name { font-weight: 700; font-size: clamp(11px,1.2vw,14px); }
+.market-price { font-size: clamp(12px,1.3vw,15px); font-weight: 700; color: var(--danger); }
+
+/* ── Smuggling ── */
+.smuggling-run {
+  background: var(--bg-elevated);
+  border: 1px solid var(--gold-border);
+  border-radius: 10px;
+  padding: clamp(12px,1.5vw,18px);
+  margin-bottom: clamp(12px,1.5vw,18px);
+}
+.run-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.run-title { font-size: clamp(12px,1.3vw,15px); font-weight: 700; color: var(--text-primary); }
+.run-meta { display: flex; gap: clamp(12px,1.5vw,20px); }
+.run-stat { font-size: clamp(10px,1vw,12px); }
+.run-stat label { color: var(--text-muted); display: block; margin-bottom: 2px; }
+.run-stat value { color: var(--text-primary); font-weight: 600; }
+
+.smuggling-start {
+  display: flex;
+  gap: clamp(8px,1vw,12px);
+  align-items: flex-end;
+  margin-bottom: clamp(12px,1.5vw,18px);
+}
+.form-group { flex: 1; }
+.form-label { display: block; font-size: clamp(10px,1vw,12px); color: var(--text-muted); margin-bottom: 6px; }
+
+.risk-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: clamp(10px,1vw,12px);
+}
+.risk-table th {
+  text-align: left;
+  padding: clamp(6px,0.8vw,10px) clamp(8px,1vw,14px);
+  background: var(--bg-base);
+  color: var(--text-muted);
+  font-weight: 600;
+  border-bottom: 1px solid var(--gold-border);
+}
+.risk-table td {
+  padding: clamp(6px,0.8vw,10px) clamp(8px,1vw,14px);
+  border-bottom: 1px solid rgba(212,175,55,0.1);
+  color: var(--text-primary);
+}
+.risk-table tr:hover td { background: var(--bg-elevated); }
+
+.section-title {
+  font-size: clamp(11px,1.2vw,14px);
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: clamp(8px,1vw,12px);
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- Header -->
+  <div class="modal-header">
+    <div class="modal-title">
+      <span class="icon">💀</span>
+      <span>Criminal Operations</span>
+    </div>
+    <button class="close-btn" onclick="closePanel()" title="Close (ESC)">✕</button>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" data-tab="robbery">🏦 Robbery</div>
+    <div class="tab" data-tab="drugs">💊 Drugs</div>
+    <div class="tab" data-tab="gang">👥 Gang</div>
+    <div class="tab" data-tab="blackmarket">🛒 Black Market</div>
+    <div class="tab" data-tab="smuggling">🚢 Smuggling</div>
+  </div>
+
+  <!-- Content -->
+  <div class="tab-content">
+
+    <!-- ── ROBBERY ── -->
+    <div class="tab-panel active" id="tab-robbery">
+      <!-- Active Banner -->
+      <div class="robbery-banner inactive" id="robberyBanner">
+        <div class="pulse-dot gold" id="bannerDot"></div>
+        <div class="banner-info">
+          <div class="banner-label" id="bannerLabel">No Active Robbery</div>
+          <div class="banner-value" id="bannerValue">Select a location below to begin</div>
+        </div>
+        <div class="timer" id="robberyTimer" style="display:none">00:00</div>
+      </div>
+
+      <div class="section-title">Available Locations</div>
+      <div class="location-grid">
+        <!-- Fleeca Bank -->
+        <div class="location-card">
+          <div class="location-icon">🏦</div>
+          <div class="location-name">Fleeca Bank</div>
+          <div class="location-payout">$8,000 – $15,000</div>
+          <div class="location-footer">
+            <span class="badge badge-success">Low Risk</span>
+            <button class="btn btn-primary btn-sm" onclick="startRobbery('fleeca')">Start</button>
+          </div>
+        </div>
+        <!-- Paleto Bay -->
+        <div class="location-card">
+          <div class="location-icon">🏦</div>
+          <div class="location-name">Paleto Bay Bank</div>
+          <div class="location-payout">$22,000 – $40,000</div>
+          <div class="location-footer">
+            <span class="badge badge-warning">Med Risk</span>
+            <button class="btn btn-primary btn-sm" onclick="startRobbery('paleto')">Start</button>
+          </div>
+        </div>
+        <!-- Blaine Co -->
+        <div class="location-card">
+          <div class="location-icon">💰</div>
+          <div class="location-name">Blaine Co Savings</div>
+          <div class="location-payout">$30,000 – $55,000</div>
+          <div class="location-footer">
+            <span class="badge badge-danger">High Risk</span>
+            <button class="btn btn-primary btn-sm" onclick="startRobbery('blaineco')">Start</button>
+          </div>
+        </div>
+        <!-- 24/7 -->
+        <div class="location-card">
+          <div class="location-icon">🏪</div>
+          <div class="location-name">24/7 Store</div>
+          <div class="location-payout">$1,500 – $4,000</div>
+          <div class="location-footer">
+            <span class="badge badge-success">Low Risk</span>
+            <button class="btn btn-primary btn-sm" onclick="startRobbery('247store')">Start</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── DRUGS ── -->
+    <div class="tab-panel" id="tab-drugs">
+      <div class="section-title">Crafting Recipes</div>
+      <div class="recipe-grid">
+
+        <div class="recipe-card" id="recipe-water">
+          <div class="recipe-name">💧 Water Bottle</div>
+          <div class="recipe-ingredients">1x Empty Bottle<br>1x Purified Water</div>
+          <div class="recipe-meta">
+            <span class="recipe-time">⏱ 5s</span>
+            <span class="recipe-price">$120</span>
+          </div>
+          <div class="craft-progress" id="prog-water"><div class="craft-progress-bar"></div></div>
+          <button class="btn btn-ghost btn-sm" onclick="craftItem('water','prog-water')">Craft</button>
+        </div>
+
+        <div class="recipe-card" id="recipe-bandage">
+          <div class="recipe-name">🩹 Bandage</div>
+          <div class="recipe-ingredients">2x Cloth<br>1x Antiseptic</div>
+          <div class="recipe-meta">
+            <span class="recipe-time">⏱ 8s</span>
+            <span class="recipe-price">$250</span>
+          </div>
+          <div class="craft-progress" id="prog-bandage"><div class="craft-progress-bar"></div></div>
+          <button class="btn btn-ghost btn-sm" onclick="craftItem('bandage','prog-bandage')">Craft</button>
+        </div>
+
+        <div class="recipe-card" id="recipe-burger">
+          <div class="recipe-name">🍔 Burger</div>
+          <div class="recipe-ingredients">1x Beef Patty<br>1x Bread Bun<br>1x Cheese</div>
+          <div class="recipe-meta">
+            <span class="recipe-time">⏱ 12s</span>
+            <span class="recipe-price">$180</span>
+          </div>
+          <div class="craft-progress" id="prog-burger"><div class="craft-progress-bar"></div></div>
+          <button class="btn btn-ghost btn-sm" onclick="craftItem('burger','prog-burger')">Craft</button>
+        </div>
+
+        <div class="recipe-card" id="recipe-weed">
+          <div class="recipe-name">🌿 Weed</div>
+          <div class="recipe-ingredients">2x Herbs<br>1x Chemicals<br>1x Rolling Paper</div>
+          <div class="recipe-meta">
+            <span class="recipe-time">⏱ 30s</span>
+            <span class="recipe-price" style="color:var(--warning)">$2,400</span>
+          </div>
+          <div class="craft-progress" id="prog-weed"><div class="craft-progress-bar"></div></div>
+          <button class="btn btn-ghost btn-sm" onclick="craftItem('weed','prog-weed')">Craft</button>
+        </div>
+
+        <div class="recipe-card" id="recipe-cocaine">
+          <div class="recipe-name">❄️ Cocaine</div>
+          <div class="recipe-ingredients">3x Coca Leaves<br>2x Chemicals<br>1x Cutting Agent</div>
+          <div class="recipe-meta">
+            <span class="recipe-time">⏱ 60s</span>
+            <span class="recipe-price" style="color:var(--danger)">$8,500</span>
+          </div>
+          <div class="craft-progress" id="prog-cocaine"><div class="craft-progress-bar"></div></div>
+          <button class="btn btn-ghost btn-sm" onclick="craftItem('cocaine','prog-cocaine')">Craft</button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── GANG ── -->
+    <div class="tab-panel" id="tab-gang">
+      <div class="gang-info-card">
+        <div class="gang-avatar">⚔️</div>
+        <div class="gang-meta">
+          <div class="gang-name">Your Gang</div>
+          <div class="gang-stats">
+            <div class="gang-stat">Members: <span id="gangMemberCount">5</span></div>
+            <div class="gang-stat">Territories: <span>3</span></div>
+            <div class="gang-stat">Rep: <span style="color:var(--gold)">1,240</span></div>
+          </div>
+        </div>
+        <span class="badge badge-gold">Leader</span>
+      </div>
+
+      <div class="section-title">Members Online</div>
+      <div class="member-list">
+        <div class="member-row">
+          <div class="online-dot online"></div>
+          <div class="member-name">Player_Alpha</div>
+          <div class="member-rank"><span class="badge badge-gold">Leader</span></div>
+        </div>
+        <div class="member-row">
+          <div class="online-dot online"></div>
+          <div class="member-name">Player_Bravo</div>
+          <div class="member-rank"><span class="badge badge-info">Officer</span></div>
+        </div>
+        <div class="member-row">
+          <div class="online-dot online"></div>
+          <div class="member-name">Player_Charlie</div>
+          <div class="member-rank"><span class="badge badge-success">Member</span></div>
+        </div>
+        <div class="member-row">
+          <div class="online-dot offline"></div>
+          <div class="member-name">Player_Delta</div>
+          <div class="member-rank"><span class="badge" style="background:rgba(85,102,170,0.15);color:var(--text-dim)">Offline</span></div>
+        </div>
+        <div class="member-row">
+          <div class="online-dot offline"></div>
+          <div class="member-name">Player_Echo</div>
+          <div class="member-rank"><span class="badge" style="background:rgba(85,102,170,0.15);color:var(--text-dim)">Offline</span></div>
+        </div>
+      </div>
+
+      <div class="gang-actions">
+        <div class="invite-wrap">
+          <input class="input" placeholder="Player name to invite…" id="inviteInput" style="flex:1">
+          <button class="btn btn-primary btn-sm" onclick="invitePlayer()">Invite</button>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="openGangChat()">💬 Gang Chat</button>
+      </div>
+    </div>
+
+    <!-- ── BLACK MARKET ── -->
+    <div class="tab-panel" id="tab-blackmarket">
+      <div class="section-title">Available Items</div>
+      <div class="market-grid">
+        <div class="market-card">
+          <div class="market-icon">🔫</div>
+          <div class="market-name">Illegal Weapon</div>
+          <div class="market-price">$15,000</div>
+          <button class="btn btn-danger btn-sm" style="width:100%" onclick="buyItem('illegal_weapon',15000)">Buy Now</button>
+        </div>
+        <div class="market-card">
+          <div class="market-icon">🪪</div>
+          <div class="market-name">Fake ID</div>
+          <div class="market-price">$3,500</div>
+          <button class="btn btn-danger btn-sm" style="width:100%" onclick="buyItem('fake_id',3500)">Buy Now</button>
+        </div>
+        <div class="market-card">
+          <div class="market-icon">💊</div>
+          <div class="market-name">Bulk Drugs</div>
+          <div class="market-price">$28,000</div>
+          <button class="btn btn-danger btn-sm" style="width:100%" onclick="buyItem('bulk_drugs',28000)">Buy Now</button>
+        </div>
+        <div class="market-card">
+          <div class="market-icon">📦</div>
+          <div class="market-name">Stolen Goods</div>
+          <div class="market-price">$9,000</div>
+          <button class="btn btn-danger btn-sm" style="width:100%" onclick="buyItem('stolen_goods',9000)">Buy Now</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SMUGGLING ── -->
+    <div class="tab-panel" id="tab-smuggling">
+      <!-- Active run -->
+      <div class="smuggling-run">
+        <div class="run-header">
+          <div class="run-title">🚢 Active Run</div>
+          <span class="badge badge-warning" id="runStatus">Standby</span>
+        </div>
+        <div class="run-meta">
+          <div class="run-stat">
+            <label>Route</label>
+            <value id="runRoute">—</value>
+          </div>
+          <div class="run-stat">
+            <label>Cargo</label>
+            <value id="runCargo">—</value>
+          </div>
+          <div class="run-stat">
+            <label>Time Left</label>
+            <value id="runTime" class="timer">—</value>
+          </div>
+          <div class="run-stat">
+            <label>Payout</label>
+            <value id="runPayout" style="color:var(--success)">—</value>
+          </div>
+        </div>
+      </div>
+
+      <!-- Start new run -->
+      <div class="section-title">Start New Run</div>
+      <div class="smuggling-start">
+        <div class="form-group">
+          <label class="form-label">Destination</label>
+          <select class="input" id="smuggleDestination">
+            <option value="los_santos_port">Los Santos Port → Sandy Shores</option>
+            <option value="paleto_border">Paleto Border → Chumash</option>
+            <option value="offshore_drop">Offshore Drop → LSIA</option>
+            <option value="mountain_pass">Mountain Pass → Vinewood Hills</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" style="flex-shrink:0" onclick="startSmuggling()">
+          🚢 Start Run
+        </button>
+      </div>
+
+      <!-- Risk table -->
+      <div class="section-title">Route Risk / Payout Table</div>
+      <table class="risk-table">
+        <thead>
+          <tr>
+            <th>Route</th>
+            <th>Risk</th>
+            <th>Payout</th>
+            <th>Duration</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>LS Port → Sandy Shores</td>
+            <td><span class="badge badge-success">Low</span></td>
+            <td style="color:var(--success)">$12,000</td>
+            <td>8 min</td>
+          </tr>
+          <tr>
+            <td>Paleto Border → Chumash</td>
+            <td><span class="badge badge-warning">Medium</span></td>
+            <td style="color:var(--gold)">$25,000</td>
+            <td>15 min</td>
+          </tr>
+          <tr>
+            <td>Offshore Drop → LSIA</td>
+            <td><span class="badge badge-danger">High</span></td>
+            <td style="color:var(--danger)">$48,000</td>
+            <td>22 min</td>
+          </tr>
+          <tr>
+            <td>Mountain Pass → Vinewood</td>
+            <td><span class="badge badge-danger">High</span></td>
+            <td style="color:var(--danger)">$55,000</td>
+            <td>25 min</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div><!-- /tab-content -->
+</div><!-- /app -->
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+const state = {
+  visible: false,
+  activeTab: 'robbery',
+  robberyTimer: null,
+  robberySeconds: 0,
+};
+
+// ── NUI helpers ──────────────────────────────────────────────────────────
+function nuiFetch(action, data) {
+  return fetch('https://atc-criminal/' + action, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data || {}),
+  }).catch(() => {});
+}
+
+// ── Panel lifecycle ──────────────────────────────────────────────────────
+function openPanel(data) {
+  const app = document.getElementById('app');
+  app.style.display = 'flex';
+  requestAnimationFrame(() => app.classList.add('visible'));
+  state.visible = true;
+  if (data) populateData(data);
+}
+
+function closePanel() {
+  const app = document.getElementById('app');
+  app.classList.remove('visible');
+  setTimeout(() => { app.style.display = 'none'; }, 260);
+  state.visible = false;
+  nuiFetch('criminal_close', {});
+}
+
+function populateData(data) {
+  if (data.gangName) document.querySelector('.gang-name').textContent = data.gangName;
+  if (data.memberCount) document.getElementById('gangMemberCount').textContent = data.memberCount;
+}
+
+// ── Tab switching ────────────────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const name = tab.dataset.tab;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + name).classList.add('active');
+    state.activeTab = name;
+  });
+});
+
+// ── Robbery ──────────────────────────────────────────────────────────────
+function startRobbery(locationId) {
+  nuiFetch('callback', { action: 'robbery_start', locationId });
+
+  const locationNames = {
+    fleeca: 'Fleeca Bank', paleto: 'Paleto Bay Bank',
+    blaineco: 'Blaine Co Savings', '247store': '24/7 Store',
+  };
+
+  const banner = document.getElementById('robberyBanner');
+  const dot    = document.getElementById('bannerDot');
+  banner.classList.remove('inactive');
+  dot.classList.remove('gold');
+  document.getElementById('bannerLabel').textContent = 'Active Robbery';
+  document.getElementById('bannerValue').textContent = locationNames[locationId] || locationId;
+  const timerEl = document.getElementById('robberyTimer');
+  timerEl.style.display = 'block';
+
+  clearInterval(state.robberyTimer);
+  state.robberySeconds = 0;
+  state.robberyTimer = setInterval(() => {
+    state.robberySeconds++;
+    const m = String(Math.floor(state.robberySeconds / 60)).padStart(2,'0');
+    const s = String(state.robberySeconds % 60).padStart(2,'0');
+    timerEl.textContent = m + ':' + s;
+  }, 1000);
+}
+
+// ── Drugs ────────────────────────────────────────────────────────────────
+function craftItem(recipeId, progressId) {
+  nuiFetch('callback', { action: 'drug_craft', recipeId });
+  const prog = document.getElementById(progressId);
+  prog.classList.add('active');
+  prog.querySelector('.craft-progress-bar').style.animation = 'none';
+  setTimeout(() => {
+    prog.querySelector('.craft-progress-bar').style.animation = '';
+    prog.classList.add('active');
+  }, 10);
+  setTimeout(() => prog.classList.remove('active'), 3200);
+}
+
+// ── Gang ─────────────────────────────────────────────────────────────────
+function invitePlayer() {
+  const name = document.getElementById('inviteInput').value.trim();
+  if (!name) return;
+  nuiFetch('callback', { action: 'gang_invite', playerName: name });
+  document.getElementById('inviteInput').value = '';
+}
+function openGangChat() { nuiFetch('callback', { action: 'gang_chat' }); }
+
+// ── Black Market ─────────────────────────────────────────────────────────
+function buyItem(itemId, price) {
+  nuiFetch('callback', { action: 'blackmarket_buy', itemId, price });
+}
+
+// ── Smuggling ────────────────────────────────────────────────────────────
+function startSmuggling() {
+  const dest = document.getElementById('smuggleDestination').value;
+  nuiFetch('callback', { action: 'smuggling_start', destination: dest });
+  document.getElementById('runStatus').textContent = 'In Progress';
+  document.getElementById('runStatus').className = 'badge badge-danger';
+  document.getElementById('runRoute').textContent = document.getElementById('smuggleDestination').selectedOptions[0].text;
+  document.getElementById('runCargo').textContent = 'Contraband';
+  document.getElementById('runPayout').textContent = '$25,000';
+  let secs = 15 * 60;
+  clearInterval(window._smugTimer);
+  const timeEl = document.getElementById('runTime');
+  window._smugTimer = setInterval(() => {
+    if (secs <= 0) { clearInterval(window._smugTimer); return; }
+    secs--;
+    const m = String(Math.floor(secs / 60)).padStart(2,'0');
+    const s = String(secs % 60).padStart(2,'0');
+    timeEl.textContent = m + ':' + s;
+  }, 1000);
+}
+
+// ── NUI message handler ───────────────────────────────────────────────────
+window.addEventListener('message', function(event) {
+  const { type, payload } = event.data || {};
+  switch (type) {
+    case 'ATC_CRIMINAL_OPEN':
+      openPanel(payload || {});
+      break;
+    case 'ATC_CRIMINAL_CLOSE':
+      closePanel();
+      break;
+    case 'ATC_CRIMINAL_UPDATE':
+      if (payload) populateData(payload);
+      break;
+  }
+});
+
+// ── ESC to close ──────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && state.visible) closePanel();
+});
+
+// ── Dev preview (remove in prod) ─────────────────────────────────────────
+// openPanel({});
+</script>
+</body>
+</html>

@@ -37,3 +37,24 @@ end)
 AddEventHandler(ATC.Events.CHARACTER.SELECTED, function(data)
     TriggerServerEvent('atc:territory:zones:request')
 end)
+
+-- ── NUI / Territory Panel ─────────────────────────────────────────────────
+
+--- /territory  (F2)
+--- Opens the territory control map panel.
+RegisterCommand('territory', function()
+    SetNuiFocus(true, true)
+    TriggerServerEvent('atc:territory:zones:request')
+    SendNUIMessage({ type = 'ATC_TERRITORY_OPEN', payload = { zones = {}, gang = nil } })
+end, false)
+RegisterKeyMapping('territory', 'Open Territory Map', 'keyboard', 'F2')
+
+RegisterNUICallback('atc:territory:close', function(_, cb)
+    SetNuiFocus(false, false)
+    cb('ok')
+end)
+
+RegisterNUICallback('atc:territory:claim', function(data, cb)
+    TriggerServerEvent('atc:territory:claim', data)
+    cb('ok')
+end)

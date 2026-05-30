@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atlantic Bank ATM</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: transparent; font-family: Inter, system-ui, sans-serif; color: var(--text-primary); overflow: hidden; display: flex; align-items: center; justify-content: center; height: 100vh; }
+
+:root {
+  --bg-base:     #0d0d1a;
+  --bg-card:     #1a1a2e;
+  --bg-elevated: #16213e;
+  --bg-hover:    #1e2a4a;
+  --gold:        #d4af37;
+  --gold-light:  #e8c547;
+  --gold-dim:    rgba(212,175,55,0.15);
+  --gold-border: rgba(212,175,55,0.25);
+  --text-primary:#e8e8f0;
+  --text-muted:  #8888aa;
+  --text-dim:    #5566aa;
+  --success:     #52c052;
+  --danger:      #e05252;
+  --warning:     #e0a052;
+  --info:        #5288e0;
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--gold-border); border-radius: 2px; }
+
+.btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:40px; padding:0 clamp(12px,1.5vw,20px); border-radius:8px; font-size:clamp(11px,1.1vw,13px); font-weight:600; cursor:pointer; transition:all 0.15s; border:none; }
+.btn-primary { background:var(--gold); color:#0d0d1a; }
+.btn-primary:hover { background:var(--gold-light); }
+.btn-primary:active { transform:scale(0.96); }
+.btn-ghost   { background:transparent; color:var(--text-muted); border:1px solid var(--gold-border); }
+.btn-ghost:hover   { color:var(--gold); border-color:var(--gold); background:var(--gold-dim); }
+.btn-ghost:active  { transform:scale(0.96); }
+.btn-success { background:rgba(82,192,82,0.15); color:var(--success); border:1px solid rgba(82,192,82,0.3); }
+.btn-success:hover { background:rgba(82,192,82,0.25); }
+.btn-success:active { transform:scale(0.96); }
+
+.input { width:100%; background:var(--bg-elevated); border:1px solid var(--gold-border); border-radius:8px; padding:10px 14px; color:var(--text-primary); font-size:clamp(11px,1.1vw,13px); outline:none; transition:border-color 0.15s; }
+.input:focus { border-color:var(--gold); }
+
+/* ── ATM Wrapper ── */
+#atm-app {
+  display: none;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) translateY(24px) scale(0.97);
+  opacity: 0;
+  width: clamp(300px, 88vw, 420px);
+  background: var(--bg-card);
+  border: 1px solid var(--gold-border);
+  border-radius: clamp(12px,1.8vw,20px);
+  overflow: hidden;
+  flex-direction: column;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  /* Metal texture via layered borders */
+  box-shadow:
+    0 0 0 1px rgba(212,175,55,0.1),
+    0 4px 30px rgba(0,0,0,0.6),
+    inset 0 1px 0 rgba(212,175,55,0.12);
+}
+#atm-app.visible {
+  display: flex;
+  opacity: 1;
+  transform: translate(-50%, -50%) translateY(0) scale(1);
+}
+
+/* ── ATM Header ── */
+.atm-header {
+  background: linear-gradient(135deg, #0d0d1a 0%, #161628 50%, #0a0a16 100%);
+  border-bottom: 1px solid var(--gold-border);
+  padding: clamp(14px,2vw,22px) clamp(16px,2.2vw,26px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+}
+.atm-header::before {
+  content: '';
+  position: absolute;
+  top: -50%; left: -20%;
+  width: 60%;
+  height: 200%;
+  background: linear-gradient(90deg, transparent, rgba(212,175,55,0.04), transparent);
+  transform: rotate(-20deg);
+}
+.atm-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.atm-logo {
+  width: clamp(36px,4.5vw,46px);
+  height: clamp(36px,4.5vw,46px);
+  border-radius: 10px;
+  background: var(--gold-dim);
+  border: 1px solid var(--gold-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(18px,2.2vw,24px);
+}
+.atm-bank-name {
+  color: var(--gold);
+  font-size: clamp(14px,1.8vw,20px);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-shadow: 0 0 20px rgba(212,175,55,0.3);
+}
+.atm-bank-sub {
+  color: var(--text-muted);
+  font-size: clamp(9px,0.9vw,11px);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.atm-card-num {
+  color: var(--text-dim);
+  font-size: clamp(9px,0.9vw,11px);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.12em;
+  text-align: right;
+}
+.close-atm {
+  position: absolute;
+  top: clamp(8px,1vw,12px);
+  right: clamp(8px,1vw,12px);
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.12s;
+}
+.close-atm:hover { background: rgba(224,82,82,0.15); color: var(--danger); }
+
+/* ── Balance Cards ── */
+.balance-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(8px,1vw,12px);
+  padding: clamp(12px,1.6vw,18px);
+}
+.balance-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--gold-border);
+  border-radius: 10px;
+  padding: clamp(10px,1.3vw,16px);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+.balance-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.balance-card.cash::before   { background: radial-gradient(ellipse at top, rgba(82,192,82,0.06), transparent 70%); }
+.balance-card.bank::before   { background: radial-gradient(ellipse at top, rgba(212,175,55,0.06), transparent 70%); }
+.balance-card:hover::before  { opacity: 1; }
+.balance-card:hover { border-color: rgba(212,175,55,0.5); }
+
+.balance-label {
+  font-size: clamp(9px,0.9vw,11px);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.balance-amount {
+  font-size: clamp(18px,2.4vw,28px);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.balance-card.cash  .balance-amount { color: var(--success); }
+.balance-card.bank  .balance-amount { color: var(--gold); }
+.balance-sub {
+  font-size: clamp(9px,0.85vw,10px);
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+/* ── Action Tabs ── */
+.action-tabs {
+  display: flex;
+  border-top: 1px solid var(--gold-border);
+  border-bottom: 1px solid var(--gold-border);
+  background: var(--bg-base);
+}
+.action-tab {
+  flex: 1;
+  text-align: center;
+  padding: clamp(8px,1vw,12px);
+  font-size: clamp(10px,1.1vw,13px);
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+  user-select: none;
+}
+.action-tab:hover { color: var(--text-primary); }
+.action-tab.active { color: var(--gold); border-bottom-color: var(--gold); background: var(--gold-dim); }
+
+/* ── Action Panels ── */
+.action-body {
+  padding: clamp(12px,1.6vw,18px);
+}
+.action-panel { display: none; }
+.action-panel.active { display: block; }
+
+/* ── Amount buttons ── */
+.amount-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(6px,0.8vw,10px);
+  margin-bottom: clamp(10px,1.2vw,14px);
+}
+.amount-btn {
+  background: var(--bg-elevated);
+  border: 1px solid var(--gold-border);
+  border-radius: 8px;
+  padding: clamp(8px,1vw,12px) 0;
+  color: var(--text-primary);
+  font-size: clamp(10px,1.1vw,13px);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.12s;
+  text-align: center;
+  min-height: 40px;
+}
+.amount-btn:hover { border-color: var(--gold); background: var(--gold-dim); color: var(--gold); }
+.amount-btn:active { transform: scale(0.95); }
+.amount-btn.selected { border-color: var(--gold); background: var(--gold-dim); color: var(--gold); }
+
+.custom-amount-wrap {
+  display: flex;
+  gap: clamp(6px,0.8vw,10px);
+  margin-bottom: clamp(10px,1.2vw,14px);
+  align-items: center;
+}
+.custom-amount-wrap .prefix {
+  color: var(--text-muted);
+  font-size: clamp(13px,1.5vw,17px);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.submit-btn { flex-shrink: 0; min-height: 40px; }
+
+/* ── Transfer tab ── */
+.transfer-form { display: flex; flex-direction: column; gap: clamp(8px,1vw,12px); }
+.form-label { font-size: clamp(10px,1vw,12px); color: var(--text-muted); margin-bottom: 4px; display: block; }
+
+/* ── Recent Transactions ── */
+.transactions-section {
+  border-top: 1px solid var(--gold-border);
+  padding: clamp(10px,1.3vw,16px);
+}
+.txn-header {
+  font-size: clamp(10px,1vw,12px);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: clamp(6px,0.8vw,10px);
+}
+.txn-list { display: flex; flex-direction: column; gap: 4px; }
+.txn-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: clamp(5px,0.7vw,8px) clamp(8px,1vw,12px);
+  background: var(--bg-elevated);
+  border-radius: 8px;
+  font-size: clamp(10px,1vw,12px);
+}
+.txn-type { color: var(--text-primary); font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.txn-time { color: var(--text-dim); font-size: clamp(9px,0.85vw,10px); }
+.txn-amount.positive { color: var(--success); font-weight: 700; }
+.txn-amount.negative { color: var(--danger); font-weight: 700; }
+
+/* ── Toast notification ── */
+#toast {
+  position: fixed;
+  bottom: clamp(16px,3vh,30px);
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  min-width: 220px;
+  max-width: clamp(260px,60vw,380px);
+  padding: clamp(10px,1.2vw,14px) clamp(14px,1.8vw,20px);
+  border-radius: 10px;
+  font-size: clamp(11px,1.1vw,13px);
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+  z-index: 999;
+  text-align: center;
+  border: 1px solid;
+}
+#toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+#toast.success { background: rgba(82,192,82,0.12); color: var(--success); border-color: rgba(82,192,82,0.3); }
+#toast.error   { background: rgba(224,82,82,0.12); color: var(--danger);  border-color: rgba(224,82,82,0.3); }
+</style>
+</head>
+<body>
+
+<div id="atm-app">
+  <!-- Header -->
+  <div class="atm-header">
+    <div class="atm-brand">
+      <div class="atm-logo">💳</div>
+      <div>
+        <div class="atm-bank-name">Atlantic Bank</div>
+        <div class="atm-bank-sub">Secure ATM Terminal</div>
+      </div>
+    </div>
+    <div class="atm-card-num">
+      ****-****-****-<span id="cardSuffix">1234</span>
+    </div>
+    <button class="close-atm" onclick="closeATM()" title="Close (ESC)">✕</button>
+  </div>
+
+  <!-- Balance -->
+  <div class="balance-section">
+    <div class="balance-card cash">
+      <div class="balance-label">💵 Cash</div>
+      <div class="balance-amount" id="cashBalance">$0</div>
+      <div class="balance-sub">Available</div>
+    </div>
+    <div class="balance-card bank">
+      <div class="balance-label">🏦 Bank</div>
+      <div class="balance-amount" id="bankBalance">$0</div>
+      <div class="balance-sub">Savings</div>
+    </div>
+  </div>
+
+  <!-- Action Tabs -->
+  <div class="action-tabs">
+    <div class="action-tab active" data-action="withdraw">Withdraw</div>
+    <div class="action-tab" data-action="deposit">Deposit</div>
+    <div class="action-tab" data-action="transfer">Transfer</div>
+  </div>
+
+  <!-- Action Body -->
+  <div class="action-body">
+
+    <!-- Withdraw -->
+    <div class="action-panel active" id="action-withdraw">
+      <div class="amount-grid">
+        <div class="amount-btn" onclick="selectAmount(50,   this, 'withdraw')">$50</div>
+        <div class="amount-btn" onclick="selectAmount(100,  this, 'withdraw')">$100</div>
+        <div class="amount-btn" onclick="selectAmount(500,  this, 'withdraw')">$500</div>
+        <div class="amount-btn" onclick="selectAmount(1000, this, 'withdraw')">$1,000</div>
+        <div class="amount-btn" onclick="selectAmount(5000, this, 'withdraw')">$5,000</div>
+        <div class="amount-btn" id="custom-w-btn" onclick="focusCustom('custom-w-input', this, 'withdraw')">Custom</div>
+      </div>
+      <div class="custom-amount-wrap">
+        <span class="prefix">$</span>
+        <input class="input" id="custom-w-input" type="number" min="1" placeholder="Enter amount…" oninput="onCustomInput('withdraw')">
+        <button class="btn btn-primary submit-btn" onclick="submitAction('withdraw')">Withdraw</button>
+      </div>
+    </div>
+
+    <!-- Deposit -->
+    <div class="action-panel" id="action-deposit">
+      <div class="amount-grid">
+        <div class="amount-btn" onclick="selectAmount(50,   this, 'deposit')">$50</div>
+        <div class="amount-btn" onclick="selectAmount(100,  this, 'deposit')">$100</div>
+        <div class="amount-btn" onclick="selectAmount(500,  this, 'deposit')">$500</div>
+        <div class="amount-btn" onclick="selectAmount(1000, this, 'deposit')">$1,000</div>
+        <div class="amount-btn" onclick="selectAmount(5000, this, 'deposit')">$5,000</div>
+        <div class="amount-btn" id="custom-d-btn" onclick="focusCustom('custom-d-input', this, 'deposit')">Custom</div>
+      </div>
+      <div class="custom-amount-wrap">
+        <span class="prefix">$</span>
+        <input class="input" id="custom-d-input" type="number" min="1" placeholder="Enter amount…" oninput="onCustomInput('deposit')">
+        <button class="btn btn-success submit-btn" onclick="submitAction('deposit')">Deposit</button>
+      </div>
+      <button class="btn btn-ghost" style="width:100%;margin-top:clamp(6px,0.8vw,10px)" onclick="depositAll()">
+        📥 Deposit All Cash
+      </button>
+    </div>
+
+    <!-- Transfer -->
+    <div class="action-panel" id="action-transfer">
+      <div class="transfer-form">
+        <div>
+          <label class="form-label">Recipient Name</label>
+          <input class="input" id="transferName" placeholder="Enter player name…">
+        </div>
+        <div>
+          <label class="form-label">Amount</label>
+          <div class="custom-amount-wrap" style="margin-bottom:0">
+            <span class="prefix">$</span>
+            <input class="input" id="transferAmount" type="number" min="1" placeholder="Amount to transfer…">
+            <button class="btn btn-primary submit-btn" onclick="submitTransfer()">Transfer</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Recent Transactions -->
+  <div class="transactions-section">
+    <div class="txn-header">Recent Transactions</div>
+    <div class="txn-list" id="txnList">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+const atmState = {
+  visible: false,
+  cash: 0,
+  bank: 0,
+  selectedAmount: { withdraw: 0, deposit: 0 },
+  transactions: [],
+};
+
+// ── NUI helpers ──────────────────────────────────────────────────────────
+function nuiFetch(action, data) {
+  return fetch('https://atc-economy/' + action, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data || {}),
+  }).catch(() => {});
+}
+
+// ── Panel lifecycle ──────────────────────────────────────────────────────
+function openATM(data) {
+  const app = document.getElementById('atm-app');
+  app.style.display = 'flex';
+  requestAnimationFrame(() => app.classList.add('visible'));
+  atmState.visible = true;
+
+  const payload = data || { cash: 4250, bank: 38750, transactions: [
+    { type: 'Withdrawal', amount: -500, time: '2 min ago' },
+    { type: 'Deposit',    amount: 2000, time: '14 min ago' },
+    { type: 'Transfer',   amount: -350, time: '1h ago' },
+  ]};
+
+  atmState.cash = payload.cash || 0;
+  atmState.bank = payload.bank || 0;
+  atmState.transactions = payload.transactions || [];
+
+  animateBalance('cashBalance', atmState.cash);
+  animateBalance('bankBalance', atmState.bank);
+  renderTransactions();
+}
+
+function closeATM() {
+  const app = document.getElementById('atm-app');
+  app.classList.remove('visible');
+  setTimeout(() => { app.style.display = 'none'; }, 270);
+  atmState.visible = false;
+  nuiFetch('atc:economy:atm:close', {});
+}
+
+// ── Balance animation ────────────────────────────────────────────────────
+function animateBalance(elId, targetValue) {
+  const el = document.getElementById(elId);
+  const duration = 900;
+  const steps = 40;
+  const stepVal = targetValue / steps;
+  let current = 0;
+  let step = 0;
+  const timer = setInterval(() => {
+    step++;
+    current = Math.min(Math.round(stepVal * step), targetValue);
+    el.textContent = '$' + current.toLocaleString();
+    if (step >= steps) clearInterval(timer);
+  }, duration / steps);
+}
+
+// ── Transactions ─────────────────────────────────────────────────────────
+function renderTransactions() {
+  const list = document.getElementById('txnList');
+  if (!atmState.transactions.length) { list.innerHTML = '<div style="color:var(--text-dim);font-size:clamp(10px,1vw,12px);padding:8px 0">No recent transactions.</div>'; return; }
+  list.innerHTML = atmState.transactions.map(t => {
+    const pos = t.amount > 0;
+    return `<div class="txn-row">
+      <span class="txn-type">${pos ? '⬆' : '⬇'} ${t.type}</span>
+      <span class="txn-time">${t.time}</span>
+      <span class="txn-amount ${pos ? 'positive' : 'negative'}">${pos ? '+' : ''}$${Math.abs(t.amount).toLocaleString()}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── Action Tabs ──────────────────────────────────────────────────────────
+document.querySelectorAll('.action-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const name = tab.dataset.action;
+    document.querySelectorAll('.action-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.action-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('action-' + name).classList.add('active');
+    // Reset selections
+    document.querySelectorAll('.amount-btn').forEach(b => b.classList.remove('selected'));
+    atmState.selectedAmount.withdraw = 0;
+    atmState.selectedAmount.deposit  = 0;
+  });
+});
+
+// ── Amount selection ─────────────────────────────────────────────────────
+function selectAmount(val, btn, type) {
+  // Deselect siblings in same grid
+  const grid = btn.closest('.amount-grid');
+  grid.querySelectorAll('.amount-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  atmState.selectedAmount[type] = val;
+  // Clear custom input
+  const inputId = type === 'withdraw' ? 'custom-w-input' : 'custom-d-input';
+  document.getElementById(inputId).value = '';
+}
+
+function focusCustom(inputId, btn, type) {
+  const grid = btn.closest('.amount-grid');
+  grid.querySelectorAll('.amount-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  atmState.selectedAmount[type] = 0;
+  document.getElementById(inputId).focus();
+}
+
+function onCustomInput(type) {
+  const inputId = type === 'withdraw' ? 'custom-w-input' : 'custom-d-input';
+  const val = parseInt(document.getElementById(inputId).value, 10);
+  atmState.selectedAmount[type] = isNaN(val) ? 0 : val;
+}
+
+function getActiveAmount(type) {
+  const inputId = type === 'withdraw' ? 'custom-w-input' : 'custom-d-input';
+  const customVal = parseInt(document.getElementById(inputId).value, 10);
+  if (!isNaN(customVal) && customVal > 0) return customVal;
+  return atmState.selectedAmount[type];
+}
+
+// ── Submissions ──────────────────────────────────────────────────────────
+function submitAction(type) {
+  const amount = getActiveAmount(type);
+  if (!amount || amount <= 0) { showToast('Please select or enter an amount.', 'error'); return; }
+  nuiFetch('callback', { action: type, amount });
+  showToast(
+    (type === 'withdraw' ? 'Withdrawing' : 'Depositing') + ' $' + amount.toLocaleString() + '…',
+    'success'
+  );
+}
+
+function depositAll() {
+  if (atmState.cash <= 0) { showToast('No cash to deposit.', 'error'); return; }
+  nuiFetch('callback', { action: 'deposit', amount: atmState.cash });
+  showToast('Depositing all cash ($' + atmState.cash.toLocaleString() + ')…', 'success');
+}
+
+function submitTransfer() {
+  const name   = document.getElementById('transferName').value.trim();
+  const amount = parseInt(document.getElementById('transferAmount').value, 10);
+  if (!name)  { showToast('Enter a recipient name.', 'error'); return; }
+  if (!amount || amount <= 0) { showToast('Enter a valid amount.', 'error'); return; }
+  nuiFetch('callback', { action: 'transfer', recipientName: name, amount });
+  showToast('Transferring $' + amount.toLocaleString() + ' to ' + name + '…', 'success');
+}
+
+// ── Toast ────────────────────────────────────────────────────────────────
+let toastTimer = null;
+function showToast(msg, type) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + (type || 'success');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.classList.remove('show'); }, 3000);
+}
+
+// ── NUI message handler ───────────────────────────────────────────────────
+window.addEventListener('message', function(event) {
+  const { type, payload } = event.data || {};
+  switch (type) {
+    case 'ATC_ECONOMY_ATM_OPEN':
+      openATM(payload || null);
+      break;
+    case 'ATC_ECONOMY_ATM_RESULT':
+      if (payload) {
+        showToast(payload.message || (payload.success ? 'Transaction complete.' : 'Transaction failed.'), payload.success ? 'success' : 'error');
+        if (payload.success && payload.newBalance !== undefined) {
+          if (payload.type === 'withdraw') {
+            atmState.cash = payload.newBalance;
+            animateBalance('cashBalance', atmState.cash);
+          } else if (payload.type === 'deposit') {
+            atmState.bank = payload.newBalance;
+            animateBalance('bankBalance', atmState.bank);
+          }
+        }
+      }
+      break;
+    case 'ATC_ECONOMY_ATM_CLOSE':
+      closeATM();
+      break;
+  }
+});
+
+// ── ESC to close ──────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && atmState.visible) closeATM();
+});
+
+// ── Dev preview ───────────────────────────────────────────────────────────
+// openATM(null);
+</script>
+</body>
+</html>

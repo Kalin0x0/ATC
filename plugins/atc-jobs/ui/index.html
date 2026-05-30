@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ATC Jobs</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg-base:     #0d0d1a;
+  --bg-card:     #1a1a2e;
+  --bg-elevated: #16213e;
+  --bg-hover:    #1e2a4a;
+  --gold:        #d4af37;
+  --gold-light:  #e8c547;
+  --gold-dim:    rgba(212,175,55,0.15);
+  --gold-border: rgba(212,175,55,0.25);
+  --text-primary:#e8e8f0;
+  --text-muted:  #8888aa;
+  --text-dim:    #5566aa;
+  --success:     #52c052;
+  --danger:      #e05252;
+  --warning:     #e0a052;
+  --info:        #5288e0;
+}
+body {
+  background: transparent;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--text-primary);
+  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  width: 100vw; height: 100vh;
+}
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--gold-border); border-radius: 2px; }
+
+/* ── Shared ────────────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 6px; min-height: 40px; padding: 0 clamp(12px,1.5vw,20px);
+  border-radius: 8px; font-size: clamp(11px,1.1vw,13px);
+  font-weight: 600; cursor: pointer; transition: all 0.15s; border: none;
+}
+.btn-primary { background: var(--gold); color: #0d0d1a; }
+.btn-primary:hover { background: var(--gold-light); }
+.btn-danger  { background: var(--danger); color: #fff; }
+.btn-danger:hover  { background: #c94444; }
+.btn-ghost   { background: transparent; color: var(--text-muted); border: 1px solid var(--gold-border); }
+.btn-ghost:hover   { color: var(--gold); border-color: var(--gold); }
+
+/* ── Panel ─────────────────────────────────────────────────────────────── */
+#jobs-panel {
+  width: clamp(320px, 90vw, 560px);
+  background: var(--bg-card);
+  border: 1px solid var(--gold-border);
+  border-radius: clamp(12px,1.8vw,18px);
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  max-height: 92vh;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(212,175,55,0.05);
+  opacity: 0;
+  transform: translateY(16px) scale(0.98);
+  transition: opacity 0.25s, transform 0.25s;
+}
+#jobs-panel.open { opacity: 1; transform: translateY(0) scale(1); }
+
+/* ── Panel Header ──────────────────────────────────────────────────────── */
+.panel-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: clamp(14px,1.8vw,20px) clamp(16px,2vw,22px);
+  background: linear-gradient(135deg, var(--bg-elevated) 0%, rgba(22,33,62,0.9) 100%);
+  border-bottom: 1px solid var(--gold-border);
+  flex-shrink: 0;
+}
+.panel-title {
+  font-weight: 700; font-size: clamp(14px,1.6vw,18px); color: var(--gold);
+  display: flex; align-items: center; gap: 8px;
+}
+.close-btn {
+  width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+  border-radius: 8px; cursor: pointer; color: var(--text-muted);
+  background: transparent; border: none; font-size: 18px; transition: all 0.15s;
+}
+.close-btn:hover { background: rgba(224,82,82,0.15); color: var(--danger); }
+
+/* ── Panel Body ────────────────────────────────────────────────────────── */
+.panel-body {
+  flex: 1; overflow-y: auto;
+  padding: clamp(14px,1.8vw,22px) clamp(16px,2vw,22px);
+  display: flex; flex-direction: column; gap: clamp(12px,1.6vw,18px);
+}
+
+/* ── Current Job Card ──────────────────────────────────────────────────── */
+.current-job-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--gold-border);
+  border-radius: 14px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.job-card-banner {
+  position: relative;
+  background: linear-gradient(135deg, #0b0e1f 0%, #111828 60%, #0d1a2e 100%);
+  padding: clamp(16px,2vw,24px) clamp(16px,2vw,22px) clamp(12px,1.6vw,18px);
+  display: flex; align-items: center; gap: clamp(12px,1.5vw,18px);
+  overflow: hidden;
+}
+.job-card-banner::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent, transparent 24px,
+    rgba(212,175,55,0.025) 24px, rgba(212,175,55,0.025) 25px
+  );
+}
+.job-icon-wrap {
+  width: clamp(52px,6vw,68px); height: clamp(52px,6vw,68px);
+  background: var(--gold-dim);
+  border: 1px solid var(--gold-border);
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(22px,2.8vw,32px);
+  position: relative; z-index: 1;
+  flex-shrink: 0;
+  box-shadow: 0 0 16px rgba(212,175,55,0.2);
+}
+.job-name-block { position: relative; z-index: 1; flex: 1; min-width: 0; }
+.job-name-label {
+  font-size: clamp(16px,2vw,24px); font-weight: 700; color: var(--gold);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.job-rank-label {
+  font-size: clamp(11px,1.1vw,13px); color: var(--text-muted); margin-top: 2px;
+}
+
+/* ── Duty Toggle ───────────────────────────────────────────────────────── */
+.duty-section {
+  padding: clamp(12px,1.5vw,18px) clamp(16px,2vw,22px);
+  border-top: 1px solid var(--gold-border);
+  display: flex; flex-direction: column; align-items: center; gap: clamp(10px,1.2vw,14px);
+}
+
+.duty-switch-wrap { display: flex; align-items: center; gap: 14px; }
+
+.duty-switch {
+  position: relative;
+  width: clamp(130px,14vw,170px); height: 44px;
+  background: var(--bg-base);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 22px;
+  cursor: pointer;
+  transition: border-color 0.3s, box-shadow 0.3s;
+  overflow: hidden;
+  user-select: none;
+}
+.duty-switch.on {
+  border-color: var(--gold-border);
+  box-shadow: 0 0 16px rgba(212,175,55,0.25), inset 0 0 20px rgba(212,175,55,0.06);
+}
+.duty-track {
+  position: absolute; inset: 0;
+  display: flex; align-items: center;
+  padding: 0 14px;
+  justify-content: space-between;
+  pointer-events: none;
+}
+.duty-label-off {
+  font-size: clamp(10px,1vw,12px); font-weight: 700;
+  color: var(--text-dim); transition: opacity 0.3s;
+  z-index: 1;
+}
+.duty-label-on {
+  font-size: clamp(10px,1vw,12px); font-weight: 700;
+  color: var(--gold); transition: opacity 0.3s;
+  z-index: 1;
+  opacity: 0;
+}
+.duty-switch.on .duty-label-off { opacity: 0; }
+.duty-switch.on .duty-label-on  { opacity: 1; }
+.duty-knob {
+  position: absolute;
+  width: 34px; height: 34px;
+  top: 4px; left: 5px;
+  background: var(--text-dim);
+  border-radius: 50%;
+  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1), background 0.3s;
+  z-index: 2;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+.duty-switch.on .duty-knob {
+  transform: translateX(calc(clamp(130px,14vw,170px) - 44px));
+  background: var(--gold);
+  box-shadow: 0 0 10px rgba(212,175,55,0.5);
+}
+.duty-switch:active { transform: scale(0.97); }
+
+.duty-time-row {
+  display: flex; gap: clamp(16px,2vw,24px);
+}
+.duty-time-item {
+  text-align: center;
+}
+.duty-time-label {
+  font-size: clamp(9px,0.9vw,11px); color: var(--text-dim); margin-bottom: 2px;
+}
+.duty-time-value {
+  font-size: clamp(12px,1.2vw,15px); font-weight: 700;
+  color: var(--text-primary); font-variant-numeric: tabular-nums;
+}
+.duty-time-value.gold { color: var(--gold); }
+
+/* Duty pulse on duty */
+@keyframes duty-pulse {
+  0%,100% { box-shadow: 0 0 16px rgba(212,175,55,0.25), inset 0 0 20px rgba(212,175,55,0.06); }
+  50%      { box-shadow: 0 0 28px rgba(212,175,55,0.45), inset 0 0 20px rgba(212,175,55,0.1); }
+}
+.duty-switch.on { animation: duty-pulse 2.5s ease-in-out infinite; }
+
+/* ── Salary Bar ────────────────────────────────────────────────────────── */
+.salary-bar {
+  background: var(--bg-elevated);
+  border: 1px solid var(--gold-border);
+  border-radius: 12px;
+  padding: clamp(10px,1.2vw,14px) clamp(14px,1.6vw,18px);
+  display: flex; gap: clamp(8px,1.2vw,16px);
+  flex-shrink: 0;
+}
+.salary-item {
+  flex: 1; text-align: center;
+  border-right: 1px solid var(--gold-border);
+}
+.salary-item:last-child { border-right: none; }
+.salary-label {
+  font-size: clamp(9px,0.85vw,11px); color: var(--text-dim); margin-bottom: 3px;
+}
+.salary-value {
+  font-size: clamp(12px,1.2vw,14px); font-weight: 700; color: var(--success);
+}
+
+/* ── Section Title ─────────────────────────────────────────────────────── */
+.section-title {
+  font-size: clamp(11px,1.1vw,13px); font-weight: 700;
+  color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-title::after {
+  content: ''; flex: 1; height: 1px; background: var(--gold-border);
+}
+
+/* ── Available Jobs List ───────────────────────────────────────────────── */
+.jobs-list {
+  display: flex; flex-direction: column; gap: 6px;
+  overflow-y: auto; max-height: clamp(180px,22vh,280px);
+}
+.job-row {
+  display: flex; align-items: center; gap: clamp(10px,1.2vw,14px);
+  background: var(--bg-elevated);
+  border: 1px solid var(--gold-border);
+  border-radius: 10px;
+  padding: clamp(8px,1vw,12px) clamp(12px,1.3vw,16px);
+  transition: border-color 0.15s, background 0.15s;
+}
+.job-row:hover { border-color: rgba(212,175,55,0.4); background: var(--bg-hover); }
+.job-row-icon {
+  font-size: clamp(18px,2.2vw,24px);
+  width: 36px; text-align: center; flex-shrink: 0;
+}
+.job-row-info { flex: 1; min-width: 0; }
+.job-row-name {
+  font-size: clamp(11px,1.1vw,13px); font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.job-row-desc {
+  font-size: clamp(10px,0.9vw,11px); color: var(--text-dim); margin-top: 1px;
+}
+.job-apply-btn {
+  flex-shrink: 0; min-height: 40px; padding: 0 12px;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px; font-size: clamp(10px,0.95vw,12px); font-weight: 600;
+  color: var(--text-dim); cursor: not-allowed;
+}
+
+/* ── Bottom Quit Row ───────────────────────────────────────────────────── */
+.panel-footer {
+  padding: clamp(10px,1.3vw,14px) clamp(16px,2vw,22px);
+  border-top: 1px solid var(--gold-border);
+  display: flex; justify-content: flex-end;
+  flex-shrink: 0;
+}
+.btn-quit {
+  background: transparent; color: rgba(224,82,82,0.6);
+  border: 1px solid rgba(224,82,82,0.2);
+  border-radius: 8px; padding: 0 14px; min-height: 40px;
+  font-size: clamp(10px,0.95vw,12px); font-weight: 600; cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-quit:hover {
+  color: var(--danger); border-color: rgba(224,82,82,0.5);
+  background: rgba(224,82,82,0.08);
+}
+</style>
+</head>
+<body>
+
+<div id="jobs-panel">
+  <!-- Header -->
+  <div class="panel-header">
+    <div class="panel-title">
+      <span>💼</span> Job Menu
+    </div>
+    <button class="close-btn" onclick="closePanel()">✕</button>
+  </div>
+
+  <!-- Body -->
+  <div class="panel-body">
+
+    <!-- Current Job Card -->
+    <div class="current-job-card">
+      <div class="job-card-banner">
+        <div class="job-icon-wrap" id="job-icon">👤</div>
+        <div class="job-name-block">
+          <div class="job-name-label" id="job-name">Unemployed</div>
+          <div class="job-rank-label" id="job-rank">No Rank</div>
+        </div>
+      </div>
+
+      <!-- Duty Toggle Section -->
+      <div class="duty-section">
+        <div class="duty-switch-wrap">
+          <div class="duty-switch" id="duty-switch" onclick="toggleDuty()">
+            <div class="duty-track">
+              <span class="duty-label-off">OFF DUTY</span>
+              <span class="duty-label-on">ON DUTY</span>
+            </div>
+            <div class="duty-knob"></div>
+          </div>
+        </div>
+        <div class="duty-time-row">
+          <div class="duty-time-item">
+            <div class="duty-time-label">Duty Time</div>
+            <div class="duty-time-value gold" id="duty-timer">00:00:00</div>
+          </div>
+          <div class="duty-time-item">
+            <div class="duty-time-label">Next Paycheck</div>
+            <div class="duty-time-value" id="next-paycheck">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Salary Bar -->
+    <div class="salary-bar">
+      <div class="salary-item">
+        <div class="salary-label">Hourly Rate</div>
+        <div class="salary-value" id="salary-hourly">$0/hr</div>
+      </div>
+      <div class="salary-item">
+        <div class="salary-label">Last Payment</div>
+        <div class="salary-value" id="salary-last">$0</div>
+      </div>
+      <div class="salary-item">
+        <div class="salary-label">Earned Today</div>
+        <div class="salary-value" id="salary-today">$0</div>
+      </div>
+    </div>
+
+    <!-- Available Jobs -->
+    <div class="section-title">Available Jobs</div>
+    <div class="jobs-list">
+      <div class="job-row">
+        <div class="job-row-icon">🚔</div>
+        <div class="job-row-info">
+          <div class="job-row-name">Police Officer</div>
+          <div class="job-row-desc">Law enforcement · LSPD</div>
+        </div>
+        <button class="job-apply-btn" disabled>Apply</button>
+      </div>
+      <div class="job-row">
+        <div class="job-row-icon">🚑</div>
+        <div class="job-row-info">
+          <div class="job-row-name">EMS Medic</div>
+          <div class="job-row-desc">Emergency Medical Services</div>
+        </div>
+        <button class="job-apply-btn" disabled>Apply</button>
+      </div>
+      <div class="job-row">
+        <div class="job-row-icon">🔧</div>
+        <div class="job-row-info">
+          <div class="job-row-name">Mechanic</div>
+          <div class="job-row-desc">Vehicle repair & tuning</div>
+        </div>
+        <button class="job-apply-btn" disabled>Apply</button>
+      </div>
+      <div class="job-row">
+        <div class="job-row-icon">🚕</div>
+        <div class="job-row-info">
+          <div class="job-row-name">Taxi Driver</div>
+          <div class="job-row-desc">Passenger transport</div>
+        </div>
+        <button class="job-apply-btn" disabled>Apply</button>
+      </div>
+      <div class="job-row">
+        <div class="job-row-icon">🚚</div>
+        <div class="job-row-info">
+          <div class="job-row-name">Delivery Driver</div>
+          <div class="job-row-desc">Freight & parcel logistics</div>
+        </div>
+        <button class="job-apply-btn" disabled>Apply</button>
+      </div>
+    </div>
+
+  </div><!-- /panel-body -->
+
+  <!-- Footer -->
+  <div class="panel-footer">
+    <button class="btn-quit" onclick="quitJob()">Quit Job</button>
+  </div>
+</div>
+
+<script>
+/* ── State ───────────────────────────────────────────────────────────── */
+const JOB_ICONS = {
+  police:    '🚔',
+  ems:       '🚑',
+  mechanic:  '🔧',
+  taxi:      '🚕',
+  delivery:  '🚚',
+  civilian:  '👤',
+  unemployed:'👤',
+};
+
+let state = {
+  onDuty:      false,
+  dutySeconds: 0,
+  jobName:     'unemployed',
+  jobLabel:    'Unemployed',
+  rank:        '',
+  rankLabel:   'No Rank',
+  salary:      { hourly: 0, lastPay: 0, earnedToday: 0 },
+  paycheckIn:  null,
+};
+
+let dutyInterval  = null;
+let paycheckTimer = null;
+
+/* ── NUI Messages ────────────────────────────────────────────────────── */
+window.addEventListener('message', (e) => {
+  const { type, payload } = e.data || {};
+  if (type === 'ATC_JOBS_OPEN') {
+    applyJobData(payload);
+    openPanel();
+  }
+  if (type === 'ATC_JOB_UPDATE') {
+    applyJobData(payload);
+  }
+});
+
+function applyJobData(payload) {
+  if (!payload) return;
+  const job    = payload.job    || {};
+  const salary = payload.salary || {};
+
+  state.jobName   = job.jobName   || job.name  || 'unemployed';
+  state.jobLabel  = job.jobLabel  || job.label || 'Unemployed';
+  state.rankLabel = job.rankLabel || job.rank  || 'No Rank';
+  state.onDuty    = job.onDuty === true;
+
+  state.salary.hourly     = salary.hourly     || 0;
+  state.salary.lastPay    = salary.lastPay    || 0;
+  state.salary.earnedToday= salary.earnedToday|| 0;
+  state.paycheckIn        = salary.paycheckIn || null;
+
+  renderJobCard();
+  renderSalary();
+  updateDutyUI();
+  if (state.onDuty) startDutyTimer(); else stopDutyTimer();
+}
+
+/* ── Panel Open/Close ─────────────────────────────────────────────────── */
+function openPanel() {
+  document.getElementById('jobs-panel').classList.add('open');
+}
+function closePanel() {
+  document.getElementById('jobs-panel').classList.remove('open');
+  fetch('https://atc-jobs/atc:jobs:close', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({})
+  });
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
+
+/* ── Render ───────────────────────────────────────────────────────────── */
+function renderJobCard() {
+  const key = state.jobName.toLowerCase().replace(/[^a-z]/g,'');
+  document.getElementById('job-icon').textContent = JOB_ICONS[key] || '👤';
+  document.getElementById('job-name').textContent = state.jobLabel;
+  document.getElementById('job-rank').textContent = state.rankLabel;
+}
+
+function renderSalary() {
+  document.getElementById('salary-hourly').textContent = '$' + state.salary.hourly.toLocaleString() + '/hr';
+  document.getElementById('salary-last').textContent   = '$' + state.salary.lastPay.toLocaleString();
+  document.getElementById('salary-today').textContent  = '$' + state.salary.earnedToday.toLocaleString();
+}
+
+function updateDutyUI() {
+  const sw = document.getElementById('duty-switch');
+  if (state.onDuty) sw.classList.add('on'); else sw.classList.remove('on');
+  updatePaycheckDisplay();
+}
+
+function updatePaycheckDisplay() {
+  const el = document.getElementById('next-paycheck');
+  if (!state.onDuty || !state.paycheckIn) { el.textContent = '—'; return; }
+  const m = Math.floor(state.paycheckIn / 60);
+  const s = state.paycheckIn % 60;
+  el.textContent = m + ':' + String(s).padStart(2,'0');
+}
+
+/* ── Duty Timer ───────────────────────────────────────────────────────── */
+function startDutyTimer() {
+  if (dutyInterval) return;
+  dutyInterval = setInterval(() => {
+    state.dutySeconds++;
+    const h = Math.floor(state.dutySeconds / 3600);
+    const m = Math.floor((state.dutySeconds % 3600) / 60);
+    const s = state.dutySeconds % 60;
+    document.getElementById('duty-timer').textContent =
+      String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    if (state.paycheckIn !== null && state.paycheckIn > 0) {
+      state.paycheckIn--;
+      updatePaycheckDisplay();
+    }
+  }, 1000);
+}
+function stopDutyTimer() {
+  clearInterval(dutyInterval);
+  dutyInterval = null;
+  state.dutySeconds = 0;
+  document.getElementById('duty-timer').textContent = '00:00:00';
+  document.getElementById('next-paycheck').textContent = '—';
+}
+
+/* ── Duty Toggle ──────────────────────────────────────────────────────── */
+function toggleDuty() {
+  state.onDuty = !state.onDuty;
+  if (state.onDuty) {
+    state.paycheckIn = 1800; // 30 min default
+    startDutyTimer();
+  } else {
+    stopDutyTimer();
+  }
+  updateDutyUI();
+  fetch('https://atc-jobs/atc:jobs:duty', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ onDuty: state.onDuty })
+  });
+}
+
+/* ── Quit Job ─────────────────────────────────────────────────────────── */
+function quitJob() {
+  fetch('https://atc-jobs/atc:jobs:quit', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({})
+  });
+}
+
+/* ── Dev Demo ─────────────────────────────────────────────────────────── */
+if (location.search.includes('demo')) {
+  setTimeout(() => {
+    window.dispatchEvent(new MessageEvent('message', { data: {
+      type: 'ATC_JOBS_OPEN',
+      payload: {
+        job: { jobName: 'police', jobLabel: 'Police Officer', rank: 'officer', rankLabel: 'Officer I', onDuty: false },
+        salary: { hourly: 1200, lastPay: 600, earnedToday: 2400, paycheckIn: 1800 }
+      }
+    }}));
+  }, 300);
+}
+</script>
+</body>
+</html>

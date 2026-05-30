@@ -79,3 +79,27 @@ RegisterCommand('duty', function()
 end, false)
 
 RegisterKeyMapping('duty', 'Toggle Job Duty', 'keyboard', 'F6')
+
+-- ── NUI / Job Menu Panel ──────────────────────────────────────────────────
+
+--- /jobmenu  (F4)
+--- Opens the job management panel with current job and salary data.
+RegisterCommand('jobmenu', function()
+    SetNuiFocus(true, true)
+    SendNUIMessage({ type = 'ATC_JOBS_OPEN', payload = {
+        job    = ATC.SDK and ATC.SDK.Jobs and ATC.SDK.Jobs.GetActive and ATC.SDK.Jobs.GetActive()
+                 or { jobName = 'unemployed', jobLabel = 'Unemployed', rank = 'recruit', rankLabel = 'Recruit', onDuty = false },
+        salary = { hourly = 500, lastPay = 0 },
+    }})
+end, false)
+RegisterKeyMapping('jobmenu', 'Open Job Menu', 'keyboard', 'F4')
+
+RegisterNUICallback('atc:jobs:close', function(_, cb)
+    SetNuiFocus(false, false)
+    cb('ok')
+end)
+
+RegisterNUICallback('atc:jobs:duty', function(data, cb)
+    TriggerServerEvent('atc:jobs:duty:toggle')
+    cb('ok')
+end)

@@ -169,4 +169,34 @@ AddEventHandler('atc:vehicles:impound', function(vehicleId, reason)
     end)
 end)
 
+--- atc:vehicles:garage:payFine
+--- Client requests to pay the impound fine for a vehicle.
+ATC.Firewall.On('atc:vehicles:garage:payFine', {
+    clientAllowed  = true,
+    requireSession = true,
+    rateLimit      = { window = 10000, max = 3 },
+}, function(src, payload)
+    if type(payload) ~= 'table' then return end
+    local vehicleId = payload.vehicleId
+    if type(vehicleId) ~= 'string' or #vehicleId == 0 then return end
+
+    local principalId = ATC.Accounts.GetPrincipalId(src)
+    if not principalId then return end
+
+    ATC.HTTP.Post('/api/v1/vehicles/' .. vehicleId .. '/impound/pay', {
+        principalId = principalId,
+    }, function(ok, status, data, err)
+        if not ok then
+            ATC.Log.Error('vehicles', 'payFine API error', {
+                source = src, vehicleId = vehicleId, status = status, err = err,
+            })
+        end
+        TriggerClientEvent('atc:vehicles:garage:result', src, {
+            success  = ok,
+            message  = ok and 'Fine paid. Vehicle returned to garage.' or (data and data.error or 'Payment failed.'),
+            vehicles = ok and data and data.vehicles or nil,
+        })
+    end)
+end)
+
 ATC.Log.Info('vehicles', 'atc-vehicles server initialised')

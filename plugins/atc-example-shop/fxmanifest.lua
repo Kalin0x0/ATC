@@ -16,3 +16,9 @@ server_scripts {
 client_scripts {
     'client/init.lua',
 }
+
+ui_page 'ui/index.html'
+
+files {
+    'ui/index.html',
+}

@@ -28,8 +28,44 @@ for _, e in ipairs({'atc:example_shop:catalog:response','atc:example_shop:buy:re
 RegisterNUICallback('atc:example_shop:close', function(_, cb)
     _shopOpen = false
     SetNuiFocus(false, false)
-    SendNUIMessage({ type='ATC_EXAMPLE_SHOP_CLOSE' })
+    SendNUIMessage({ type = 'ATC_SHOP_CLOSE' })
     cb('ok')
+end)
+
+-- NUI checkout callback: forward cart to server
+RegisterNUICallback('atc:shop:checkout', function(data, cb)
+    -- Support both single-item legacy API and multi-item cart
+    if data and data.items and #data.items > 0 then
+        -- Multi-item: fire individual buy events (server handles each)
+        for _, entry in ipairs(data.items) do
+            TriggerServerEvent('atc:example_shop:buy', { itemId = entry.id, qty = entry.qty or 1 })
+        end
+    elseif data and data.itemId then
+        TriggerServerEvent('atc:example_shop:buy', { itemId = data.itemId })
+    end
+    cb('ok')
+end)
+
+-- Wire up catalog response to NUI
+AddEventHandler('atc:example_shop:catalog:response', function(items)
+    SendNUIMessage({ type = 'ATC_SHOP_OPEN', payload = { items = items } })
+end)
+
+-- Handle buy result
+AddEventHandler('atc:example_shop:buy:result', function(data)
+    local success = data and data.success
+    SendNUIMessage({ type = 'ATC_SHOP_RESULT', payload = {
+        success = success,
+        message = success
+            and ('Bought ' .. tostring(data.item and data.item.name or 'item'))
+            or  ('Cannot buy: ' .. tostring(data and data.reason or 'error')),
+    }})
+    if not success then
+        -- On failure keep shop open; close on success handled by UI checkout flow
+        return
+    end
+    _shopOpen = false
+    SetNuiFocus(false, false)
 end)
 
 AddEventHandler('atc:example_shop:catalog:response', function(items)

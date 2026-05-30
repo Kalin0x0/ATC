@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ATC Territory</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg-base:     #0d0d1a;
+  --bg-card:     #1a1a2e;
+  --bg-elevated: #16213e;
+  --bg-hover:    #1e2a4a;
+  --gold:        #d4af37;
+  --gold-light:  #e8c547;
+  --gold-dim:    rgba(212,175,55,0.15);
+  --gold-border: rgba(212,175,55,0.25);
+  --text-primary:#e8e8f0;
+  --text-muted:  #8888aa;
+  --text-dim:    #5566aa;
+  --success:     #52c052;
+  --danger:      #e05252;
+  --warning:     #e0a052;
+  --info:        #5288e0;
+}
+body {
+  background: transparent;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--text-primary);
+  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  width: 100vw; height: 100vh;
+}
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--gold-border); border-radius: 2px; }
+
+/* ── Shared ────────────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 6px; min-height: 40px; padding: 0 clamp(12px,1.5vw,20px);
+  border-radius: 8px; font-size: clamp(11px,1.1vw,13px);
+  font-weight: 600; cursor: pointer; transition: all 0.15s; border: none;
+}
+.btn-primary { background: var(--gold); color: #0d0d1a; }
+.btn-primary:hover { background: var(--gold-light); }
+.btn-danger  { background: var(--danger); color: #fff; }
+.btn-ghost   { background: transparent; color: var(--text-muted); border: 1px solid var(--gold-border); }
+.btn-ghost:hover   { color: var(--gold); border-color: var(--gold); }
+
+/* ── Panel ─────────────────────────────────────────────────────────────── */
+#territory-panel {
+  width: clamp(380px, 92vw, 780px);
+  background: var(--bg-card);
+  border: 1px solid var(--gold-border);
+  border-radius: clamp(12px,1.8vw,18px);
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  max-height: 92vh;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(212,175,55,0.05);
+  opacity: 0;
+  transform: translateY(20px) scale(0.97);
+  transition: opacity 0.28s, transform 0.28s;
+}
+#territory-panel.open { opacity: 1; transform: translateY(0) scale(1); }
+
+/* ── Panel Header ──────────────────────────────────────────────────────── */
+.panel-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: clamp(12px,1.5vw,18px) clamp(16px,2vw,22px);
+  background: linear-gradient(135deg, var(--bg-elevated) 0%, rgba(14,18,36,0.95) 100%);
+  border-bottom: 1px solid var(--gold-border);
+  flex-shrink: 0;
+  gap: 12px;
+}
+.panel-title-block { display: flex; flex-direction: column; gap: 2px; }
+.panel-title {
+  font-weight: 700; font-size: clamp(14px,1.6vw,18px); color: var(--gold);
+  display: flex; align-items: center; gap: 8px;
+}
+.panel-subtitle {
+  font-size: clamp(10px,0.95vw,12px); color: var(--text-dim);
+}
+.panel-header-right { display: flex; align-items: center; gap: 10px; }
+.zone-summary {
+  display: flex; gap: 6px;
+}
+.summary-pill {
+  padding: 3px 10px; border-radius: 20px;
+  font-size: clamp(10px,0.9vw,12px); font-weight: 700;
+}
+.pill-owned  { background: var(--gold-dim); color: var(--gold); border: 1px solid var(--gold-border); }
+.pill-total  { background: rgba(255,255,255,0.04); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.08); }
+.close-btn {
+  width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+  border-radius: 8px; cursor: pointer; color: var(--text-muted);
+  background: transparent; border: none; font-size: 18px; transition: all 0.15s;
+}
+.close-btn:hover { background: rgba(224,82,82,0.15); color: var(--danger); }
+
+/* ── Main Content Row ──────────────────────────────────────────────────── */
+.content-row {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ── Territory Grid ────────────────────────────────────────────────────── */
+.map-area {
+  flex: 1; min-width: 0;
+  padding: clamp(12px,1.5vw,18px);
+  overflow-y: auto;
+  display: flex; flex-direction: column; gap: clamp(8px,1vw,12px);
+}
+
+.zone-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(6px,0.9vw,10px);
+  flex: 1;
+}
+
+/* ── Zone Tile ─────────────────────────────────────────────────────────── */
+.zone-tile {
+  background: var(--bg-elevated);
+  border: 1px solid var(--gold-border);
+  border-radius: 10px;
+  padding: clamp(8px,1vw,12px) clamp(8px,1vw,12px);
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+  min-height: clamp(70px,9vw,100px);
+  display: flex; flex-direction: column; justify-content: space-between;
+}
+.zone-tile:hover { background: var(--bg-hover); transform: translateY(-1px); }
+.zone-tile:hover .zone-hover-actions { opacity: 1; }
+
+/* Ownership states */
+.zone-tile.owned {
+  border-color: var(--gold);
+  box-shadow: 0 0 10px rgba(212,175,55,0.25), inset 0 0 16px rgba(212,175,55,0.04);
+}
+.zone-tile.owned::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+.zone-tile.enemy {
+  border-color: rgba(224,82,82,0.45);
+  background: rgba(224,82,82,0.04);
+}
+.zone-tile.enemy::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--danger), transparent);
+}
+
+/* Contested animation */
+@keyframes zone-pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(224,160,82,0); }
+  50%      { box-shadow: 0 0 14px 2px rgba(224,160,82,0.45); }
+}
+.zone-tile.contested {
+  border-color: rgba(224,160,82,0.55);
+  animation: zone-pulse 1.5s ease-in-out infinite;
+}
+.zone-tile.contested::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--warning), transparent);
+}
+
+/* Zone content */
+.zone-top {
+  display: flex; justify-content: space-between; align-items: flex-start;
+}
+.zone-name {
+  font-size: clamp(10px,1vw,13px); font-weight: 700;
+  color: var(--text-primary); line-height: 1.2;
+}
+.zone-owner-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 2px;
+  background: var(--text-dim);
+}
+.zone-tile.owned   .zone-owner-dot { background: var(--gold); box-shadow: 0 0 5px rgba(212,175,55,0.6); }
+.zone-tile.enemy   .zone-owner-dot { background: var(--danger); box-shadow: 0 0 5px rgba(224,82,82,0.5); }
+.zone-tile.contested .zone-owner-dot { background: var(--warning); box-shadow: 0 0 5px rgba(224,160,82,0.5); }
+
+.zone-bottom {}
+.zone-gang {
+  font-size: clamp(9px,0.85vw,11px); color: var(--text-dim); margin-top: 4px;
+}
+.zone-tile.owned   .zone-gang { color: var(--gold); }
+.zone-tile.enemy   .zone-gang { color: rgba(224,82,82,0.8); }
+.zone-tile.contested .zone-gang { color: var(--warning); }
+
+/* Hover actions overlay */
+.zone-hover-actions {
+  position: absolute; inset: 0;
+  background: rgba(13,13,26,0.82);
+  backdrop-filter: blur(2px);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity 0.15s;
+  border-radius: 10px;
+}
+.zone-action-btn {
+  padding: 6px 14px; border-radius: 8px; font-size: clamp(10px,0.95vw,12px);
+  font-weight: 700; cursor: pointer; border: none; transition: all 0.15s;
+}
+.zone-action-attack { background: rgba(224,82,82,0.2); color: var(--danger); border: 1px solid rgba(224,82,82,0.35); }
+.zone-action-attack:hover { background: rgba(224,82,82,0.35); }
+.zone-action-defend { background: var(--gold-dim); color: var(--gold); border: 1px solid var(--gold-border); }
+.zone-action-defend:hover { background: rgba(212,175,55,0.25); }
+.zone-action-neutral { background: rgba(82,136,224,0.15); color: var(--info); border: 1px solid rgba(82,136,224,0.3); }
+.zone-action-neutral:hover { background: rgba(82,136,224,0.25); }
+
+/* Legend row */
+.legend-row {
+  display: flex; gap: clamp(10px,1.5vw,18px); align-items: center;
+  padding: 0 2px;
+  flex-shrink: 0;
+}
+.legend-item { display: flex; align-items: center; gap: 6px; }
+.legend-dot {
+  width: 9px; height: 9px; border-radius: 50%;
+}
+.legend-dot.owned    { background: var(--gold); }
+.legend-dot.enemy    { background: var(--danger); }
+.legend-dot.neutral  { background: var(--text-dim); }
+.legend-dot.contested { background: var(--warning); }
+.legend-label { font-size: clamp(9px,0.85vw,11px); color: var(--text-dim); }
+
+/* ── Right Sidebar ──────────────────────────────────────────────────────── */
+.sidebar {
+  width: clamp(160px,22vw,240px);
+  flex-shrink: 0;
+  border-left: 1px solid var(--gold-border);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-section {
+  padding: clamp(10px,1.2vw,16px) clamp(10px,1.3vw,16px);
+  border-bottom: 1px solid var(--gold-border);
+  flex-shrink: 0;
+}
+.sidebar-title {
+  font-size: clamp(9px,0.85vw,11px); font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-dim); margin-bottom: 10px;
+}
+
+/* Gang stats */
+.gang-name-row {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+}
+.gang-icon {
+  width: 26px; height: 26px;
+  background: var(--gold-dim);
+  border: 1px solid var(--gold-border);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+}
+.gang-name {
+  font-size: clamp(11px,1.1vw,13px); font-weight: 700; color: var(--gold);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.stat-row {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 6px;
+}
+.stat-label { font-size: clamp(9px,0.85vw,11px); color: var(--text-dim); }
+.stat-value { font-size: clamp(10px,0.95vw,12px); font-weight: 700; color: var(--text-primary); }
+.stat-value.gold { color: var(--gold); }
+
+/* Income bar */
+.income-bar {
+  height: 4px; background: rgba(255,255,255,0.05);
+  border-radius: 2px; margin-top: 8px; overflow: hidden;
+}
+.income-fill {
+  height: 100%; background: var(--gold);
+  border-radius: 2px; transition: width 0.6s;
+}
+
+/* Claim button */
+.claim-section {
+  padding: clamp(10px,1.2vw,16px) clamp(10px,1.3vw,16px);
+  border-bottom: 1px solid var(--gold-border);
+  flex-shrink: 0;
+}
+.btn-claim {
+  width: 100%; min-height: 40px; border-radius: 10px;
+  background: var(--gold-dim); border: 1px solid var(--gold-border);
+  color: var(--gold); font-size: clamp(11px,1.05vw,13px); font-weight: 700;
+  cursor: pointer; transition: all 0.15s;
+}
+.btn-claim:hover:not(:disabled) { background: rgba(212,175,55,0.25); }
+.btn-claim:disabled {
+  opacity: 0.4; cursor: not-allowed;
+}
+
+/* Events feed */
+.events-feed {
+  flex: 1; overflow-y: auto;
+  padding: clamp(10px,1.2vw,16px) clamp(10px,1.3vw,16px);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.event-item {
+  background: var(--bg-elevated);
+  border: 1px solid var(--gold-border);
+  border-radius: 8px;
+  padding: 7px 10px;
+}
+.event-text {
+  font-size: clamp(9px,0.85vw,11px); color: var(--text-muted); line-height: 1.4;
+}
+.event-text strong { color: var(--danger); }
+.event-text em { color: var(--text-primary); font-style: normal; }
+.event-time {
+  font-size: clamp(8px,0.8vw,10px); color: var(--text-dim); margin-top: 2px;
+}
+.event-item.event-capture .event-text strong { color: var(--danger); }
+.event-item.event-defend .event-text strong { color: var(--success); }
+.event-item.event-neutral .event-text strong { color: var(--info); }
+</style>
+</head>
+<body>
+
+<div id="territory-panel">
+
+  <!-- Header -->
+  <div class="panel-header">
+    <div class="panel-title-block">
+      <div class="panel-title">
+        <span>🗺</span> Territory Control
+      </div>
+      <div class="panel-subtitle" id="zone-sub">Loading zone data…</div>
+    </div>
+    <div class="panel-header-right">
+      <div class="zone-summary">
+        <span class="summary-pill pill-owned" id="zones-owned">0 owned</span>
+        <span class="summary-pill pill-total" id="zones-total">12 zones</span>
+      </div>
+      <button class="close-btn" onclick="closePanel()">✕</button>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content-row">
+
+    <!-- Map Area -->
+    <div class="map-area">
+      <!-- Legend -->
+      <div class="legend-row">
+        <div class="legend-item"><div class="legend-dot owned"></div><span class="legend-label">Your gang</span></div>
+        <div class="legend-item"><div class="legend-dot enemy"></div><span class="legend-label">Enemy</span></div>
+        <div class="legend-item"><div class="legend-dot contested"></div><span class="legend-label">Contested</span></div>
+        <div class="legend-item"><div class="legend-dot neutral"></div><span class="legend-label">Neutral</span></div>
+      </div>
+      <!-- 4×3 Grid -->
+      <div class="zone-grid" id="zone-grid">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+
+      <!-- Gang Stats -->
+      <div class="sidebar-section">
+        <div class="sidebar-title">Your Gang</div>
+        <div class="gang-name-row">
+          <div class="gang-icon">⚔</div>
+          <div class="gang-name" id="gang-name">No Gang</div>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Online</span>
+          <span class="stat-value" id="gang-online">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Zones</span>
+          <span class="stat-value gold" id="gang-zones">0 / 12</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Income/hr</span>
+          <span class="stat-value gold" id="gang-income">$0</span>
+        </div>
+        <div class="income-bar">
+          <div class="income-fill" id="income-fill" style="width:0%"></div>
+        </div>
+      </div>
+
+      <!-- Claim -->
+      <div class="claim-section">
+        <button class="btn-claim" id="claim-btn" onclick="claimZone()" disabled>
+          ⚑ Claim Zone
+        </button>
+        <div style="font-size:clamp(9px,.85vw,10px);color:var(--text-dim);margin-top:6px;text-align:center;" id="claim-hint">
+          Enter a zone to claim
+        </div>
+      </div>
+
+      <!-- Events Feed -->
+      <div class="events-feed" id="events-feed">
+        <div class="sidebar-title">Recent Events</div>
+      </div>
+
+    </div><!-- /sidebar -->
+
+  </div><!-- /content-row -->
+
+</div>
+
+<script>
+/* ── Data ─────────────────────────────────────────────────────────────── */
+const ZONE_NAMES = [
+  'Davis', 'Strawberry', 'Chamberlain Hills', 'Rancho',
+  'Cypress Flats', 'La Mesa', 'Elysian Island', 'Terminal',
+  'Banning', 'Chumash', 'Banham Canyon', 'Vinewood'
+];
+
+let state = {
+  zones:      [],
+  gang:       null,
+  myGangId:   null,
+  inZoneId:   null,
+  events:     [],
+};
+
+/* ── NUI Messages ────────────────────────────────────────────────────── */
+window.addEventListener('message', (e) => {
+  const { type, payload } = e.data || {};
+  if (type === 'ATC_TERRITORY_OPEN') {
+    state.zones  = payload.zones  || defaultZones();
+    state.gang   = payload.gang   || null;
+    state.myGangId = state.gang ? (state.gang.id || state.gang.name) : null;
+    openPanel();
+    renderAll();
+  }
+  if (type === 'ATC_TERRITORY_ZONES') {
+    state.zones = Array.isArray(payload) ? payload : (payload.zones || defaultZones());
+    renderGrid();
+    renderHeader();
+  }
+  if (type === 'ATC_TERRITORY_IN_ZONE') {
+    state.inZoneId = payload ? payload.zoneId : null;
+    updateClaimBtn();
+  }
+});
+
+/* ── Open / Close ────────────────────────────────────────────────────── */
+function openPanel() {
+  document.getElementById('territory-panel').classList.add('open');
+}
+function closePanel() {
+  document.getElementById('territory-panel').classList.remove('open');
+  fetch('https://atc-territory/atc:territory:close', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({})
+  });
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
+
+/* ── Render All ──────────────────────────────────────────────────────── */
+function renderAll() {
+  renderHeader();
+  renderGrid();
+  renderSidebar();
+}
+
+/* ── Header ──────────────────────────────────────────────────────────── */
+function renderHeader() {
+  const owned  = state.zones.filter(z => z.factionId && z.factionId === state.myGangId).length;
+  const total  = state.zones.length || ZONE_NAMES.length;
+  document.getElementById('zones-owned').textContent = owned + ' owned';
+  document.getElementById('zones-total').textContent = total + ' zones';
+  const gangLabel = state.gang ? (state.gang.label || state.gang.name || 'Your Gang') : 'No Gang';
+  document.getElementById('zone-sub').textContent =
+    gangLabel + ': ' + owned + '/' + total + ' zones controlled';
+}
+
+/* ── Grid ────────────────────────────────────────────────────────────── */
+function renderGrid() {
+  const grid = document.getElementById('zone-grid');
+  grid.innerHTML = '';
+
+  const zones = state.zones.length ? state.zones : defaultZones();
+
+  zones.forEach((zone, i) => {
+    const name     = zone.name || ZONE_NAMES[i] || 'Zone ' + i;
+    const owner    = zone.factionId || null;
+    const isOwned  = owner && owner === state.myGangId;
+    const isEnemy  = owner && owner !== state.myGangId;
+    const contested= zone.contested === true;
+
+    let cls = 'zone-tile';
+    if (contested) cls += ' contested';
+    else if (isOwned) cls += ' owned';
+    else if (isEnemy) cls += ' enemy';
+
+    const ownerLabel = zone.factionLabel || (isOwned ? (state.gang && (state.gang.label||state.gang.name)||'Your Gang') : (owner ? owner : 'Neutral'));
+
+    let actionBtn = '';
+    if (isOwned) {
+      actionBtn = `<button class="zone-action-btn zone-action-defend" onclick="defendZone('${zone.id||i}',event)">🛡 Defend</button>`;
+    } else if (isEnemy) {
+      actionBtn = `<button class="zone-action-btn zone-action-attack" onclick="attackZone('${zone.id||i}',event)">⚔ Attack</button>`;
+    } else {
+      actionBtn = `<button class="zone-action-btn zone-action-neutral" onclick="claimZone('${zone.id||i}',event)">⚑ Claim</button>`;
+    }
+
+    const tile = document.createElement('div');
+    tile.className = cls;
+    tile.dataset.id = zone.id || i;
+    tile.innerHTML = `
+      <div class="zone-top">
+        <div class="zone-name">${escHtml(name)}</div>
+        <div class="zone-owner-dot"></div>
+      </div>
+      <div class="zone-bottom">
+        <div class="zone-gang">${escHtml(ownerLabel)}</div>
+      </div>
+      <div class="zone-hover-actions">${actionBtn}</div>
+    `;
+    grid.appendChild(tile);
+  });
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────────────── */
+function renderSidebar() {
+  const gang    = state.gang || {};
+  const owned   = state.zones.filter(z => z.factionId === state.myGangId).length;
+  const total   = state.zones.length || 12;
+  const income  = gang.income || owned * 500;
+  const pct     = Math.min(100, (income / 6000) * 100);
+
+  document.getElementById('gang-name').textContent   = gang.label || gang.name || 'No Gang';
+  document.getElementById('gang-online').textContent = gang.membersOnline || '—';
+  document.getElementById('gang-zones').textContent  = owned + ' / ' + total;
+  document.getElementById('gang-income').textContent = '$' + income.toLocaleString();
+  document.getElementById('income-fill').style.width = pct + '%';
+  updateClaimBtn();
+  renderEvents();
+}
+
+function updateClaimBtn() {
+  const btn  = document.getElementById('claim-btn');
+  const hint = document.getElementById('claim-hint');
+  if (state.inZoneId) {
+    btn.disabled = false;
+    hint.textContent = 'You are in a claimable zone';
+  } else {
+    btn.disabled = true;
+    hint.textContent = 'Enter a zone to claim';
+  }
+}
+
+function renderEvents() {
+  const feed = document.getElementById('events-feed');
+  // Clear old events (keep title)
+  feed.querySelectorAll('.event-item').forEach(el => el.remove());
+
+  const evts = state.events.length ? state.events : defaultEvents();
+  evts.slice(-5).reverse().forEach(ev => {
+    const item = document.createElement('div');
+    item.className = 'event-item event-' + escHtml(ev.type || 'neutral');
+    item.innerHTML = `
+      <div class="event-text">${escHtml(ev.text || '')}</div>
+      <div class="event-time">${escHtml(ev.time || 'just now')}</div>
+    `;
+    feed.appendChild(item);
+  });
+}
+
+/* ── Zone Actions ────────────────────────────────────────────────────── */
+function attackZone(id, e) {
+  e && e.stopPropagation();
+  fetch('https://atc-territory/atc:territory:attack', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ zoneId: id })
+  });
+}
+function defendZone(id, e) {
+  e && e.stopPropagation();
+  fetch('https://atc-territory/atc:territory:defend', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ zoneId: id })
+  });
+}
+function claimZone(id, e) {
+  e && e.stopPropagation();
+  const zoneId = id || state.inZoneId;
+  if (!zoneId) return;
+  fetch('https://atc-territory/atc:territory:claim', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ zoneId })
+  });
+}
+
+/* ── Default / Fallback Data ─────────────────────────────────────────── */
+function defaultZones() {
+  return ZONE_NAMES.map((name, i) => ({ id: 'z' + i, name, factionId: null, contested: false }));
+}
+function defaultEvents() {
+  return [
+    { type: 'capture', text: 'The Ballas captured Davis',          time: '2m ago' },
+    { type: 'defend',  text: 'Your Gang defended Strawberry',      time: '8m ago' },
+    { type: 'neutral', text: 'La Mesa is now Neutral',             time: '15m ago' },
+  ];
+}
+
+/* ── Helpers ─────────────────────────────────────────────────────────── */
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ── Dev Demo ─────────────────────────────────────────────────────────── */
+if (location.search.includes('demo')) {
+  setTimeout(() => {
+    window.dispatchEvent(new MessageEvent('message', { data: {
+      type: 'ATC_TERRITORY_OPEN',
+      payload: {
+        gang: { id: 'gang_grove', name: 'gang_grove', label: 'Grove Street', membersOnline: 7, income: 2500 },
+        zones: ZONE_NAMES.map((name, i) => ({
+          id: 'z' + i,
+          name,
+          factionId:    i < 3  ? 'gang_grove' : (i < 6 ? 'gang_ballas' : null),
+          factionLabel: i < 3  ? 'Grove Street' : (i < 6 ? 'The Ballas' : 'Neutral'),
+          contested:    i === 6,
+        }))
+      }
+    }}));
+  }, 300);
+}
+</script>
+</body>
+</html>

@@ -115,4 +115,19 @@ ATC.Firewall.On('atc:housing:property:lock', {
     )
 end)
 
+--- atc:housing:properties:list
+--- Client opens the housing panel — fetch all owned/rented properties.
+ATC.Firewall.On('atc:housing:properties:list', {
+    clientAllowed  = true,
+    requireSession = true,
+    rateLimit      = { window = 5000, max = 3 },
+}, function(src)
+    local principalId = ATC.Accounts.GetPrincipalId(src)
+    if not principalId then return end
+    ATC.HTTP.Get('/api/v1/properties?ownerId=' .. principalId, function(ok, _, data)
+        TriggerClientEvent('atc:housing:properties:list:response', src,
+            ok and data or { properties = {} })
+    end)
+end)
+
 ATC.Log.Info('housing', 'atc-housing server initialised')

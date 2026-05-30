@@ -10,6 +10,12 @@ lua54 'yes'
 
 dependency 'atc-core'
 
+ui_page 'ui/index.html'
+
+files {
+    'ui/index.html',
+}
+
 server_scripts {
     'server/init.lua',
 }

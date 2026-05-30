@@ -197,3 +197,111 @@ RegisterCommand('atcspectate', function(source, args)
         target = targetId,
     })
 end, true)
+
+-- ── NUI-based Firewall handlers ───────────────────────────────────────────────
+
+ATC.Firewall.On('atc:admin:bring', {
+    clientAllowed  = true,
+    requireSession = true,
+    rateLimit      = { window = 3000, max = 10 },
+}, function(src, d)
+    if not isAdmin(src) then return end
+    local targetId = tonumber(d and d.id)
+    if not targetId then return end
+    local coords = GetEntityCoords(GetPlayerPed(src))
+    SetEntityCoords(GetPlayerPed(targetId), coords.x + 2.0, coords.y, coords.z, false, false, false, true)
+    ATC.Log.Info('admin', 'NUI bring', { admin = src, target = targetId })
+end)
+
+ATC.Firewall.On('atc:admin:goto', {
+    clientAllowed  = true,
+    requireSession = true,
+    rateLimit      = { window = 3000, max = 10 },
+}, function(src, d)
+    if not isAdmin(src) then return end
+    local targetId = tonumber(d and d.id)
+    if not targetId then return end
+    local coords = GetEntityCoords(GetPlayerPed(targetId))
+    SetEntityCoords(GetPlayerPed(src), coords.x + 2.0, coords.y, coords.z, false, false, false, true)
+    ATC.Log.Info('admin', 'NUI goto', { admin = src, target = targetId })
+end)
+
+ATC.Firewall.On('atc:admin:freeze', {
+    clientAllowed  = true,
+    requireSession = true,
+    rateLimit      = { window = 3000, max = 10 },
+}, function(src, d)
+    if not isAdmin(src) then return end
+    local targetId = tonumber(d and d.id)
+    if not targetId then return end
+    FreezeEntityPosition(GetPlayerPed(targetId), true)
+    ATC.Log.Info('admin', 'NUI freeze', { admin = src, target = targetId })
+end)
+
+ATC.Firewall.On('atc:admin:kick', {
+    clientAllowed  = true,
+    requireSession = true,
+    rateLimit      = { window = 5000, max = 5 },
+}, function(src, d)
+    if not isAdmin(src) then return end
+    local targetId = tonumber(d and d.id)
+    local reason   = type(d) == 'table' and tostring(d.reason or 'Admin kick'):sub(1, 128) or 'Admin kick'
+    if not targetId then return end
+    DropPlayer(tostring(targetId), '[ATC Admin] ' .. reason)
+    ATC.Log.Security('admin', 'NUI kick', { admin = src, target = targetId, reason = reason })
+end)
+
+ATC.Firewall.On('atc:admin:ban', {
+    clientAllowed  = true,
+    requireSession = true,
+    rateLimit      = { window = 10000, max = 3 },
+}, function(src, d)
+    if not isAdmin(src) then return end
+    local targetId = tonumber(d and d.id)
+    local reason   = type(d) == 'table' and tostring(d.reason or 'Admin ban'):sub(1, 256) or 'Admin ban'
+    if not targetId then return end
+    local identifier = GetPlayerIdentifierByType(tostring(targetId), 'license')
+    if identifier then
+        ATC.HTTP.Post('/api/v1/accounts/ban', { identifier = identifier, reason = reason }, function() end)
+        DropPlayer(tostring(targetId), '[ATC] Banned: ' .. reason)
+        ATC.Log.Security('admin', 'NUI ban', { admin = src, target = targetId, reason = reason })
+    end
+end)
+
+ATC.Firewall.On('atc:admin:announce', {
+    clientAllowed  = true,
+    requireSession = true,
+    rateLimit      = { window = 10000, max = 5 },
+}, function(src, d)
+    if not isAdmin(src) then return end
+    local msg = type(d) == 'table' and tostring(d.message or ''):sub(1, 256) or ''
+    if msg ~= '' then
+        TriggerClientEvent('atc:notify:show', -1, {
+            message  = '[ADMIN] ' .. msg,
+            level    = 'warning',
+            duration = 8000,
+        })
+        ATC.Log.Info('admin', 'Server announcement sent', { admin = src, message = msg })
+    end
+end)
+
+ATC.Firewall.On('atc:admin:reviveAll', {
+    clientAllowed  = true,
+    requireSession = true,
+    rateLimit      = { window = 15000, max = 3 },
+}, function(src)
+    if not isAdmin(src) then return end
+    TriggerClientEvent('atc:admin:reviveAll:exec', -1)
+    ATC.Log.Info('admin', 'Revive all triggered', { admin = src })
+end)
+
+ATC.Firewall.On('atc:admin:clearArea', {
+    clientAllowed  = true,
+    requireSession = true,
+    rateLimit      = { window = 30000, max = 2 },
+}, function(src)
+    if not isAdmin(src) then return end
+    -- Delegate to client-side clear for nearby entity removal
+    TriggerClientEvent('atc:admin:clearArea:exec', src)
+    ATC.Log.Info('admin', 'Clear area triggered', { admin = src })
+end)

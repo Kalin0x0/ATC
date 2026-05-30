@@ -54,4 +54,44 @@ AddEventHandler('atc:housing:property:lock:response', function(data)
             duration = 2000,
         },
     })
+
+    -- Forward lock result to the housing panel
+    SendNUIMessage({
+        type    = 'ATC_HOUSING_LOCK_RESULT',
+        payload = {
+            propertyId = data.propertyId,
+            locked     = data.locked,
+        },
+    })
+end)
+
+-- ── NUI / Housing Panel ───────────────────────────────────────────────────
+
+--- /housing  (F3)
+--- Opens the property management panel.
+RegisterCommand('housing', function()
+    SetNuiFocus(true, true)
+    TriggerServerEvent('atc:housing:properties:list')
+    SendNUIMessage({ type = 'ATC_HOUSING_OPEN', payload = { properties = {} } })
+end, false)
+RegisterKeyMapping('housing', 'Open Housing', 'keyboard', 'F3')
+
+RegisterNetEvent('atc:housing:properties:list:response')
+AddEventHandler('atc:housing:properties:list:response', function(data)
+    SendNUIMessage({ type = 'ATC_HOUSING_OPEN', payload = data })
+end)
+
+RegisterNUICallback('atc:housing:close', function(_, cb)
+    SetNuiFocus(false, false)
+    cb('ok')
+end)
+
+RegisterNUICallback('atc:housing:lock', function(data, cb)
+    TriggerServerEvent('atc:housing:property:lock', data)
+    cb('ok')
+end)
+
+RegisterNUICallback('atc:housing:enter', function(data, cb)
+    TriggerServerEvent('atc:housing:property:enter', data)
+    cb('ok')
 end)

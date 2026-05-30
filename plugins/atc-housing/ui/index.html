@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ATC Housing</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg-base:     #0d0d1a;
+  --bg-card:     #1a1a2e;
+  --bg-elevated: #16213e;
+  --bg-hover:    #1e2a4a;
+  --gold:        #d4af37;
+  --gold-light:  #e8c547;
+  --gold-dim:    rgba(212,175,55,0.15);
+  --gold-border: rgba(212,175,55,0.25);
+  --text-primary:#e8e8f0;
+  --text-muted:  #8888aa;
+  --text-dim:    #5566aa;
+  --success:     #52c052;
+  --danger:      #e05252;
+  --warning:     #e0a052;
+  --info:        #5288e0;
+}
+body {
+  background: transparent;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--text-primary);
+  overflow: hidden;
+}
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--gold-border); border-radius: 2px; }
+
+/* ── Shared Classes ────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 6px; min-height: 40px; padding: 0 clamp(12px,1.5vw,20px);
+  border-radius: 8px; font-size: clamp(11px,1.1vw,13px);
+  font-weight: 600; cursor: pointer; transition: all 0.15s; border: none;
+}
+.btn-primary { background: var(--gold); color: #0d0d1a; }
+.btn-primary:hover { background: var(--gold-light); }
+.btn-danger  { background: var(--danger); color: #fff; }
+.btn-danger:hover  { background: #c94444; }
+.btn-ghost   { background: transparent; color: var(--text-muted); border: 1px solid var(--gold-border); }
+.btn-ghost:hover   { color: var(--gold); border-color: var(--gold); }
+.btn-sm { min-height: 40px; padding: 0 10px; font-size: clamp(10px,1vw,12px); }
+.badge {
+  display: inline-flex; align-items: center; padding: 2px 8px;
+  border-radius: 20px; font-size: clamp(9px,0.9vw,11px); font-weight: 700;
+}
+.badge-gold    { background: var(--gold-dim); color: var(--gold); }
+.badge-info    { background: rgba(82,136,224,0.15); color: var(--info); }
+.badge-success { background: rgba(82,192,82,0.15); color: var(--success); }
+.badge-warning { background: rgba(224,160,82,0.15); color: var(--warning); }
+.input {
+  width: 100%; background: var(--bg-elevated); border: 1px solid var(--gold-border);
+  border-radius: 8px; padding: 10px 14px; color: var(--text-primary);
+  font-size: clamp(11px,1.1vw,13px); outline: none; transition: border-color 0.15s;
+}
+.input:focus { border-color: var(--gold); }
+
+/* ── Panel Slide-in ────────────────────────────────────────────────────── */
+#housing-panel {
+  position: fixed;
+  top: 0; right: 0;
+  width: clamp(300px, 88vw, 400px);
+  height: 100vh;
+  background: var(--bg-card);
+  border-left: 1px solid var(--gold-border);
+  display: flex; flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 100;
+  box-shadow: -8px 0 32px rgba(0,0,0,0.6);
+}
+#housing-panel.open { transform: translateX(0); }
+
+/* ── Panel Header ──────────────────────────────────────────────────────── */
+.panel-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: clamp(14px,2vw,20px) clamp(14px,2vw,20px) 0;
+  flex-shrink: 0;
+}
+.panel-title {
+  display: flex; align-items: center; gap: 10px;
+  color: var(--gold); font-weight: 700;
+  font-size: clamp(14px,1.6vw,18px);
+}
+.panel-title .icon-home {
+  width: 28px; height: 28px;
+  background: var(--gold-dim);
+  border: 1px solid var(--gold-border);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+}
+.close-btn {
+  width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+  border-radius: 8px; cursor: pointer; color: var(--text-muted);
+  background: transparent; border: none; font-size: 18px; transition: all 0.15s;
+}
+.close-btn:hover { background: rgba(224,82,82,0.15); color: var(--danger); }
+
+/* ── Sub-header ────────────────────────────────────────────────────────── */
+.panel-sub {
+  padding: 6px clamp(14px,2vw,20px) 0;
+  font-size: clamp(10px,1vw,12px);
+  color: var(--text-dim);
+}
+
+/* ── Divider ───────────────────────────────────────────────────────────── */
+.divider {
+  height: 1px;
+  background: var(--gold-border);
+  margin: clamp(10px,1.5vw,16px) clamp(14px,2vw,20px);
+  flex-shrink: 0;
+}
+
+/* ── Scrollable Body ───────────────────────────────────────────────────── */
+.panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 clamp(14px,2vw,20px) clamp(14px,2vw,20px);
+  display: flex; flex-direction: column; gap: clamp(10px,1.5vw,14px);
+}
+
+/* ── Property Card ─────────────────────────────────────────────────────── */
+.prop-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--gold-border);
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.prop-card:hover {
+  border-color: var(--gold);
+  box-shadow: 0 0 12px var(--gold-dim);
+}
+.prop-card.expanded { border-color: var(--gold); }
+
+/* Card Banner */
+.prop-banner {
+  position: relative;
+  height: clamp(56px,7vw,72px);
+  background: linear-gradient(135deg, #0d1220 0%, #1a2040 50%, #0d1525 100%);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.prop-banner::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent, transparent 20px,
+    rgba(212,175,55,0.03) 20px, rgba(212,175,55,0.03) 21px
+  );
+}
+.prop-banner-icon {
+  font-size: clamp(24px,3vw,36px);
+  filter: drop-shadow(0 0 8px rgba(212,175,55,0.5));
+  position: relative; z-index: 1;
+}
+.prop-status-pill {
+  position: absolute; top: 8px; right: 8px;
+  padding: 3px 10px; border-radius: 20px;
+  font-size: clamp(9px,0.85vw,11px); font-weight: 700;
+  z-index: 1;
+}
+.status-owned { background: var(--gold-dim); color: var(--gold); border: 1px solid var(--gold-border); }
+.status-rented { background: rgba(82,136,224,0.2); color: var(--info); border: 1px solid rgba(82,136,224,0.3); }
+
+/* Card Info */
+.prop-info {
+  padding: clamp(10px,1.2vw,14px);
+}
+.prop-name {
+  font-weight: 600; font-size: clamp(12px,1.2vw,14px);
+  color: var(--text-primary); margin-bottom: 2px;
+}
+.prop-address {
+  font-size: clamp(10px,0.95vw,12px);
+  color: var(--text-muted); margin-bottom: clamp(8px,1vw,12px);
+}
+.prop-badges { display: flex; gap: 6px; margin-bottom: clamp(8px,1vw,12px); flex-wrap: wrap; }
+
+/* Action Row */
+.prop-actions {
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+.prop-actions .btn {
+  flex: 1; min-width: 0;
+  font-size: clamp(10px,0.95vw,12px);
+}
+
+/* Lock button states */
+.btn-lock-locked   { background: rgba(224,160,82,0.15); color: var(--warning); border: 1px solid rgba(224,160,82,0.3); }
+.btn-lock-locked:hover { background: rgba(224,160,82,0.25); }
+.btn-lock-unlocked { background: rgba(82,192,82,0.15); color: var(--success); border: 1px solid rgba(82,192,82,0.3); }
+.btn-lock-unlocked:hover { background: rgba(82,192,82,0.25); }
+
+/* Expanded Details */
+.prop-details {
+  display: none;
+  border-top: 1px solid var(--gold-border);
+  padding: clamp(10px,1.2vw,14px);
+  background: rgba(0,0,0,0.2);
+}
+.prop-card.expanded .prop-details { display: block; }
+.detail-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 8px; margin-bottom: 0;
+}
+.detail-item {
+  background: var(--bg-elevated);
+  border: 1px solid var(--gold-border);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.detail-label { font-size: clamp(9px,0.85vw,11px); color: var(--text-dim); margin-bottom: 2px; }
+.detail-value { font-size: clamp(11px,1.05vw,13px); color: var(--text-primary); font-weight: 600; }
+
+/* ── Add Property Button ───────────────────────────────────────────────── */
+.add-prop-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 52px; border-radius: 12px;
+  border: 1px dashed rgba(212,175,55,0.35);
+  background: transparent;
+  color: rgba(212,175,55,0.45);
+  font-size: clamp(11px,1.1vw,13px); font-weight: 600;
+  cursor: not-allowed;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.add-prop-btn:hover {
+  border-color: rgba(212,175,55,0.55);
+  color: rgba(212,175,55,0.65);
+  background: rgba(212,175,55,0.04);
+}
+
+/* ── Permissions Modal ─────────────────────────────────────────────────── */
+.modal-overlay {
+  position: absolute; inset: 0;
+  background: rgba(13,13,26,0.85);
+  backdrop-filter: blur(4px);
+  display: none;
+  z-index: 200;
+  padding: clamp(16px,2vw,24px);
+  flex-direction: column;
+}
+.modal-overlay.active { display: flex; }
+.modal-box {
+  background: var(--bg-card);
+  border: 1px solid var(--gold-border);
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  max-height: 100%;
+  flex: 1;
+}
+.modal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: clamp(12px,1.5vw,18px) clamp(14px,1.8vw,20px);
+  border-bottom: 1px solid var(--gold-border);
+  background: var(--bg-elevated);
+  flex-shrink: 0;
+}
+.modal-title {
+  display: flex; flex-direction: column; gap: 2px;
+}
+.modal-title span:first-child {
+  font-weight: 700; font-size: clamp(13px,1.3vw,15px); color: var(--gold);
+}
+.modal-title span:last-child {
+  font-size: clamp(10px,0.95vw,12px); color: var(--text-dim);
+}
+.modal-body {
+  flex: 1; overflow-y: auto;
+  padding: clamp(12px,1.5vw,18px) clamp(14px,1.8vw,20px);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.modal-add-row {
+  display: flex; gap: 8px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--gold-border);
+  flex-shrink: 0;
+}
+.modal-add-row .input { flex: 1; }
+.modal-add-row .btn { flex-shrink: 0; }
+.perm-list { display: flex; flex-direction: column; gap: 6px; }
+.perm-item {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--bg-elevated);
+  border: 1px solid var(--gold-border);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+.perm-player { display: flex; align-items: center; gap: 8px; }
+.perm-avatar {
+  width: 30px; height: 30px;
+  background: var(--gold-dim);
+  border: 1px solid var(--gold-border);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: var(--gold);
+}
+.perm-name { font-size: clamp(11px,1.05vw,13px); font-weight: 500; }
+.perm-remove {
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 6px; border: none; cursor: pointer;
+  background: rgba(224,82,82,0.1); color: var(--danger);
+  font-size: 14px; transition: background 0.15s;
+}
+.perm-remove:hover { background: rgba(224,82,82,0.25); }
+.perm-empty {
+  text-align: center; color: var(--text-dim);
+  font-size: clamp(11px,1.05vw,13px); padding: 20px 0;
+}
+
+/* ── Empty State ───────────────────────────────────────────────────────── */
+.empty-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; padding: 40px 20px;
+  color: var(--text-dim); text-align: center;
+}
+.empty-state .empty-icon { font-size: 40px; opacity: 0.4; }
+.empty-state p { font-size: clamp(11px,1.05vw,13px); }
+</style>
+</head>
+<body>
+
+<!-- ── Main Panel ──────────────────────────────────────────────────────── -->
+<div id="housing-panel">
+  <!-- Header -->
+  <div class="panel-header">
+    <div class="panel-title">
+      <div class="icon-home">🏠</div>
+      Properties
+    </div>
+    <button class="close-btn" onclick="closePanel()" title="Close">✕</button>
+  </div>
+  <div class="panel-sub" id="prop-count">0 properties</div>
+  <div class="divider"></div>
+
+  <!-- Scrollable body -->
+  <div class="panel-body" id="prop-list">
+    <div class="empty-state" id="empty-state">
+      <div class="empty-icon">🏚</div>
+      <p>You don't own any properties yet.</p>
+    </div>
+  </div>
+
+  <!-- Add Property -->
+  <div style="padding: 0 clamp(14px,2vw,20px) clamp(14px,2vw,20px); flex-shrink:0;">
+    <button class="add-prop-btn" disabled>
+      <span style="font-size:18px;">+</span>
+      Add Property <span style="font-size:11px;opacity:.6;">(coming soon)</span>
+    </button>
+  </div>
+
+  <!-- Permissions Modal (inside panel) -->
+  <div class="modal-overlay" id="perms-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span>👥 Manage Access</span>
+          <span id="perms-prop-name">—</span>
+        </div>
+        <button class="close-btn" onclick="closePerms()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-add-row">
+          <input class="input" id="perms-input" placeholder="Player name or ID…" />
+          <button class="btn btn-primary btn-sm" onclick="addPermPlayer()">Add</button>
+        </div>
+        <div class="perm-list" id="perm-list">
+          <div class="perm-empty">No players have access.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── State ──────────────────────────────────────────────────────────── */
+let properties = [];
+let activePermsId = null;
+let expandedId   = null;
+
+const TYPE_META = {
+  House:      { icon: '🏠', badgeClass: 'badge-gold'    },
+  Apartment:  { icon: '🏢', badgeClass: 'badge-info'    },
+  Business:   { icon: '🏪', badgeClass: 'badge-warning'  },
+  Warehouse:  { icon: '🏗', badgeClass: 'badge-success'  },
+};
+
+/* ── NUI Message Handler ─────────────────────────────────────────── */
+window.addEventListener('message', (e) => {
+  const { type, payload } = e.data || {};
+  if (type === 'ATC_HOUSING_OPEN') {
+    properties = payload.properties || [];
+    openPanel();
+    renderList();
+  }
+  if (type === 'ATC_HOUSING_LOCK_RESULT') {
+    updateLockState(payload.propertyId, payload.locked);
+  }
+});
+
+/* ── Panel Open / Close ─────────────────────────────────────────── */
+function openPanel() {
+  document.getElementById('housing-panel').classList.add('open');
+}
+function closePanel() {
+  document.getElementById('housing-panel').classList.remove('open');
+  closePerms();
+  fetch('https://atc-housing/atc:housing:close', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({})
+  });
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
+
+/* ── Render List ────────────────────────────────────────────────── */
+function renderList() {
+  const list   = document.getElementById('prop-list');
+  const count  = document.getElementById('prop-count');
+  const empty  = document.getElementById('empty-state');
+  count.textContent = properties.length + ' propert' + (properties.length === 1 ? 'y' : 'ies');
+
+  // Remove old cards
+  list.querySelectorAll('.prop-card').forEach(el => el.remove());
+
+  if (properties.length === 0) {
+    empty.style.display = 'flex';
+    return;
+  }
+  empty.style.display = 'none';
+
+  properties.forEach(prop => {
+    const card = buildCard(prop);
+    list.appendChild(card);
+  });
+}
+
+function buildCard(prop) {
+  const meta    = TYPE_META[prop.type] || TYPE_META.House;
+  const isOwned = prop.status === 'Owned';
+  const locked  = prop.locked !== false; // default locked
+
+  const card = document.createElement('div');
+  card.className = 'prop-card';
+  card.dataset.id = prop.id;
+
+  card.innerHTML = `
+    <div class="prop-banner">
+      <span class="prop-banner-icon">${meta.icon}</span>
+      <span class="prop-status-pill ${isOwned ? 'status-owned' : 'status-rented'}">
+        ${isOwned ? '★ Owned' : '◆ Rented'}
+      </span>
+    </div>
+    <div class="prop-info">
+      <div class="prop-name">${escHtml(prop.name || 'Property')}</div>
+      <div class="prop-address">${escHtml(prop.address || '—')}</div>
+      <div class="prop-badges">
+        <span class="badge ${meta.badgeClass}">${escHtml(prop.type || 'House')}</span>
+      </div>
+      <div class="prop-actions">
+        <button class="btn btn-primary btn-sm" onclick="enterProperty('${prop.id}',event)">▶ Enter</button>
+        <button class="btn btn-sm ${locked ? 'btn-lock-locked' : 'btn-lock-unlocked'}"
+                id="lock-btn-${prop.id}"
+                onclick="toggleLock('${prop.id}',event)">
+          ${locked ? '🔒 Locked' : '🔓 Unlocked'}
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="openPerms('${prop.id}',event)">👥</button>
+      </div>
+    </div>
+    <div class="prop-details">
+      <div class="detail-grid">
+        <div class="detail-item">
+          <div class="detail-label">Storage</div>
+          <div class="detail-value">${prop.storageUsed || 0} / ${prop.storageMax || 100} slots</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Garage</div>
+          <div class="detail-value">${prop.garageSpaces || 0} spaces</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Monthly Rent</div>
+          <div class="detail-value">${prop.monthlyRent ? '$' + prop.monthlyRent.toLocaleString() : 'Owned'}</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Interior</div>
+          <div class="detail-value">${escHtml(prop.interior || 'Standard')}</div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  card.querySelector('.prop-info').addEventListener('click', (e) => {
+    if (e.target.closest('.prop-actions')) return;
+    toggleExpand(prop.id);
+  });
+  card.querySelector('.prop-banner').addEventListener('click', (e) => {
+    toggleExpand(prop.id);
+  });
+
+  return card;
+}
+
+function toggleExpand(id) {
+  const card = document.querySelector(`.prop-card[data-id="${id}"]`);
+  if (!card) return;
+  const wasExpanded = card.classList.contains('expanded');
+  document.querySelectorAll('.prop-card.expanded').forEach(c => c.classList.remove('expanded'));
+  if (!wasExpanded) card.classList.add('expanded');
+  expandedId = wasExpanded ? null : id;
+}
+
+/* ── Actions ─────────────────────────────────────────────────────── */
+function enterProperty(id, e) {
+  e && e.stopPropagation();
+  fetch('https://atc-housing/atc:housing:enter', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ propertyId: id })
+  });
+}
+
+function toggleLock(id, e) {
+  e && e.stopPropagation();
+  const prop = properties.find(p => p.id === id);
+  if (!prop) return;
+  const newLocked = !prop.locked;
+  prop.locked = newLocked;
+  updateLockState(id, newLocked);
+  fetch('https://atc-housing/atc:housing:lock', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ propertyId: id, locked: newLocked })
+  });
+}
+
+function updateLockState(id, locked) {
+  const prop = properties.find(p => p.id === id);
+  if (prop) prop.locked = locked;
+  const btn = document.getElementById('lock-btn-' + id);
+  if (!btn) return;
+  btn.className = 'btn btn-sm ' + (locked ? 'btn-lock-locked' : 'btn-lock-unlocked');
+  btn.textContent = locked ? '🔒 Locked' : '🔓 Unlocked';
+}
+
+/* ── Permissions ─────────────────────────────────────────────────── */
+function openPerms(id, e) {
+  e && e.stopPropagation();
+  activePermsId = id;
+  const prop = properties.find(p => p.id === id);
+  document.getElementById('perms-prop-name').textContent = prop ? prop.name : id;
+  renderPermList(prop ? (prop.guests || []) : []);
+  document.getElementById('perms-modal').classList.add('active');
+}
+function closePerms() {
+  document.getElementById('perms-modal').classList.remove('active');
+  activePermsId = null;
+}
+function renderPermList(guests) {
+  const list = document.getElementById('perm-list');
+  if (!guests.length) {
+    list.innerHTML = '<div class="perm-empty">No players have access.</div>';
+    return;
+  }
+  list.innerHTML = guests.map((g, i) => `
+    <div class="perm-item">
+      <div class="perm-player">
+        <div class="perm-avatar">${(g.name || '?')[0].toUpperCase()}</div>
+        <span class="perm-name">${escHtml(g.name || g)}</span>
+      </div>
+      <button class="perm-remove" onclick="removePermPlayer(${i})" title="Remove">✕</button>
+    </div>
+  `).join('');
+}
+function addPermPlayer() {
+  const input = document.getElementById('perms-input');
+  const name  = input.value.trim();
+  if (!name || !activePermsId) return;
+  const prop = properties.find(p => p.id === activePermsId);
+  if (!prop) return;
+  prop.guests = prop.guests || [];
+  prop.guests.push({ name });
+  renderPermList(prop.guests);
+  input.value = '';
+  fetch('https://atc-housing/atc:housing:perms:add', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ propertyId: activePermsId, player: name })
+  });
+}
+function removePermPlayer(idx) {
+  if (!activePermsId) return;
+  const prop = properties.find(p => p.id === activePermsId);
+  if (!prop || !prop.guests) return;
+  const removed = prop.guests.splice(idx, 1)[0];
+  renderPermList(prop.guests);
+  fetch('https://atc-housing/atc:housing:perms:remove', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ propertyId: activePermsId, player: removed.name || removed })
+  });
+}
+
+/* ── Helpers ─────────────────────────────────────────────────────── */
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ── Dev: seed demo data ──────────────────────────────────────────── */
+// Remove in production — activated by ?demo query param
+if (location.search.includes('demo')) {
+  setTimeout(() => {
+    window.dispatchEvent(new MessageEvent('message', { data: {
+      type: 'ATC_HOUSING_OPEN',
+      payload: {
+        properties: [
+          { id: 'p1', name: 'Grove Street Apartment', address: '123 Grove St, Strawberry', type: 'Apartment', status: 'Owned', locked: true, storageUsed: 12, storageMax: 50, garageSpaces: 1, monthlyRent: null, interior: 'Small Apartment', guests: [{ name: 'JohnDoe_99' }] },
+          { id: 'p2', name: 'Downtown Warehouse', address: '7 Harbor Dr, Terminal', type: 'Warehouse', status: 'Rented', locked: false, storageUsed: 80, storageMax: 200, garageSpaces: 4, monthlyRent: 12000, interior: 'Industrial' },
+          { id: 'p3', name: 'Vinewood Villa', address: '5 Vinewood Hills Blvd', type: 'House', status: 'Owned', locked: true, storageUsed: 5, storageMax: 80, garageSpaces: 3, monthlyRent: null, interior: 'Luxury Villa' },
+        ]
+      }
+    }}));
+  }, 300);
+}
+</script>
+</body>
+</html>
