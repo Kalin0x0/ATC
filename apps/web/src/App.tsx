@@ -9,6 +9,10 @@ import { PlayerDetailPage } from './pages/PlayerDetailPage'
 import { EconomyPage } from './pages/EconomyPage'
 import { JobsPage } from './pages/JobsPage'
 import { ServerOpsPage } from './pages/ServerOpsPage'
+import { RollbackPage } from './pages/RollbackPage'
+import { MarketplacePage } from './pages/MarketplacePage'
+import { OrganizationsPage } from './pages/OrganizationsPage'
+import { AssetsPage } from './pages/AssetsPage'
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const token = useAuthStore((s) => s.token)
@@ -35,6 +39,10 @@ export function App() {
         <Route path="economy" element={<EconomyPage />} />
         <Route path="jobs" element={<JobsPage />} />
         <Route path="server" element={<ServerOpsPage />} />
+        <Route path="rollback" element={<RollbackPage />} />
+        <Route path="marketplace" element={<MarketplacePage />} />
+        <Route path="organizations" element={<OrganizationsPage />} />
+        <Route path="assets" element={<AssetsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>

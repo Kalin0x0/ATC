@@ -65,7 +65,8 @@ body { background: transparent; font-family: Inter, system-ui, sans-serif; color
   transform: translate(-50%, -50%) translateY(30px);
   opacity: 0;
   width: clamp(340px, 92vw, 680px);
-  max-height: 85vh;
+  max-width: min(680px, 96vw);
+  max-height: 92vh;
   background: var(--bg-card);
   border: 1px solid var(--gold-border);
   border-radius: clamp(10px, 1.5vw, 16px);
@@ -357,6 +358,33 @@ body { background: transparent; font-family: Inter, system-ui, sans-serif; color
   text-transform: uppercase;
   letter-spacing: 0.08em;
   margin-bottom: clamp(8px,1vw,12px);
+}
+
+/* ════ RESPONSIVE HARDENING ════ */
+/* Narrow / portrait — collapse multi-column layouts to single column */
+@media (max-width: 820px), (orientation: portrait) {
+  .location-grid,
+  .recipe-grid,
+  .market-grid { grid-template-columns: 1fr !important; }
+  .gang-actions { flex-direction: column !important; align-items: stretch !important; }
+  .invite-wrap { width: 100% !important; }
+  .smuggling-start { flex-direction: column !important; align-items: stretch !important; }
+  .smuggling-start .btn { width: 100% !important; }
+  .run-meta { flex-wrap: wrap !important; gap: clamp(8px,1.5vw,14px) !important; }
+}
+/* Short screens — guarantee internal scroll */
+@media (max-height: 640px) {
+  #app { max-height: 96vh !important; }
+  .tab-content { max-height: 60vh !important; }
+}
+/* Ultra-wide & 4K — scale typography up gracefully */
+@media (min-width: 2560px) {
+  :root { font-size: 18px; }
+}
+/* Tiny windows */
+@media (max-width: 480px) {
+  #app { padding: 0 !important; border-radius: 10px !important; }
+  .location-icon { font-size: 24px !important; }
 }
 </style>
 </head>
@@ -825,8 +853,15 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && state.visible) closePanel();
 });
 
-// ── Dev preview (remove in prod) ─────────────────────────────────────────
-// openPanel({});
+// ── Browser preview seeding — runs only outside FiveM (no GetParentResourceName) ──
+if (typeof window !== 'undefined' && !window.invokeNative) {
+  window.addEventListener('DOMContentLoaded', () => {
+    window.postMessage({
+      type: 'ATC_CRIMINAL_OPEN',
+      payload: { gangName: 'Los Santos Vagos', memberCount: 5 },
+    }, '*');
+  });
+}
 </script>
 </body>
 </html>
