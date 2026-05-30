@@ -243,6 +243,36 @@
     emit('ATC_NOTIFICATION', payload);
   };
 
+  handlers['ATC_VOICE_STATE'] = function (payload) {
+    // Update voice indicator in HUD
+    var indicator = document.getElementById('voice-indicator');
+    var label     = document.getElementById('voice-label');
+    if (!indicator) return;
+
+    var talking      = payload && payload.talking;
+    var radioTalking = payload && payload.radioTalking;
+    var channel      = payload && payload.channel;
+
+    indicator.classList.toggle('hidden',       !talking && !radioTalking && !channel);
+    indicator.classList.toggle('talking',       talking && !radioTalking);
+    indicator.classList.toggle('radio-talking', radioTalking);
+
+    if (label) {
+      if (radioTalking) {
+        label.textContent = 'CH ' + (channel || '?');
+      } else if (channel) {
+        label.textContent = 'Radio CH ' + channel;
+      } else {
+        label.textContent = 'Voice';
+      }
+    }
+    emit('ATC_VOICE_STATE', payload);
+  };
+
+  handlers['ATC_EMOTE_WHEEL_OPEN'] = function (payload) {
+    emit('ATC_EMOTE_WHEEL_OPEN', payload);
+  };
+
   /* ─── Dispatcher ─────────────────────────────────────────────── */
   function dispatch(msg) {
     if (!msg || typeof msg.type !== 'string') return;

@@ -123,3 +123,23 @@ ATC.Events.HUD = {
 ATC.Events.NOTIFY = {
     SHOW = 'atc:notify:show',
 }
+
+-- ── Interaction ───────────────────────────────────────────────────────────────
+ATC.Events.INTERACT = {
+    REGISTER_ZONE   = 'atc:interaction:register:zone',
+    REGISTER_ENTITY = 'atc:interaction:register:entity',
+    REMOVE          = 'atc:interaction:remove',
+    ENTITY_USED     = 'atc:interaction:entity:used',
+}
+
+-- ── Voice & Radio (Phase 87) ──────────────────────────────────────────────────
+ATC.Events.VOICE = {
+    CHANNEL_ASSIGN = 'atc:voice:channel:assign',  -- server → client: assign/remove radio channel
+    STATE_CHANGED  = 'atc:voice:state:changed',   -- client → server: voice state notification
+}
+
+-- ── Emotes (Phase 88) ─────────────────────────────────────────────────────────
+ATC.Events.EMOTE = {
+    PLAY  = 'atc:emote:play',   -- (NUI callback, not a network event)
+    STOP  = 'atc:emote:stop',   -- (NUI callback, not a network event)
+}

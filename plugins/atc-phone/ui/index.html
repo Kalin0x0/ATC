@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ATC Phone</title>
+<style>
+  /* ── Reset ──────────────────────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ── Root vars ──────────────────────────────────────────────────────────── */
+  :root {
+    --bg:          #1a1a2e;
+    --bg-card:     #16213e;
+    --bg-surface:  #0f3460;
+    --gold:        #d4af37;
+    --gold-dim:    #a08a26;
+    --text:        #e0e0e0;
+    --text-dim:    #888;
+    --danger:      #e74c3c;
+    --success:     #2ecc71;
+    --radius:      14px;
+    --phone-w:     320px;
+    --phone-h:     560px;
+    --transition:  0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* ── Body / overlay ─────────────────────────────────────────────────────── */
+  body {
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 13px;
+    color: var(--text);
+    pointer-events: none;
+    user-select: none;
+  }
+
+  /* ── Phone frame ────────────────────────────────────────────────────────── */
+  #phone {
+    width:         var(--phone-w);
+    height:        var(--phone-h);
+    background:    var(--bg);
+    border-radius: 24px;
+    border:        2px solid #2a2a4a;
+    box-shadow:
+      0 0  0    1px #111,
+      0 8px 40px rgba(0,0,0,.9),
+      0 0  20px  rgba(212,175,55,.08);
+    display:        flex;
+    flex-direction: column;
+    overflow:       hidden;
+    pointer-events: auto;
+    opacity:        0;
+    transform:      scale(0.88) translateY(24px);
+    transition:     opacity var(--transition), transform var(--transition);
+    position:       relative;
+  }
+
+  #phone.open {
+    opacity:   1;
+    transform: scale(1) translateY(0);
+  }
+
+  /* ── Status bar ─────────────────────────────────────────────────────────── */
+  #status-bar {
+    display:         flex;
+    align-items:     center;
+    justify-content: space-between;
+    padding:         6px 14px 4px;
+    background:      rgba(0,0,0,.25);
+    font-size:       11px;
+    font-weight:     600;
+    color:           var(--text);
+    flex-shrink:     0;
+  }
+
+  #status-bar .time { font-size: 13px; font-weight: 700; }
+
+  .signal-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+  }
+  .signal-bars span {
+    width:         3px;
+    background:    var(--gold);
+    border-radius: 1px;
+    opacity:       0.35;
+  }
+  .signal-bars span:nth-child(1) { height: 4px;  opacity: 1; }
+  .signal-bars span:nth-child(2) { height: 7px;  opacity: 1; }
+  .signal-bars span:nth-child(3) { height: 10px; opacity: 1; }
+  .signal-bars span:nth-child(4) { height: 13px; opacity: .4; }
+
+  .battery {
+    display:     flex;
+    align-items: center;
+    gap:         3px;
+    font-size:   10px;
+  }
+  .battery-icon {
+    width:        18px;
+    height:       10px;
+    border:       1.5px solid var(--text);
+    border-radius: 2px;
+    position:     relative;
+    padding:      1.5px;
+  }
+  .battery-icon::after {
+    content:      '';
+    position:     absolute;
+    right:        -4px;
+    top:          50%;
+    transform:    translateY(-50%);
+    width:        2px;
+    height:       5px;
+    background:   var(--text);
+    border-radius: 0 1px 1px 0;
+  }
+  .battery-fill {
+    height:        100%;
+    width:         72%;
+    background:    var(--success);
+    border-radius: 1px;
+  }
+
+  /* ── Screen container ───────────────────────────────────────────────────── */
+  #screen-area {
+    flex:     1;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .screen {
+    position:   absolute;
+    inset:      0;
+    padding:    12px;
+    overflow-y: auto;
+    opacity:    0;
+    transform:  translateX(30px);
+    transition: opacity var(--transition), transform var(--transition);
+    pointer-events: none;
+  }
+
+  .screen.active {
+    opacity:        1;
+    transform:      translateX(0);
+    pointer-events: auto;
+  }
+
+  /* ── Bottom nav dock ────────────────────────────────────────────────────── */
+  #nav-dock {
+    display:         flex;
+    justify-content: space-around;
+    align-items:     center;
+    padding:         8px 0 10px;
+    background:      rgba(0,0,0,.35);
+    border-top:      1px solid #2a2a4a;
+    flex-shrink:     0;
+  }
+
+  .nav-btn {
+    display:        flex;
+    flex-direction: column;
+    align-items:    center;
+    gap:            3px;
+    background:     none;
+    border:         none;
+    color:          var(--text-dim);
+    cursor:         pointer;
+    padding:        4px 8px;
+    border-radius:  8px;
+    transition:     color .2s, background .2s;
+    font-size:      10px;
+    font-weight:    600;
+  }
+
+  .nav-btn svg { width: 18px; height: 18px; }
+
+  .nav-btn.active,
+  .nav-btn:hover {
+    color:      var(--gold);
+    background: rgba(212,175,55,.1);
+  }
+
+  /* ── Home screen ────────────────────────────────────────────────────────── */
+  #home-clock {
+    text-align:  center;
+    margin:      10px 0 18px;
+  }
+  #home-clock .big-time {
+    font-size:   42px;
+    font-weight: 700;
+    color:       var(--text);
+    letter-spacing: -1px;
+  }
+  #home-clock .date-str {
+    font-size: 12px;
+    color:     var(--text-dim);
+    margin-top: 2px;
+  }
+
+  .app-grid {
+    display:               grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap:                   10px;
+  }
+
+  .app-icon {
+    display:        flex;
+    flex-direction: column;
+    align-items:    center;
+    gap:            6px;
+    background:     var(--bg-card);
+    border:         1px solid #2a2a4a;
+    border-radius:  var(--radius);
+    padding:        12px 6px;
+    cursor:         pointer;
+    transition:     border-color .2s, background .2s;
+    font-size:      10px;
+    font-weight:    600;
+    color:          var(--text);
+  }
+
+  .app-icon:hover { background: var(--bg-surface); border-color: var(--gold-dim); }
+
+  .app-icon svg { width: 26px; height: 26px; }
+
+  .app-icon.emergency svg { color: var(--danger); }
+  .app-icon.messages svg  { color: var(--gold); }
+  .app-icon.contacts svg  { color: #5dade2; }
+  .app-icon.bank svg      { color: var(--success); }
+  .app-icon.settings svg  { color: var(--text-dim); }
+
+  /* ── Section headers ────────────────────────────────────────────────────── */
+  .screen-header {
+    display:         flex;
+    align-items:     center;
+    justify-content: space-between;
+    margin-bottom:   12px;
+  }
+
+  .screen-title {
+    font-size:   15px;
+    font-weight: 700;
+    color:       var(--gold);
+  }
+
+  .btn-back {
+    background: none;
+    border:     none;
+    color:      var(--text-dim);
+    cursor:     pointer;
+    padding:    4px;
+    border-radius: 6px;
+    display:    flex;
+    transition: color .2s;
+  }
+  .btn-back:hover { color: var(--gold); }
+  .btn-back svg   { width: 16px; height: 16px; }
+
+  /* ── Search box ─────────────────────────────────────────────────────────── */
+  .search-box {
+    width:         100%;
+    background:    var(--bg-card);
+    border:        1px solid #2a2a4a;
+    border-radius: 8px;
+    padding:       7px 10px;
+    color:         var(--text);
+    font-size:     12px;
+    outline:       none;
+    margin-bottom: 10px;
+    transition:    border-color .2s;
+  }
+  .search-box:focus { border-color: var(--gold-dim); }
+  .search-box::placeholder { color: var(--text-dim); }
+
+  /* ── Contact list ───────────────────────────────────────────────────────── */
+  .contact-item {
+    display:     flex;
+    align-items: center;
+    gap:         10px;
+    padding:     9px 10px;
+    background:  var(--bg-card);
+    border:      1px solid #2a2a4a;
+    border-radius: 10px;
+    margin-bottom: 6px;
+    cursor:      pointer;
+    transition:  background .2s, border-color .2s;
+  }
+  .contact-item:hover { background: var(--bg-surface); border-color: var(--gold-dim); }
+
+  .contact-avatar {
+    width:         34px;
+    height:        34px;
+    border-radius: 50%;
+    background:    var(--bg-surface);
+    border:        2px solid var(--gold-dim);
+    display:       flex;
+    align-items:   center;
+    justify-content: center;
+    font-weight:   700;
+    font-size:     13px;
+    color:         var(--gold);
+    flex-shrink:   0;
+  }
+
+  .contact-name { font-weight: 600; font-size: 12px; }
+  .contact-number { font-size: 10px; color: var(--text-dim); margin-top: 1px; }
+
+  /* ── Messages screen ────────────────────────────────────────────────────── */
+  .convo-item {
+    display:     flex;
+    align-items: center;
+    gap:         10px;
+    padding:     9px 10px;
+    background:  var(--bg-card);
+    border:      1px solid #2a2a4a;
+    border-radius: 10px;
+    margin-bottom: 6px;
+    cursor:      pointer;
+    transition:  background .2s;
+  }
+  .convo-item:hover { background: var(--bg-surface); }
+
+  .convo-info { flex: 1; min-width: 0; }
+  .convo-name { font-weight: 600; font-size: 12px; }
+  .convo-preview {
+    font-size:     10px;
+    color:         var(--text-dim);
+    margin-top:    1px;
+    white-space:   nowrap;
+    overflow:      hidden;
+    text-overflow: ellipsis;
+  }
+  .convo-time { font-size: 9px; color: var(--text-dim); flex-shrink: 0; }
+
+  .unread-badge {
+    background:    var(--gold);
+    color:         #000;
+    border-radius: 10px;
+    padding:       2px 6px;
+    font-size:     9px;
+    font-weight:   700;
+  }
+
+  /* Compose area */
+  .compose-row {
+    display:    flex;
+    gap:        6px;
+    margin-top: 10px;
+  }
+
+  .compose-to, .compose-msg {
+    flex:          1;
+    background:    var(--bg-card);
+    border:        1px solid #2a2a4a;
+    border-radius: 8px;
+    padding:       7px 10px;
+    color:         var(--text);
+    font-size:     12px;
+    outline:       none;
+    transition:    border-color .2s;
+    font-family:   inherit;
+  }
+  .compose-to:focus, .compose-msg:focus { border-color: var(--gold-dim); }
+  .compose-to::placeholder, .compose-msg::placeholder { color: var(--text-dim); }
+
+  .compose-msg { resize: none; height: 52px; }
+
+  .btn-send {
+    background:    var(--gold);
+    color:         #000;
+    border:        none;
+    border-radius: 8px;
+    padding:       0 12px;
+    font-weight:   700;
+    font-size:     11px;
+    cursor:        pointer;
+    transition:    background .2s, opacity .2s;
+    flex-shrink:   0;
+    align-self:    flex-end;
+    height:        34px;
+  }
+  .btn-send:hover    { background: #e8c542; }
+  .btn-send:disabled { opacity: .4; cursor: not-allowed; }
+
+  /* ── Banking screen ─────────────────────────────────────────────────────── */
+  .balance-cards {
+    display: flex;
+    gap:     8px;
+    margin-bottom: 14px;
+  }
+
+  .balance-card {
+    flex:          1;
+    background:    linear-gradient(135deg, var(--bg-surface) 0%, #1a1a3e 100%);
+    border:        1px solid var(--gold-dim);
+    border-radius: var(--radius);
+    padding:       12px 10px;
+    text-align:    center;
+  }
+
+  .balance-label {
+    font-size:  9px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color:      var(--gold-dim);
+    margin-bottom: 4px;
+  }
+
+  .balance-amount {
+    font-size:   18px;
+    font-weight: 700;
+    color:       var(--gold);
+  }
+
+  .tx-list-title {
+    font-size:   11px;
+    font-weight: 700;
+    color:       var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    margin-bottom: 8px;
+  }
+
+  .tx-item {
+    display:         flex;
+    justify-content: space-between;
+    align-items:     center;
+    padding:         8px 10px;
+    background:      var(--bg-card);
+    border:          1px solid #2a2a4a;
+    border-radius:   8px;
+    margin-bottom:   5px;
+  }
+
+  .tx-desc { font-size: 11px; font-weight: 600; }
+  .tx-meta { font-size: 9px; color: var(--text-dim); margin-top: 1px; }
+
+  .tx-amount { font-size: 12px; font-weight: 700; }
+  .tx-amount.positive { color: var(--success); }
+  .tx-amount.negative { color: var(--danger); }
+
+  /* ── Emergency screen ───────────────────────────────────────────────────── */
+  #screen-emergency {
+    display:        flex;
+    flex-direction: column;
+    align-items:    center;
+    justify-content: center;
+    gap:            14px;
+  }
+
+  .emergency-header { font-size: 18px; font-weight: 700; color: var(--danger); }
+
+  .emergency-desc {
+    text-align: center;
+    font-size:  11px;
+    color:      var(--text-dim);
+    line-height: 1.5;
+  }
+
+  .emergency-input {
+    width:         100%;
+    background:    var(--bg-card);
+    border:        1px solid #2a2a4a;
+    border-radius: 8px;
+    padding:       8px 12px;
+    color:         var(--text);
+    font-size:     12px;
+    outline:       none;
+    resize:        none;
+    height:        60px;
+    font-family:   inherit;
+    transition:    border-color .2s;
+  }
+  .emergency-input:focus { border-color: var(--danger); }
+  .emergency-input::placeholder { color: var(--text-dim); }
+
+  .btn-911 {
+    width:         120px;
+    height:        120px;
+    border-radius: 50%;
+    background:    radial-gradient(circle at 35% 35%, #ff6b6b, var(--danger));
+    border:        4px solid rgba(231,76,60,.4);
+    box-shadow:    0 0 30px rgba(231,76,60,.5);
+    color:         #fff;
+    font-size:     28px;
+    font-weight:   900;
+    cursor:        pointer;
+    transition:    transform .1s, box-shadow .2s;
+    letter-spacing: 2px;
+    display:       flex;
+    align-items:   center;
+    justify-content: center;
+  }
+  .btn-911:hover  { transform: scale(1.05); box-shadow: 0 0 45px rgba(231,76,60,.7); }
+  .btn-911:active { transform: scale(0.97); }
+  .btn-911:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+  .emergency-status {
+    font-size:  11px;
+    font-weight: 600;
+    color:      var(--success);
+    min-height: 18px;
+  }
+
+  /* ── Notification toast ─────────────────────────────────────────────────── */
+  #notification {
+    position:      absolute;
+    top:           46px;
+    left:          8px;
+    right:         8px;
+    background:    rgba(26,26,46,.95);
+    border:        1px solid var(--gold-dim);
+    border-radius: 10px;
+    padding:       9px 12px;
+    font-size:     11px;
+    font-weight:   600;
+    color:         var(--text);
+    z-index:       999;
+    opacity:       0;
+    transform:     translateY(-8px);
+    transition:    opacity .25s, transform .25s;
+    pointer-events: none;
+    display:       flex;
+    align-items:   center;
+    gap:           8px;
+  }
+  #notification.show { opacity: 1; transform: translateY(0); }
+  #notification .notif-dot {
+    width:         6px;
+    height:        6px;
+    border-radius: 50%;
+    background:    var(--gold);
+    flex-shrink:   0;
+  }
+
+  /* ── Scrollbar ──────────────────────────────────────────────────────────── */
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #2a2a4a; border-radius: 2px; }
+
+  /* ── Empty state ────────────────────────────────────────────────────────── */
+  .empty-state {
+    text-align:  center;
+    color:       var(--text-dim);
+    font-size:   11px;
+    margin-top:  30px;
+  }
+  .empty-state svg { width: 36px; height: 36px; opacity: .3; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+
+<!-- ── Phone frame ────────────────────────────────────────────────────────── -->
+<div id="phone">
+
+  <!-- Status bar -->
+  <div id="status-bar">
+    <span class="time" id="sb-time">00:00</span>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div class="signal-bars">
+        <span></span><span></span><span></span><span></span>
+      </div>
+      <div class="battery">
+        <div class="battery-icon"><div class="battery-fill"></div></div>
+        <span>72%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification toast -->
+  <div id="notification"><div class="notif-dot"></div><span id="notif-text"></span></div>
+
+  <!-- Screens -->
+  <div id="screen-area">
+
+    <!-- HOME -->
+    <div class="screen active" id="screen-home">
+      <div id="home-clock">
+        <div class="big-time" id="home-time">00:00</div>
+        <div class="date-str" id="home-date">Loading…</div>
+      </div>
+      <div class="app-grid">
+        <div class="app-icon messages"  onclick="showScreen('messages')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Messages
+        </div>
+        <div class="app-icon contacts" onclick="showScreen('contacts')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Contacts
+        </div>
+        <div class="app-icon bank" onclick="openBank()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+          Banking
+        </div>
+        <div class="app-icon emergency" onclick="showScreen('emergency')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Emergency
+        </div>
+        <div class="app-icon settings" onclick="">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+          Settings
+        </div>
+      </div>
+    </div>
+
+    <!-- MESSAGES -->
+    <div class="screen" id="screen-messages">
+      <div class="screen-header">
+        <button class="btn-back" onclick="showScreen('home')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <span class="screen-title">Messages</span>
+        <div style="width:24px"></div>
+      </div>
+      <div id="conversations-list">
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <div>No conversations yet</div>
+        </div>
+      </div>
+      <div style="border-top:1px solid #2a2a4a;margin-top:10px;padding-top:10px">
+        <div style="font-size:11px;font-weight:700;color:var(--text-dim);margin-bottom:6px;text-transform:uppercase;letter-spacing:.8px">New Message</div>
+        <input class="search-box compose-to" id="msg-to" placeholder="Recipient ID…" />
+        <div class="compose-row">
+          <textarea class="compose-msg" id="msg-body" placeholder="Type a message…" maxlength="256"></textarea>
+          <button class="btn-send" id="btn-send-msg" onclick="sendMessage()">Send</button>
+        </div>
+        <div style="text-align:right;font-size:9px;color:var(--text-dim);margin-top:2px">
+          <span id="msg-char-count">0</span>/256
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTACTS -->
+    <div class="screen" id="screen-contacts">
+      <div class="screen-header">
+        <button class="btn-back" onclick="showScreen('home')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <span class="screen-title">Contacts</span>
+        <div style="width:24px"></div>
+      </div>
+      <input class="search-box" id="contact-search" placeholder="Search contacts…" oninput="filterContacts(this.value)" />
+      <div id="contacts-list">
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          <div>No contacts</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BANK -->
+    <div class="screen" id="screen-bank">
+      <div class="screen-header">
+        <button class="btn-back" onclick="showScreen('home')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <span class="screen-title">Banking</span>
+        <button style="background:none;border:none;color:var(--text-dim);cursor:pointer;padding:4px;border-radius:6px" onclick="refreshBank()" title="Refresh">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+        </button>
+      </div>
+      <div class="balance-cards">
+        <div class="balance-card">
+          <div class="balance-label">Cash</div>
+          <div class="balance-amount" id="balance-cash">—</div>
+        </div>
+        <div class="balance-card">
+          <div class="balance-label">Bank</div>
+          <div class="balance-amount" id="balance-bank">—</div>
+        </div>
+      </div>
+      <div class="tx-list-title">Recent Transactions</div>
+      <div id="tx-list">
+        <div class="empty-state" style="margin-top:10px">
+          <div>No recent transactions</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EMERGENCY -->
+    <div class="screen" id="screen-emergency">
+      <button class="btn-back" style="align-self:flex-start" onclick="showScreen('home')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div class="emergency-header">Emergency Services</div>
+      <div class="emergency-desc">
+        Use this only for real in-game emergencies.<br>
+        Abuse may result in penalties.
+      </div>
+      <textarea class="emergency-input" id="emergency-msg" placeholder="Describe your emergency…" maxlength="128"></textarea>
+      <button class="btn-911" id="btn-911" onclick="call911()">911</button>
+      <div class="emergency-status" id="emergency-status"></div>
+    </div>
+
+  </div><!-- /screen-area -->
+
+  <!-- Nav dock -->
+  <div id="nav-dock">
+    <button class="nav-btn active" id="nav-home"      onclick="showScreen('home')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Home
+    </button>
+    <button class="nav-btn" id="nav-messages"  onclick="showScreen('messages')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Messages
+    </button>
+    <button class="nav-btn" id="nav-contacts"  onclick="showScreen('contacts')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      Contacts
+    </button>
+    <button class="nav-btn" id="nav-bank"      onclick="openBank()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+      Bank
+    </button>
+    <button class="nav-btn" id="nav-emergency" onclick="showScreen('emergency')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      911
+    </button>
+  </div>
+
+</div><!-- /phone -->
+
+<script>
+/* ── State ─────────────────────────────────────────────────────────────────── */
+const state = {
+  contacts:     [],
+  conversations:{},   // id → { name, messages:[] }
+  bankData:     null,
+  currentScreen:'home',
+};
+
+/* ── NUI bridge ─────────────────────────────────────────────────────────────── */
+function nuiCallback(name, data) {
+  return fetch(`https://atc-phone/${name}`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(data || {}),
+  }).catch(() => {});
+}
+
+/* ── Clock ──────────────────────────────────────────────────────────────────── */
+function updateClock() {
+  const now   = new Date();
+  const hh    = String(now.getHours()).padStart(2, '0');
+  const mm    = String(now.getMinutes()).padStart(2, '0');
+  const timeStr = `${hh}:${mm}`;
+  const dateStr = now.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
+  document.getElementById('sb-time').textContent   = timeStr;
+  document.getElementById('home-time').textContent = timeStr;
+  document.getElementById('home-date').textContent = dateStr;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+/* ── Screen navigation ──────────────────────────────────────────────────────── */
+function showScreen(name) {
+  // Deactivate current
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+
+  // Activate target
+  const el = document.getElementById('screen-' + name);
+  if (el) el.classList.add('active');
+
+  const navEl = document.getElementById('nav-' + name);
+  if (navEl) navEl.classList.add('active');
+
+  state.currentScreen = name;
+}
+
+function openBank() {
+  showScreen('bank');
+  refreshBank();
+}
+
+/* ── Notification toast ─────────────────────────────────────────────────────── */
+let notifTimer = null;
+function showNotification(message) {
+  const el   = document.getElementById('notification');
+  const text = document.getElementById('notif-text');
+  text.textContent = message;
+  el.classList.add('show');
+  if (notifTimer) clearTimeout(notifTimer);
+  notifTimer = setTimeout(() => el.classList.remove('show'), 5000);
+}
+
+/* ── Contacts ───────────────────────────────────────────────────────────────── */
+function renderContacts(list) {
+  const container = document.getElementById('contacts-list');
+  if (!list || list.length === 0) {
+    container.innerHTML = `<div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      <div>No contacts</div></div>`;
+    return;
+  }
+  container.innerHTML = list.map(c => `
+    <div class="contact-item" onclick="messageContact('${escHtml(c.id || '')}','${escHtml(c.name || '')}')">
+      <div class="contact-avatar">${escHtml((c.name || '?')[0].toUpperCase())}</div>
+      <div>
+        <div class="contact-name">${escHtml(c.name || 'Unknown')}</div>
+        <div class="contact-number">${escHtml(c.phone || c.id || '')}</div>
+      </div>
+    </div>`).join('');
+}
+
+function filterContacts(query) {
+  const q    = query.toLowerCase();
+  const list = q ? state.contacts.filter(c =>
+    (c.name || '').toLowerCase().includes(q) ||
+    (c.phone || c.id || '').toLowerCase().includes(q)
+  ) : state.contacts;
+  renderContacts(list);
+}
+
+function messageContact(id, name) {
+  document.getElementById('msg-to').value = id;
+  showScreen('messages');
+}
+
+/* ── Messages ───────────────────────────────────────────────────────────────── */
+function renderConversations() {
+  const list = Object.values(state.conversations);
+  const container = document.getElementById('conversations-list');
+  if (list.length === 0) {
+    container.innerHTML = `<div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <div>No conversations yet</div></div>`;
+    return;
+  }
+  container.innerHTML = list.map(c => {
+    const last = c.messages[c.messages.length - 1];
+    return `<div class="convo-item">
+      <div class="contact-avatar">${escHtml((c.name || '?')[0].toUpperCase())}</div>
+      <div class="convo-info">
+        <div class="convo-name">${escHtml(c.name || c.id)}</div>
+        <div class="convo-preview">${last ? escHtml(last.message) : ''}</div>
+      </div>
+      ${c.unread ? `<span class="unread-badge">${c.unread}</span>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// Character counter
+document.getElementById('msg-body').addEventListener('input', function() {
+  document.getElementById('msg-char-count').textContent = this.value.length;
+});
+
+function sendMessage() {
+  const to  = document.getElementById('msg-to').value.trim();
+  const msg = document.getElementById('msg-body').value.trim().substring(0, 256);
+  if (!to || !msg) return;
+
+  const btn = document.getElementById('btn-send-msg');
+  btn.disabled = true;
+  setTimeout(() => { btn.disabled = false; }, 2500);
+
+  nuiCallback('atc:phone:message:send', { to, message: msg });
+  document.getElementById('msg-body').value = '';
+  document.getElementById('msg-char-count').textContent = '0';
+
+  // Optimistic local append
+  addToConversation(to, to, msg, true);
+  renderConversations();
+}
+
+function addToConversation(id, name, message, outgoing) {
+  if (!state.conversations[id]) {
+    state.conversations[id] = { id, name: name || id, messages: [], unread: 0 };
+  }
+  state.conversations[id].messages.push({ message, outgoing, ts: Date.now() });
+  if (!outgoing) {
+    state.conversations[id].unread = (state.conversations[id].unread || 0) + 1;
+  }
+}
+
+/* ── Banking ────────────────────────────────────────────────────────────────── */
+function formatCurrency(amount) {
+  if (amount == null) return '—';
+  return '$' + Number(amount).toLocaleString('en-US', { minimumFractionDigits: 0 });
+}
+
+function refreshBank() {
+  document.getElementById('balance-cash').textContent = '…';
+  document.getElementById('balance-bank').textContent = '…';
+  nuiCallback('atc:phone:bank:get', {});
+}
+
+function renderBank(data) {
+  if (!data) {
+    document.getElementById('balance-cash').textContent = 'Error';
+    document.getElementById('balance-bank').textContent = 'Error';
+    return;
+  }
+  document.getElementById('balance-cash').textContent = formatCurrency(data.cash);
+  document.getElementById('balance-bank').textContent = formatCurrency(data.bank);
+
+  const txList = document.getElementById('tx-list');
+  const txs    = data.transactions || [];
+  if (txs.length === 0) {
+    txList.innerHTML = `<div class="empty-state" style="margin-top:10px"><div>No recent transactions</div></div>`;
+    return;
+  }
+  txList.innerHTML = txs.slice(0, 15).map(tx => {
+    const positive = (tx.amount || 0) >= 0;
+    const ts = tx.timestamp ? new Date(tx.timestamp * 1000).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '';
+    return `<div class="tx-item">
+      <div>
+        <div class="tx-desc">${escHtml(tx.description || 'Transaction')}</div>
+        <div class="tx-meta">${ts}</div>
+      </div>
+      <div class="tx-amount ${positive ? 'positive' : 'negative'}">${positive ? '+' : ''}${formatCurrency(tx.amount)}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ── Emergency (911) ────────────────────────────────────────────────────────── */
+function call911() {
+  const msg = document.getElementById('emergency-msg').value.trim() || 'Emergency';
+  const btn = document.getElementById('btn-911');
+  const status = document.getElementById('emergency-status');
+
+  btn.disabled = true;
+  status.textContent = '';
+  nuiCallback('atc:phone:911', { message: msg });
+}
+
+/* ── NUI Message handler ─────────────────────────────────────────────────────── */
+window.addEventListener('message', function(event) {
+  const { type, payload } = event.data || {};
+
+  switch (type) {
+
+    case 'ATC_PHONE_OPEN':
+      document.getElementById('phone').classList.add('open');
+      showScreen('home');
+      break;
+
+    case 'ATC_PHONE_CLOSE':
+      document.getElementById('phone').classList.remove('open');
+      break;
+
+    case 'ATC_PHONE_CONTACTS': {
+      const contacts = (payload && payload.contacts) ? payload.contacts : [];
+      state.contacts = contacts;
+      renderContacts(contacts);
+      break;
+    }
+
+    case 'ATC_PHONE_MESSAGE_SENT':
+      // Confirmed by server — could update optimistic entry status
+      break;
+
+    case 'ATC_PHONE_MESSAGE_IN': {
+      if (!payload) break;
+      addToConversation(payload.from, payload.from, payload.message, false);
+      renderConversations();
+      break;
+    }
+
+    case 'ATC_PHONE_BANK':
+      state.bankData = payload;
+      renderBank(payload);
+      break;
+
+    case 'ATC_PHONE_911_SENT': {
+      const btn    = document.getElementById('btn-911');
+      const status = document.getElementById('emergency-status');
+      if (payload && payload.success) {
+        status.style.color   = 'var(--success)';
+        status.textContent   = 'Emergency services notified.';
+      } else {
+        status.style.color   = 'var(--danger)';
+        status.textContent   = 'Failed to connect. Try again.';
+        btn.disabled = false;
+      }
+      // Re-enable after 60 s cooldown
+      setTimeout(() => {
+        btn.disabled         = false;
+        status.textContent   = '';
+      }, 60000);
+      break;
+    }
+
+    case 'ATC_NOTIFICATION':
+      if (payload && payload.message) {
+        showNotification(payload.message);
+      }
+      break;
+  }
+});
+
+/* ── Escape key ─────────────────────────────────────────────────────────────── */
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    nuiCallback('atc:phone:close', {});
+  }
+});
+
+/* ── Utility ────────────────────────────────────────────────────────────────── */
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#039;');
+}
+</script>
+</body>
+</html>

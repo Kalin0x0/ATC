@@ -1,0 +1,8 @@
+{
+  "id": "atc-ems",
+  "name": "ATC EMS",
+  "version": "0.1.0",
+  "description": "EMS medical gameplay",
+  "dependencies": ["atc-core"],
+  "permissions": ["medical:read", "medical:write"]
+}

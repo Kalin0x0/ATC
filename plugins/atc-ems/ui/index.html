@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ATC EMS</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-base:       #0d0d1a;
+      --bg-panel:      #12121f;
+      --bg-card:       #1a1a2e;
+      --bg-hover:      #1f1f38;
+      --border:        #2a2a45;
+      --gold:          #d4af37;
+      --gold-dim:      #a88b26;
+      --text-primary:  #e8e8f0;
+      --text-secondary:#8888aa;
+      --text-muted:    #555570;
+      --red:           #e74c3c;
+      --amber:         #e67e22;
+      --green:         #27ae60;
+      --blue:          #2980b9;
+      --radius:        6px;
+      --font:          'Courier New', 'Consolas', monospace;
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      background: transparent;
+      font-family: var(--font);
+      color: var(--text-primary);
+      display: none;
+    }
+    body.visible { display: flex; align-items: center; justify-content: center; }
+
+    .overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.55);
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .card {
+      width: 420px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-top: 2px solid var(--gold);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: 0 0 40px rgba(212,175,55,0.08), 0 16px 40px rgba(0,0,0,0.5);
+    }
+
+    .card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 18px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+    }
+    .card-title { font-size: 13px; color: var(--gold); letter-spacing: 2px; text-transform: uppercase; }
+    .card-close {
+      background: none; border: none; color: var(--text-muted);
+      font-size: 16px; cursor: pointer; padding: 2px 6px;
+      transition: color .15s;
+    }
+    .card-close:hover { color: var(--red); }
+
+    .card-body { padding: 18px; }
+
+    /* Vitals */
+    .section-title {
+      font-size: 10px; color: var(--text-muted); letter-spacing: 1.5px;
+      text-transform: uppercase; margin-bottom: 10px; margin-top: 16px;
+    }
+    .section-title:first-child { margin-top: 0; }
+
+    .vital-row { margin-bottom: 10px; }
+    .vital-label {
+      display: flex; justify-content: space-between;
+      font-size: 11px; color: var(--text-secondary);
+      margin-bottom: 4px;
+    }
+    .vital-val { color: var(--text-primary); }
+    .bar-track {
+      height: 6px; background: var(--bg-base); border-radius: 3px; overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%; border-radius: 3px;
+      transition: width .4s ease;
+    }
+    .bar-health  { background: var(--green); }
+    .bar-hunger  { background: var(--amber); }
+    .bar-thirst  { background: var(--blue); }
+
+    /* Injuries */
+    .injury-list { list-style: none; }
+    .injury-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 10px; background: var(--bg-card);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      margin-bottom: 6px; font-size: 12px; color: var(--text-primary);
+    }
+    .injury-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); flex-shrink: 0; }
+    .no-injuries { font-size: 12px; color: var(--text-muted); font-style: italic; padding: 4px 0; }
+
+    /* Treatments */
+    .treatment-grid { display: flex; flex-direction: column; gap: 8px; }
+    .treat-btn {
+      width: 100%; padding: 10px 14px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      color: var(--text-primary); border-radius: var(--radius); cursor: pointer;
+      font-family: var(--font); font-size: 12px; letter-spacing: 1px;
+      text-transform: uppercase; text-align: left;
+      display: flex; align-items: center; justify-content: space-between;
+      transition: all .15s;
+    }
+    .treat-btn:hover { border-color: var(--gold); color: var(--gold); }
+    .treat-btn.primary { border-color: var(--gold); background: rgba(212,175,55,0.08); }
+    .treat-btn.primary:hover { background: rgba(212,175,55,0.15); }
+    .treat-badge {
+      font-size: 10px; padding: 2px 8px; border-radius: 3px;
+      background: rgba(212,175,55,0.15); color: var(--gold); border: 1px solid rgba(212,175,55,0.3);
+    }
+
+    /* No patient */
+    .no-patient {
+      text-align: center; padding: 24px 0;
+      color: var(--text-muted); font-size: 13px; letter-spacing: 1px;
+    }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  </style>
+</head>
+<body>
+  <div class="overlay">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">EMS — Patient Assessment</span>
+        <button class="card-close" onclick="closeEMS()">✕</button>
+      </div>
+
+      <div class="card-body" id="ems-body">
+        <div class="no-patient">Loading patient data...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let _targetSource = null
+
+    function closeEMS() {
+      nuiCallback('atc:ems:close', {})
+      document.body.classList.remove('visible')
+    }
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeEMS()
+    })
+
+    window.addEventListener('message', e => {
+      const msg = e.data
+      if (!msg || !msg.type) return
+
+      switch (msg.type) {
+        case 'ATC_EMS_OPEN':
+          document.body.classList.add('visible')
+          _targetSource = msg.payload && msg.payload.targetSource
+          renderLoading()
+          break
+
+        case 'ATC_EMS_PATIENT':
+          if (msg.payload) renderPatient(msg.payload)
+          else renderNoPatient()
+          break
+
+        case 'ATC_EMS_TREATED':
+          document.body.classList.remove('visible')
+          break
+      }
+    })
+
+    function renderLoading() {
+      document.getElementById('ems-body').innerHTML =
+        '<div class="no-patient">Fetching patient vitals...</div>'
+    }
+
+    function renderNoPatient() {
+      document.getElementById('ems-body').innerHTML =
+        '<div class="no-patient">No patient data available.</div>'
+    }
+
+    function renderPatient(data) {
+      const health = clamp(data.health != null ? data.health : 100)
+      const hunger = clamp(data.hunger != null ? data.hunger : 100)
+      const thirst = clamp(data.thirst != null ? data.thirst : 100)
+      const injuries = Array.isArray(data.injuries) ? data.injuries : []
+
+      document.getElementById('ems-body').innerHTML = `
+        <div class="section-title">Vitals</div>
+
+        <div class="vital-row">
+          <div class="vital-label">
+            <span>Health</span><span class="vital-val">${health}%</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill bar-health" style="width:${health}%"></div></div>
+        </div>
+
+        <div class="vital-row">
+          <div class="vital-label">
+            <span>Hunger</span><span class="vital-val">${hunger}%</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill bar-hunger" style="width:${hunger}%"></div></div>
+        </div>
+
+        <div class="vital-row">
+          <div class="vital-label">
+            <span>Thirst</span><span class="vital-val">${thirst}%</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill bar-thirst" style="width:${thirst}%"></div></div>
+        </div>
+
+        <div class="section-title">Active Injuries</div>
+        <ul class="injury-list">
+          ${injuries.length
+            ? injuries.map(i => `<li class="injury-item"><span class="injury-dot"></span>${esc(i.label || i)}</li>`).join('')
+            : '<li class="no-injuries">No recorded injuries</li>'
+          }
+        </ul>
+
+        <div class="section-title">Treatment</div>
+        <div class="treatment-grid">
+          <button class="treat-btn" onclick="treat('basic')">
+            Basic Treatment
+            <span class="treat-badge">STANDARD</span>
+          </button>
+          <button class="treat-btn" onclick="treat('advanced')">
+            Advanced Treatment
+            <span class="treat-badge">ADVANCED</span>
+          </button>
+          <button class="treat-btn primary" onclick="treat('defibrillate')">
+            Defibrillate
+            <span class="treat-badge">REVIVE</span>
+          </button>
+        </div>
+      `
+    }
+
+    function treat(treatType) {
+      if (!_targetSource) return
+      nuiCallback('atc:ems:treat', { targetSource: _targetSource, treatType })
+    }
+
+    function clamp(v) { return Math.max(0, Math.min(100, Math.round(Number(v) || 0))) }
+
+    function esc(str) {
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    }
+
+    function nuiCallback(name, data) {
+      fetch(`https://atc-ems/${name}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      }).catch(() => {})
+    }
+  </script>
+</body>
+</html>

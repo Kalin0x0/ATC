@@ -91,6 +91,34 @@
     el.setAttribute('role', 'button');
     el.setAttribute('aria-label', 'Empty slot ' + (index + 1));
 
+    // ── Drag source ──────────────────────────────────────────
+    el.setAttribute('draggable', 'true');
+    el.addEventListener('dragstart', function (e) {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(index));
+      el.classList.add('dragging');
+    });
+    el.addEventListener('dragend', function () {
+      el.classList.remove('dragging');
+    });
+
+    // ── Drop target ───────────────────────────────────────────
+    el.addEventListener('dragover', function (e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      el.classList.add('drag-over');
+    });
+    el.addEventListener('dragleave', function () {
+      el.classList.remove('drag-over');
+    });
+    el.addEventListener('drop', function (e) {
+      e.preventDefault();
+      el.classList.remove('drag-over');
+      var fromIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
+      if (isNaN(fromIndex) || fromIndex === index) return;
+      ATC.nuiCallback('atc:inventory:move', { from: fromIndex, to: index });
+    });
+
     // Single click — select & show detail
     el.addEventListener('click', function () {
       onSlotClick(index);
@@ -410,4 +438,53 @@
 
   console.info('[ATC Inventory] inventory.js loaded.');
 
+}());
+
+/* ============================================================
+   HOTBAR MODULE
+   ============================================================ */
+;(function () {
+  'use strict';
+
+  function renderHotbar(slots, selected) {
+    var container = document.getElementById('hotbar-slots');
+    if (!container) return;
+    container.innerHTML = '';
+    for (var i = 1; i <= 5; i++) {
+      var slot = slots[i];
+      var el = document.createElement('div');
+      el.className = 'hotbar-slot' + (i === selected ? ' selected' : '');
+      el.innerHTML =
+        '<span class="slot-key">' + i + '</span>' +
+        (slot
+          ? '<span class="slot-name">' + (slot.itemName || '') + '</span>' +
+            '<span class="slot-qty">' + (slot.quantity || '') + '</span>'
+          : '');
+      container.appendChild(el);
+    }
+    var hotbarEl = document.getElementById('hotbar');
+    if (hotbarEl) {
+      var hasItems = slots && Object.keys(slots).some(function (k) { return slots[k]; });
+      hotbarEl.classList.toggle('hidden', !hasItems);
+    }
+  }
+
+  ATC.on('ATC_HOTBAR_UPDATE', function (p) {
+    if (p) renderHotbar(p.slots || {}, p.selected || 1);
+  });
+
+  ATC.on('ATC_HOTBAR_SELECT', function (p) {
+    if (!p) return;
+    document.querySelectorAll('.hotbar-slot').forEach(function (el, i) {
+      el.classList.toggle('selected', i + 1 === p.selected);
+    });
+  });
+
+  // Show hotbar when a character is selected / spawned
+  ATC.on('ATC_CHARACTER_SELECTED', function () {
+    var hotbarEl = document.getElementById('hotbar');
+    if (hotbarEl) hotbarEl.classList.remove('hidden');
+  });
+
+  console.info('[ATC Hotbar] hotbar module loaded.');
 }());

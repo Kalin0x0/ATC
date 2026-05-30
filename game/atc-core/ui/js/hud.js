@@ -338,6 +338,10 @@
     } else if (payload.vehicle) {
       updateVehicleHud(payload.vehicle);
     }
+    // Stress indicator (injected below armor bar)
+    updateStressBar(typeof payload.stress === 'number' ? payload.stress : 0);
+    // Reputation display
+    if (payload.reputation !== undefined) updateReputation(payload.reputation);
   });
 
   ATC.on('ATC_VITALS_UPDATE', function (vitals) {
@@ -485,6 +489,96 @@
     enableRespawnButton();
   });
 
+  /* ─── Stress bar ────────────────────────────────────────────── */
+  // Lazy-create a stress bar element appended after the armor vital-track
+  var stressBarEl = null;
+
+  function ensureStressBar() {
+    if (stressBarEl) return stressBarEl;
+    var armorRow = document.getElementById('vital-armor');
+    if (!armorRow) return null;
+    var bar = document.createElement('div');
+    bar.id = 'stress-bar';
+    bar.className = 'stress-bar';
+    bar.style.width = '0%';
+    armorRow.appendChild(bar);
+    stressBarEl = bar;
+    return stressBarEl;
+  }
+
+  function updateStressBar(stress) {
+    var pct = Math.max(0, Math.min(100, stress || 0));
+    if (pct === 0) {
+      if (stressBarEl) {
+        stressBarEl.style.width = '0%';
+        stressBarEl.classList.remove('high');
+      }
+      return;
+    }
+    var bar = ensureStressBar();
+    if (!bar) return;
+    bar.style.width = pct + '%';
+    if (pct > 70) {
+      bar.classList.add('high');
+    } else {
+      bar.classList.remove('high');
+    }
+  }
+
+  /* ─── Voice indicator ────────────────────────────────────────── */
+  ATC.on('ATC_VOICE_STATE', function (payload) {
+    var el = document.getElementById('voice-indicator');
+    if (!el || !payload) return;
+    var active = payload.talking || payload.radioTalking;
+    el.classList.toggle('hidden', !active);
+    el.classList.toggle('talking', !!payload.talking && !payload.radioTalking);
+    el.classList.toggle('radio',   !!payload.radioTalking);
+    var lbl = document.getElementById('voice-label');
+    if (lbl) lbl.textContent = payload.radioTalking ? (payload.channel || 'Radio') : 'Voice';
+  });
+
+  /* ─── Dispatch badge ─────────────────────────────────────────── */
+  var _dispatchCount = 0;
+
+  ATC.on('ATC_DISPATCH_CALL', function () {
+    _dispatchCount++;
+    var el = document.getElementById('dispatch-badge');
+    if (!el) return;
+    el.textContent = _dispatchCount;
+    el.classList.remove('hidden');
+    setTimeout(function () {
+      _dispatchCount = Math.max(0, _dispatchCount - 1);
+      el.textContent = _dispatchCount;
+      if (_dispatchCount === 0) el.classList.add('hidden');
+    }, 30000);
+  });
+
+  /* ─── Cinematic toggle ───────────────────────────────────────── */
+  ATC.on('ATC_CINEMATIC_TOGGLE', function () {
+    document.body.classList.toggle('cinematic');
+  });
+
+  /* ─── Reputation display ─────────────────────────────────────── */
+  function updateReputation(payload) {
+    var el = document.getElementById('reputation-display');
+    if (!el) return;
+    if (!payload || !payload.factionName) {
+      el.classList.add('hidden');
+      return;
+    }
+    el.classList.remove('hidden');
+    var name = document.getElementById('rep-faction-name');
+    var bar  = document.getElementById('rep-bar');
+    var lbl  = document.getElementById('rep-label');
+    if (name) name.textContent = payload.factionName || '';
+    if (bar)  bar.style.width  = Math.max(0, Math.min(100, payload.percent || 0)) + '%';
+    if (lbl)  lbl.textContent  = payload.rankLabel || '';
+  }
+
+  ATC.on('ATC_REPUTATION_UPDATE', function (payload) {
+    updateReputation(payload);
+  });
+
   /* ─── Register module ────────────────────────────────────────── */
   ATC.registerModule('hud', {
     init: function () {
@@ -496,12 +590,21 @@
       if (vehicleHudEl) vehicleHudEl.classList.add('hidden');
       // Death screen starts hidden
       if (deathScreenEl) deathScreenEl.classList.add('hidden');
+      // New indicators start hidden
+      var voiceEl = document.getElementById('voice-indicator');
+      if (voiceEl) voiceEl.classList.add('hidden');
+      var dispatchEl = document.getElementById('dispatch-badge');
+      if (dispatchEl) dispatchEl.classList.add('hidden');
+      var repEl = document.getElementById('reputation-display');
+      if (repEl) repEl.classList.add('hidden');
     },
     updateVitalsBar:    updateVitalsBar,
     updateWallet:       updateWallet,
     updateJob:          updateJob,
     updateVehicleHud:   updateVehicleHud,
     updateStatusEffects:updateStatusEffects,
+    updateStressBar:    updateStressBar,
+    updateReputation:   updateReputation,
     showDeathScreen:    showDeathScreen,
     hideDeathScreen:    hideDeathScreen
   });

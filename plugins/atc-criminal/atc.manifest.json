@@ -1,0 +1,8 @@
+{
+  "id": "atc-criminal",
+  "name": "ATC Criminal",
+  "version": "0.1.0",
+  "description": "Criminal gameplay — robberies, drugs, territory",
+  "dependencies": ["atc-core"],
+  "permissions": ["faction:read", "faction:write"]
+}

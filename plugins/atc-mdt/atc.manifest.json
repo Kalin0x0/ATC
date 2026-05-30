@@ -1,0 +1,8 @@
+{
+  "id": "atc-mdt",
+  "name": "ATC MDT",
+  "version": "0.1.0",
+  "description": "Mobile Data Terminal for police/emergency services",
+  "dependencies": ["atc-core"],
+  "permissions": ["law:read", "dispatch:read", "character:read"]
+}

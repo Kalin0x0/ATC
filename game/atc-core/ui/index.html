@@ -16,6 +16,24 @@
   ═══════════════════════════════════════════════ -->
   <div id="atc-hud">
 
+    <!-- VOICE INDICATOR — top-left -->
+    <div id="voice-indicator" class="hidden">
+      <span class="mic-icon">🎤</span>
+      <span id="voice-label">Voice</span>
+    </div>
+
+    <!-- DISPATCH BADGE — top-right -->
+    <div id="dispatch-badge" class="hidden">0</div>
+
+    <!-- REPUTATION DISPLAY — above job, right side -->
+    <div id="reputation-display" class="hidden">
+      <div id="rep-faction-name"></div>
+      <div id="rep-bar-container">
+        <div id="rep-bar"></div>
+      </div>
+      <div id="rep-label"></div>
+    </div>
+
     <!-- VITALS BAR — bottom-left -->
     <div id="vitals-bar">
       <div class="vital-row" id="vital-health">
@@ -138,6 +156,11 @@
     <!-- STATUS EFFECTS — top-right -->
     <div id="status-effects"></div>
 
+    <!-- HOTBAR — bottom-center -->
+    <div id="hotbar" class="hidden">
+      <div class="hotbar-slots" id="hotbar-slots"></div>
+    </div>
+
   </div>
   <!-- /#atc-hud -->
 
@@ -212,6 +235,18 @@
 
 
   <!-- ═══════════════════════════════════════════════
+       CONTAINER / STASH PANEL
+  ═══════════════════════════════════════════════ -->
+  <div id="container-panel" class="panel hidden">
+    <div class="panel-header">
+      <span id="container-title">Container</span>
+      <button id="container-close" onclick="ATC.nuiCallback('atc:container:close',{})" class="btn-ghost">✕</button>
+    </div>
+    <div id="container-grid" class="inventory-grid"></div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════
        DEATH SCREEN
   ═══════════════════════════════════════════════ -->
   <div id="death-screen" class="screen hidden">
@@ -240,6 +275,15 @@
 
 
   <!-- ═══════════════════════════════════════════════
+       EMOTE WHEEL (Phase 88)
+  ═══════════════════════════════════════════════ -->
+  <div id="emote-wheel" class="hidden" role="dialog" aria-label="Emote Wheel">
+    <div id="emote-wheel-inner"></div>
+    <div id="emote-close-hint">Press B or ESC to close</div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════
        SCRIPTS — order matters
   ═══════════════════════════════════════════════ -->
   <script src="js/core.js"></script>
@@ -247,6 +291,7 @@
   <script src="js/character-select.js"></script>
   <script src="js/inventory.js"></script>
   <script src="js/notifications.js"></script>
+  <script src="js/emotes.js"></script>
 
 </body>
 </html>

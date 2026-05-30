@@ -101,9 +101,13 @@ client_scripts {
     'client/vitals.lua',
     'client/status_effects.lua',
     'client/inventory.lua',
+    'client/hotbar.lua',
     'client/combat.lua',
     'client/vehicles.lua',
     'client/jobs.lua',
+    'client/interaction.lua',
+    'client/voice.lua',
+    'client/emotes.lua',
     'client/hud.lua',
     'client/main.lua',
 }
