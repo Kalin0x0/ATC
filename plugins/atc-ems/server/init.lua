@@ -51,3 +51,31 @@ ATC.Firewall.On('atc:ems:patient:info', {
         TriggerClientEvent('atc:ems:patient:response', src, ok and data or nil)
     end)
 end)
+
+-- ── Ambulance Dispatch ────────────────────────────────────────────────────────
+
+ATC.Firewall.On('atc:ems:ambulance:request', {clientAllowed=true,requireSession=true,rateLimit={window=60000,max=2}}, function(src, payload)
+    local x = tonumber(payload and payload.x) or 0
+    local y = tonumber(payload and payload.y) or 0
+    local z = tonumber(payload and payload.z) or 0
+    TriggerEvent('atc:dispatch:call:new', { type='medical', priority='high', message='Ambulance requested', source=src, coords=vector3(x,y,z) })
+    TriggerClientEvent('atc:ems:ambulance:dispatched', src, {})
+end)
+
+-- ── Hospital Check-in ─────────────────────────────────────────────────────────
+
+ATC.Firewall.On('atc:hospital:checkin', {clientAllowed=true,requireSession=true,rateLimit={window=30000,max=3}}, function(src)
+    local characterId = ATC.Sessions.GetCharacterId(src)
+    if not characterId then return end
+    local principalId = ATC.Accounts.GetPrincipalId(src)
+    -- Charge fee
+    if ATC.EconomyPlugin then
+        ATC.EconomyPlugin.Charge(src, 500, 'hospital_fee', function(chargeOk)
+            ATC.HTTP.Post('/api/v1/medical/treatments', { characterId=characterId, treatmentType='hospital', treatedByPrincipalId=principalId or characterId }, function(ok)
+                TriggerClientEvent('atc:hospital:checkin:result', src, { success=true })
+            end)
+        end)
+    else
+        TriggerClientEvent('atc:hospital:checkin:result', src, { success=true })
+    end
+end)

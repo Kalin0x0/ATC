@@ -97,6 +97,9 @@ server_scripts {
     'server/narrative_world.lua',
     'server/world_events.lua',
     'server/ai_simulation.lua',
+    'server/hazards.lua',
+    'server/safezones.lua',
+    'server/network_optim.lua',
     'server/main.lua',
 }
 
@@ -117,8 +120,16 @@ client_scripts {
     'client/emotes.lua',
     'client/survival.lua',
     'client/missions.lua',
+    'client/minimap.lua',
+    'client/tutorial.lua',
     'client/npc_world.lua',
     'client/world_events.lua',
+    'client/hazards.lua',
+    'client/safezones.lua',
+    'client/gathering.lua',
+    'client/ground_loot.lua',
+    'client/reputation.lua',
+    'client/dialogue.lua',
     'client/hud.lua',
     'client/spectate.lua',
     'client/anticheat.lua',
@@ -132,3 +143,4 @@ files {
     'ui/css/*.css',
     'ui/js/*.js',
 }
+

@@ -116,3 +116,23 @@ RegisterNetEvent('atc:mission:end')
 AddEventHandler('atc:mission:end', function(data)
     if data and data.id then ATC.Missions.End(data.id) end
 end)
+
+-- ── Activity Browser ──────────────────────────────────────────
+
+RegisterCommand('activities', function()
+    if not ATC.Core.IsReady() then return end
+    SetNuiFocus(true, true)
+    -- Build activity list from active missions + world events
+    local activities = {}
+    for id, m in pairs(_activeMissions or {}) do
+        table.insert(activities, { id=id, title=m.title, description=m.description or '', type='missions' })
+    end
+    SendNUIMessage({ type='ATC_ACTIVITY_BROWSER_OPEN', payload={ activities=activities } })
+end, false)
+RegisterKeyMapping('activities', 'Open Activity Browser', 'keyboard', 'F11')
+
+RegisterNUICallback('atc:activity:close', function(_, cb) SetNuiFocus(false, false); cb('ok') end)
+RegisterNUICallback('atc:activity:join',  function(data, cb)
+    if data and data.id then TriggerServerEvent('atc:mission:join', { missionId=data.id }) end
+    cb('ok')
+end)

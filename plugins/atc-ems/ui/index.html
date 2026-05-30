@@ -123,6 +123,48 @@
     }
 
     /* No patient */
+    /* Trauma / severity badges */
+    .trauma-bar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 12px;
+      border-radius: var(--radius);
+      margin-bottom: 12px;
+      border: 1px solid transparent;
+    }
+    .trauma-bar.critical {
+      background: rgba(231,76,60,0.12);
+      border-color: rgba(231,76,60,0.4);
+      animation: pulse-border 1.4s ease-in-out infinite;
+    }
+    .trauma-bar.serious {
+      background: rgba(230,126,34,0.1);
+      border-color: rgba(230,126,34,0.35);
+    }
+    .trauma-bar.stable {
+      background: rgba(39,174,96,0.08);
+      border-color: rgba(39,174,96,0.3);
+    }
+    @keyframes pulse-border {
+      0%,100% { border-color: rgba(231,76,60,0.4); }
+      50%      { border-color: rgba(231,76,60,0.9); }
+    }
+    .trauma-icon { font-size: 14px; flex-shrink: 0; }
+    .trauma-label { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; }
+    .trauma-label.critical { color: var(--red); }
+    .trauma-label.serious  { color: var(--amber); }
+    .trauma-label.stable   { color: var(--green); }
+    .trauma-sub { font-size: 10px; color: var(--text-secondary); margin-left: auto; }
+
+    .severity-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+    .sev-badge {
+      font-size: 10px; padding: 3px 9px; border-radius: 3px;
+      letter-spacing: 1px; text-transform: uppercase; font-weight: 700;
+    }
+    .sev-badge.head    { background: rgba(231,76,60,0.15);  color: #e74c3c; border: 1px solid rgba(231,76,60,0.35); }
+    .sev-badge.torso   { background: rgba(230,126,34,0.15); color: #e67e22; border: 1px solid rgba(230,126,34,0.35); }
+    .sev-badge.limb    { background: rgba(41,128,185,0.15); color: #2980b9; border: 1px solid rgba(41,128,185,0.35); }
+    .sev-badge.minor   { background: rgba(136,136,170,0.1); color: #8888aa; border: 1px solid rgba(136,136,170,0.2); }
+
     .no-patient {
       text-align: center; padding: 24px 0;
       color: var(--text-muted); font-size: 13px; letter-spacing: 1px;
@@ -191,12 +233,39 @@
     }
 
     function renderPatient(data) {
-      const health = clamp(data.health != null ? data.health : 100)
-      const hunger = clamp(data.hunger != null ? data.hunger : 100)
-      const thirst = clamp(data.thirst != null ? data.thirst : 100)
+      const health  = clamp(data.health  != null ? data.health  : 100)
+      const hunger  = clamp(data.hunger  != null ? data.hunger  : 100)
+      const thirst  = clamp(data.thirst  != null ? data.thirst  : 100)
       const injuries = Array.isArray(data.injuries) ? data.injuries : []
 
+      // ── Trauma severity classification ────────────────────────────────────
+      let severity, traumaIcon, traumaSub
+      if (health <= 20) {
+        severity  = 'critical'; traumaIcon = '⚠'; traumaSub = 'Immediate intervention required'
+      } else if (health <= 50) {
+        severity  = 'serious';  traumaIcon = '▲'; traumaSub = 'Elevated risk — treat promptly'
+      } else {
+        severity  = 'stable';   traumaIcon = '●'; traumaSub = 'Vitals within acceptable range'
+      }
+
+      // ── Injury severity badges (body-region hints from injury label) ──────
+      const badgeMap = { head: 'head', skull: 'head', cranial: 'head', torso: 'torso', chest: 'torso', abdomen: 'torso', arm: 'limb', leg: 'limb', limb: 'limb' }
+      const badges = injuries.map(i => {
+        const label = (i.label || String(i)).toLowerCase()
+        let zone = 'minor'
+        for (const [key, cls] of Object.entries(badgeMap)) { if (label.includes(key)) { zone = cls; break } }
+        return `<span class="sev-badge ${zone}">${esc(i.label || i)}</span>`
+      })
+
       document.getElementById('ems-body').innerHTML = `
+        <div class="trauma-bar ${severity}">
+          <span class="trauma-icon">${traumaIcon}</span>
+          <span class="trauma-label ${severity}">${severity.toUpperCase()}</span>
+          <span class="trauma-sub">${traumaSub}</span>
+        </div>
+
+        ${badges.length ? `<div class="severity-badges">${badges.join('')}</div>` : ''}
+
         <div class="section-title">Vitals</div>
 
         <div class="vital-row">

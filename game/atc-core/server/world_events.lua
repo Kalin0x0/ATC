@@ -108,6 +108,27 @@ function ATC.WorldEvents.GetActive()
 end
 
 -- ---------------------------------------------------------------------------
+-- Seasonal event system
+-- ---------------------------------------------------------------------------
+ATC.WorldEvents.Seasonal = {}
+local _activeSeasonal = nil
+
+function ATC.WorldEvents.Seasonal.Start(seasonName, config)
+    _activeSeasonal = { name=seasonName, config=config, startTime=os.time() }
+    TriggerClientEvent('atc:world:seasonal:start', -1, { name=seasonName, config=config })
+    ATC.Log.Info('world_events', 'Seasonal event started', { season=seasonName })
+end
+
+function ATC.WorldEvents.Seasonal.End()
+    if not _activeSeasonal then return end
+    local name = _activeSeasonal.name
+    _activeSeasonal = nil
+    TriggerClientEvent('atc:world:seasonal:end', -1, { name=name })
+end
+
+function ATC.WorldEvents.Seasonal.GetActive() return _activeSeasonal end
+
+-- ---------------------------------------------------------------------------
 -- Background loop: spawn a random world event every 10-15 minutes
 -- ---------------------------------------------------------------------------
 CreateThread(function()
@@ -124,5 +145,65 @@ CreateThread(function()
         ATC.WorldEvents.SpawnEvent(eventType, vector3(x, y, SPAWN_Z_DEFAULT), {})
 
         Wait(math.random(MIN_INTERVAL, MAX_INTERVAL))
+    end
+end)
+
+-- ---------------------------------------------------------------------------
+-- Natural disaster events
+-- ---------------------------------------------------------------------------
+
+--- Trigger a natural disaster world event and notify all clients.
+--- @param disasterType string  e.g. 'earthquake', 'flood', 'wildfire'
+--- @param coords vector3       Epicentre
+--- @param intensity number     1 = minor, 2 = moderate, 3 = severe
+--- @return string  Event id
+function ATC.WorldEvents.TriggerDisaster(disasterType, coords, intensity)
+    local id = ATC.WorldEvents.SpawnEvent('disaster_' .. tostring(disasterType), coords, { intensity = intensity or 1 })
+    TriggerClientEvent('atc:world:disaster', -1, {
+        id        = id,
+        type      = disasterType,
+        coords    = { x = coords.x, y = coords.y, z = coords.z },
+        intensity = intensity or 1,
+    })
+    return id
+end
+
+-- ---------------------------------------------------------------------------
+-- Economy events: market price fluctuations
+-- ---------------------------------------------------------------------------
+
+--- Broadcast a market fluctuation event to all clients.
+--- @param eventType string  'surge' | 'crash'
+--- @param itemName string   Item definition ID affected
+--- @param magnitude number  Percentage change magnitude (10–50)
+function ATC.WorldEvents.TriggerEconomyEvent(eventType, itemName, magnitude)
+    ATC.Log.Info('economy_event', 'Market fluctuation', {
+        type      = eventType,
+        item      = itemName,
+        magnitude = magnitude,
+    })
+    local msg = eventType == 'surge'
+        and 'Market surge: ' .. tostring(itemName) .. ' prices rising'
+        or  'Market crash: ' .. tostring(itemName) .. ' prices falling'
+    TriggerClientEvent('atc:world:economy:event', -1, {
+        type      = eventType,
+        itemName  = itemName,
+        magnitude = magnitude,
+        message   = msg,
+    })
+end
+
+-- Random economy event every 40–60 minutes
+CreateThread(function()
+    Wait(120000)   -- initial delay before first event
+    while true do
+        Wait(math.random(2400000, 3600000))   -- 40–60 min
+        local items = { 'iron_ore', 'herbs', 'fish', 'drugs', 'scrap' }
+        local types = { 'surge', 'crash' }
+        ATC.WorldEvents.TriggerEconomyEvent(
+            types[math.random(#types)],
+            items[math.random(#items)],
+            math.random(10, 50)
+        )
     end
 end)

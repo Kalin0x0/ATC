@@ -75,3 +75,36 @@ AddEventHandler('atc:inventory:item:effect', function(data)
         handler()
     end
 end)
+
+-- ── Crafting UI ───────────────────────────────────────────────────────────────
+
+RegisterCommand('crafting', function()
+    if not ATC.Core.IsReady() then return end
+    TriggerServerEvent('atc:crafting:recipes:get')
+    SetNuiFocus(true, true)
+end, false)
+RegisterKeyMapping('crafting', 'Open Crafting', 'keyboard', 'F7')
+
+RegisterNetEvent('atc:crafting:recipes:response')
+RegisterNetEvent('atc:crafting:result')
+
+AddEventHandler('atc:crafting:recipes:response', function(d)
+    SendNUIMessage({ type='ATC_CRAFTING_OPEN', payload=d })
+end)
+
+AddEventHandler('atc:crafting:result', function(d)
+    SendNUIMessage({ type='ATC_CRAFTING_RESULT', payload=d })
+    if d and d.success then
+        TriggerServerEvent(ATC.Events.INVENTORY.REQUEST)
+    end
+end)
+
+RegisterNUICallback('atc:crafting:close', function(_, cb)
+    SetNuiFocus(false, false)
+    cb('ok')
+end)
+
+RegisterNUICallback('atc:crafting:craft', function(data, cb)
+    TriggerServerEvent('atc:crafting:craft', data)
+    cb('ok')
+end)

@@ -59,3 +59,40 @@ ATC.Firewall.On('atc:mdt:warrant:create', {
         })
     end)
 end)
+
+-- ── Evidence Collection ───────────────────────────────────────────────────────
+
+ATC.Firewall.On('atc:evidence:collect', {clientAllowed=true,requireSession=true,rateLimit={window=5000,max=10}}, function(src, payload)
+    local principalId = ATC.Accounts.GetPrincipalId(src)
+    if not principalId then return end
+    local x = tonumber(payload and payload.x) or 0
+    local y = tonumber(payload and payload.y) or 0
+    local z = tonumber(payload and payload.z) or 0
+    ATC.HTTP.Post('/api/v1/law/evidence', {
+        collectedByPrincipalId = principalId,
+        evidenceType = 'sample',
+        locationX = x, locationY = y, locationZ = z,
+        description = 'Field collected evidence'
+    }, function(ok, _, data)
+        TriggerClientEvent('atc:evidence:collected', src, { success=ok, evidenceType=ok and data and data.evidenceType or nil })
+    end)
+end)
+
+-- ── Tactical Systems ──────────────────────────────────────────────────────────
+
+ATC.Firewall.On('atc:tactical:flash', {clientAllowed=true,requireSession=true,rateLimit={window=10000,max=3}}, function(src, payload)
+    if not IsPlayerAceAllowed(tostring(src), 'atc.police') and not IsPlayerAceAllowed(tostring(src), 'atc.admin') then return end
+    local x = tonumber(payload and payload.x) or 0
+    local y = tonumber(payload and payload.y) or 0
+    local z = tonumber(payload and payload.z) or 0
+    local radius = math.min(tonumber(payload and payload.radius) or 10.0, 25.0)
+    for _, pid in ipairs(GetPlayers()) do
+        local p = tonumber(pid)
+        if p ~= src then
+            local pCoords = GetEntityCoords(GetPlayerPed(p))
+            if #(pCoords - vector3(x,y,z)) <= radius then
+                TriggerClientEvent('atc:tactical:flash:effect', p)
+            end
+        end
+    end
+end)

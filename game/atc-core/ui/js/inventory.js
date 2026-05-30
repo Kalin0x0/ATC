@@ -488,3 +488,49 @@
 
   console.info('[ATC Hotbar] hotbar module loaded.');
 }());
+
+/* ============================================================
+   CRAFTING MODULE
+   ============================================================ */
+;(function () {
+  'use strict';
+
+  function _escHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  ATC.on('ATC_CRAFTING_OPEN', function (p) {
+    var panel = document.getElementById('crafting-panel');
+    var list  = document.getElementById('crafting-recipes');
+    if (!panel || !list) return;
+    var recipes = (p && p.recipes) ? p.recipes : [];
+    list.innerHTML = recipes.map(function (r) {
+      var ingredients = (r.ingredients || []).map(function (i) {
+        return i.qty + 'x ' + _escHtml(i.name);
+      }).join(', ');
+      return (
+        '<div class="recipe-card">' +
+          '<h4>' + _escHtml(r.name) + '</h4>' +
+          '<div class="recipe-ingredients">' + ingredients + '</div>' +
+          '<button class="recipe-craft-btn" onclick="ATC.nuiCallback(\'atc:crafting:craft\',{recipeId:\'' + _escHtml(r.id) + '\'})">Craft</button>' +
+        '</div>'
+      );
+    }).join('');
+    ATC.Windows.open('crafting-panel');
+  });
+
+  ATC.on('ATC_CRAFTING_RESULT', function (p) {
+    var r = document.getElementById('crafting-result');
+    if (!r) return;
+    r.textContent = (p && p.success) ? 'Crafted: ' + ((p.resultItem) || '') : 'Not enough materials';
+    r.className   = (p && p.success) ? 'crafting-success' : 'crafting-fail';
+    r.classList.remove('hidden');
+    setTimeout(function () { r.classList.add('hidden'); }, 3000);
+  });
+
+  console.info('[ATC Crafting] crafting module loaded.');
+}());

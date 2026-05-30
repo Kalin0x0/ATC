@@ -312,6 +312,64 @@
     if (el) el.classList.add('hidden');
     emit('ATC_MISSION_END', p);
   };
+
+  /* ── Activity Browser ─────────────────────────────────────────── */
+  window._activityData = [];
+  window.filterActivities = function(type) {
+    document.querySelectorAll('.activity-tab').forEach(function(t) {
+      t.classList.toggle('active', t.textContent.toLowerCase() === type || (type === 'all' && t.textContent === 'All'));
+    });
+    var list = document.getElementById('activity-list');
+    if (!list) return;
+    var filtered = type === 'all' ? _activityData : _activityData.filter(function(a) { return a.type === type; });
+    list.innerHTML = filtered.map(function(a) {
+      return '<div class="activity-card">' +
+        '<h4>' + _escHtml(a.title || '') + '</h4>' +
+        '<p>' + _escHtml(a.description || '') + '</p>' +
+        '<button class="activity-join" onclick="ATC.nuiCallback(\'atc:activity:join\',{id:\'' + a.id + '\'})">Join</button>' +
+        '</div>';
+    }).join('');
+  };
+
+  handlers['ATC_ACTIVITY_BROWSER_OPEN'] = function (p) {
+    window._activityData = (p && p.activities) || [];
+    window.filterActivities('all');
+    if (window.ATC && ATC.Windows) ATC.Windows.open('activity-browser');
+    emit('ATC_ACTIVITY_BROWSER_OPEN', p);
+  };
+
+  handlers['ATC_REPUTATION_UPDATE'] = function (payload) {
+    emit('ATC_REPUTATION_UPDATE', payload);
+  };
+
+  handlers['ATC_LEVELUP'] = function (payload) {
+    emit('ATC_LEVELUP', payload);
+  };
+
+  handlers['ATC_DIALOGUE_OPEN'] = function (payload) {
+    if (!payload || !payload.node) return;
+    var panel  = document.getElementById('dialogue-panel');
+    var nameEl = document.getElementById('dialogue-name');
+    var textEl = document.getElementById('dialogue-text');
+    var optsEl = document.getElementById('dialogue-options');
+    if (!panel) return;
+    if (nameEl) nameEl.textContent = payload.node.speaker || 'NPC';
+    if (textEl) textEl.textContent = payload.node.text    || '';
+    if (optsEl) {
+      optsEl.innerHTML = (payload.node.options || []).map(function (o, i) {
+        return '<button class="dialogue-opt" onclick="ATC.nuiCallback(\'atc:dialogue:choose\',{index:' +
+          (i + 1) + '})">' + (i + 1) + '. ' + _escHtml(o.label || '') + '</button>';
+      }).join('');
+    }
+    ATC.Windows.open('dialogue-panel');
+    emit('ATC_DIALOGUE_OPEN', payload);
+  };
+
+  handlers['ATC_DIALOGUE_CLOSE'] = function () {
+    ATC.Windows.close('dialogue-panel');
+    emit('ATC_DIALOGUE_CLOSE', null);
+  };
+
   /* ─── Dispatcher ─────────────────────────────────────────────── */
   function dispatch(msg) {
     if (!msg || typeof msg.type !== 'string') return;

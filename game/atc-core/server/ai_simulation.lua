@@ -119,3 +119,56 @@ CreateThread(function()
         Wait(ECONOMY_AI_INTERVAL)
     end
 end)
+
+-- ---------------------------------------------------------------------------
+-- Event AI: react to world events
+-- ---------------------------------------------------------------------------
+AddEventHandler('atc:world:event:start', function(data)
+    if not data then return end
+    -- Increase NPC aggression near criminal events
+    if data.type == 'gang_war' or data.type == 'armed_robbery' then
+        TriggerClientEvent('atc:ai:threat:elevated', -1, { coords=data.coords, radius=200.0 })
+    end
+end)
+
+-- ---------------------------------------------------------------------------
+-- Tactical AI: coordinate police NPCs
+-- ---------------------------------------------------------------------------
+ATC.AISimulation.Tactical = {}
+function ATC.AISimulation.Tactical.CoordinateResponse(criminalSource, policyType)
+    -- Notify on-duty police players
+    for _, pid in ipairs(GetPlayers()) do
+        local src = tonumber(pid)
+        local session = ATC.Sessions.Get(src)
+        if session and session.job == 'police' and session.onDuty then
+            TriggerClientEvent('atc:ai:tactical:alert', src, { type=policyType, targetSource=criminalSource })
+        end
+    end
+end
+
+-- ---------------------------------------------------------------------------
+-- Runtime Balancing: dynamic economy adjustments
+-- ---------------------------------------------------------------------------
+ATC.AISimulation.Balance = {}
+local _balanceConfig = { xpMultiplier=1.0, payMultiplier=1.0, crimeRate='normal' }
+
+function ATC.AISimulation.Balance.Set(config)
+    for k, v in pairs(config or {}) do
+        _balanceConfig[k] = v
+    end
+    TriggerClientEvent('atc:ai:balance:update', -1, _balanceConfig)
+    ATC.Log.Info('ai_simulation', 'Balance updated', _balanceConfig)
+end
+
+function ATC.AISimulation.Balance.Get() return _balanceConfig end
+
+-- Admin command to adjust balance
+RegisterCommand('atcbalance', function(source, args)
+    if not IsPlayerAceAllowed(tostring(source), 'atc.admin') then return end
+    local key = args[1]
+    local val = tonumber(args[2])
+    if key and val then
+        ATC.AISimulation.Balance.Set({ [key]=val })
+        TriggerClientEvent('atc:notify:show', source, { message='Balance: '..key..'='..tostring(val), level='info', duration=3000 })
+    end
+end, true)

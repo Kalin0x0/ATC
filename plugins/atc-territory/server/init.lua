@@ -85,3 +85,19 @@ function ATC.Territory.Claim(claimerSource, factionId, zoneId)
         zoneId    = zoneId,
     })
 end
+
+-- ── Reputation Request Relay ──────────────────────────────────────────────────
+-- Clients request their current reputation/progression data on character select.
+-- Territory plugin owns this relay because reputation is faction-scoped.
+
+ATC.Firewall.On('atc:reputation:request', {
+    clientAllowed  = true,
+    requireSession = true,
+    rateLimit      = { window = 5000, max = 3 }
+}, function(src)
+    local principalId = ATC.Accounts.GetPrincipalId(src)
+    if not principalId then return end
+    ATC.HTTP.Get('/api/v1/reputation/principal/' .. principalId, function(ok, _, data)
+        TriggerClientEvent('atc:reputation:update', src, ok and data or {})
+    end)
+end)

@@ -78,11 +78,58 @@ end)
 -- Escape key closes EMS panel (mirrors phone/mdt escape handling)
 CreateThread(function()
     while true do
-        Wait(0)
-        if _open and IsControlJustReleased(0, 200) then  -- 200 = ESCAPE
-            _open = false
-            SetNuiFocus(false, false)
-            SendNUIMessage({ type = 'ATC_EMS_CLOSE' })
+        if _open then
+            Wait(0)
+            if IsControlJustReleased(0, 200) then  -- 200 = ESCAPE
+                _open = false
+                SetNuiFocus(false, false)
+                SendNUIMessage({ type = 'ATC_EMS_CLOSE' })
+            end
+        else
+            Wait(500)
         end
+    end
+end)
+
+-- ── Ambulance Call System ─────────────────────────────────────────────────────
+
+RegisterCommand('ambulance', function()
+    TriggerServerEvent('atc:ems:ambulance:request', { x=GetEntityCoords(PlayerPedId()).x, y=GetEntityCoords(PlayerPedId()).y, z=GetEntityCoords(PlayerPedId()).z })
+end, false)
+
+RegisterNetEvent('atc:ems:ambulance:dispatched')
+AddEventHandler('atc:ems:ambulance:dispatched', function(data)
+    SendNUIMessage({ type='ATC_NOTIFICATION', payload={ message='Ambulance dispatched — ETA: ~3 min', level='info', duration=6000 } })
+end)
+
+-- ── Hospital Gameplay ─────────────────────────────────────────────────────────
+
+local HOSPITAL_COORDS = vector3(295.84, -1447.53, 29.99)
+local _inHospitalRange = false
+
+CreateThread(function()
+    while true do
+        if ATC.Core.IsReady() and ATC.Characters and ATC.Characters.IsSpawned() then
+            local dist = #(GetEntityCoords(PlayerPedId()) - HOSPITAL_COORDS)
+            if dist < 5.0 and not _inHospitalRange then
+                _inHospitalRange = true
+                ATC.Interaction.RegisterZone('hospital_checkin', HOSPITAL_COORDS, 5.0, 'Check in to Hospital', function()
+                    TriggerServerEvent('atc:hospital:checkin')
+                end)
+            elseif dist >= 5.0 and _inHospitalRange then
+                _inHospitalRange = false
+                ATC.Interaction.Remove('hospital_checkin')
+            end
+        end
+        Wait(1000)
+    end
+end)
+
+RegisterNetEvent('atc:hospital:checkin:result')
+AddEventHandler('atc:hospital:checkin:result', function(data)
+    if data and data.success then
+        SendNUIMessage({ type='ATC_NOTIFICATION', payload={ message='Hospital check-in complete. Injuries treated.', level='success', duration=5000 } })
+        -- Restore health
+        SetEntityHealth(PlayerPedId(), 200)
     end
 end)

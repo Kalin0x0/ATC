@@ -21,6 +21,8 @@ CreateThread(function()
                 isDead        = ATC.SDK.Combat.IsDead(),
                 inVehicle     = ATC.SDK.Vehicles.IsInVehicle(),
                 vehicle       = ATC.SDK.Vehicles.GetState(),
+                stress        = ATC.Survival and ATC.Survival.GetStress() or 0,
+                reputation    = ATC.Reputation and ATC.Reputation.GetDisplay() or nil,
             }
             SendNUIMessage({ type = 'ATC_HUD_TICK', payload = payload })
             Wait(500)

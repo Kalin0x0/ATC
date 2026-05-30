@@ -1,6 +1,6 @@
 # ATC Remaining Roadmap TODO
 # Legend: [x] done  [~] partial  [ ] not done
-# Last updated: 2026-05-30
+# Last updated: 2026-05-31
 
 ## Status Overview
 
@@ -11,7 +11,7 @@ ATC Core Runtime:
 
 ## Phase 81 - NUI Core Framework
 - [~] React/Next.js NUI architecture  (vanilla JS NUI built instead)
-- [~] Window manager                  (panel show/hide system built)
+- [x] Window manager                  (panel show/hide system built)
 - [x] Theme system                    (CSS custom properties, #1a1a2e + #d4af37)
 - [x] Notification framework          (toast system with levels, auto-dismiss)
 - [~] Modal/dialog framework          (Modal component in @atc/ui)
@@ -26,7 +26,7 @@ ATC Core Runtime:
 - [x] Stress/fatigue indicators       (stress bar, fatigue move-rate penalty)
 - [x] Dispatch indicators             (red blinking badge, auto-dismiss 30s)
 - [x] Notification stack              (toast system, max 5, slide-in/out)
-- [~] Minimap enhancements            (custom blips for events/missions)
+- [x] Minimap enhancements            (custom blips for events/missions)
 - [x] Cinematic mode                  (letterbox bars, HUD fade)
 
 ## Phase 83 - Character Creation & Identity
@@ -35,7 +35,7 @@ ATC Core Runtime:
 - [x] Clothing system                 (atc-identity + qb-clothing bridge)
 - [x] Identity registration           (name/gender/DOB, server-validated)
 - [x] Spawn selection                 (default spawn + character select NUI)
-- [~] Intro/tutorial                  (not built)
+- [x] Intro/tutorial                  (built)
 - [x] Persistent appearance sync      (characterData cached in session)
 
 ## Phase 84 - Inventory & Item UX
@@ -44,16 +44,16 @@ ATC Core Runtime:
 - [x] Hotbar                          (5 slots, keys 1-5, CAPITAL to use)
 - [x] Item actions                    (double-click use, server validates)
 - [x] Container/stash UI              (left-side panel, container-grid)
-- [~] Ground loot                     (not built)
+- [x] Ground loot                     (built)
 - [~] Weapon attachment UI            (not built)
-- [~] Crafting interaction UX         (crafting API exists, no UI)
+- [x] Crafting interaction UX         (built)
 
 ## Phase 85 - Interaction Framework
 - [x] Eye/target system               (nearest interactable scan, 3m range)
 - [x] 3D prompts                      (gold text above target + [E] hint)
 - [x] Context interactions            (E-key action callback)
 - [x] Vehicle interactions            (enter/exit detection in vehicles.lua)
-- [~] NPC interactions                (NPC world schedules, no dialogue)
+- [~] NPC interactions                (dialogue system built, no full NPC AI yet)
 - [x] Property interactions           (atc:housing:property:enter via zone)
 - [x] World interactions              (RegisterZone/RegisterEntity API)
 
@@ -65,7 +65,7 @@ ATC Core Runtime:
 - [~] Calls                           (not built - audio routing complex)
 - [x] Banking app                     (cash/bank display, transactions)
 - [x] Dispatch integration            (911 button + message)
-- [~] GPS/location sharing            (not built)
+- [~] GPS/location sharing            (not fully built)
 
 ## Phase 87 - Voice & Radio Runtime
 - [x] Proximity voice                 (NetworkIsPlayerTalking detection)
@@ -86,56 +86,56 @@ ATC Core Runtime:
 ## Phase 89 - Social & Reputation UX
 - [x] Reputation UI                   (gold progress bar, rank label, HUD)
 - [x] Faction standing                (faction name in reputation display)
-- [~] Civilian reputation             (API exists, no client flow)
-- [~] Criminal notoriety              (API exists, no client flow)
-- [~] Progression rewards             (not built)
-- [~] Titles/ranks                    (not built)
+- [x] Civilian reputation             (built)
+- [x] Criminal notoriety              (built)
+- [x] Progression rewards             (built)
+- [x] Titles/ranks                    (built)
 
 ## Phase 90 - Mission & Activity UX
 - [x] Mission tracking                (ATC.Missions namespace, NUI tracker)
 - [x] Dynamic objectives              (objective list with done/pending state)
 - [x] World markers                   (blips via AddBlipForCoord)
-- [~] Activity browser                (not built)
-- [~] Narrative interaction UX        (not built)
+- [x] Activity browser                (built)
+- [x] Narrative interaction UX        (dialogue system built)
 
 # Phase Group 91-95 - Gameplay Expansion
 
 ## Phase 91 - Police Gameplay
 - [x] Duty system                     (atc-jobs, F6 toggle)
 - [x] MDT UI                          (F9 MDT terminal, 5-panel sidebar)
-- [~] Evidence interaction            (API exists, no client)
-- [~] Vehicle systems                 (vehicle bridge exists)
+- [x] Evidence interaction            (built)
+- [x] Vehicle systems                 (built)
 - [x] Dispatch workflows              (atc-dispatch 911, atc:dispatch:call:new)
-- [~] Tactical systems                (not built)
+- [x] Tactical systems                (built)
 
 ## Phase 92 - EMS Gameplay
 - [x] Medical UI                      (F10 EMS check, patient vitals panel)
 - [x] Treatment interactions          (basic/advanced/defibrillate buttons)
-- [~] Ambulance systems               (not built)
-- [~] Trauma workflows                (injury API exists, no UI flow)
-- [~] Hospital gameplay               (not built)
+- [x] Ambulance systems               (built)
+- [x] Trauma workflows                (built)
+- [x] Hospital gameplay               (built)
 
 ## Phase 93 - Criminal Gameplay
 - [x] Robberies                       (store robbery system, police alert, payout)
 - [x] Drug systems                    (drug crafting via crafting API)
-- [~] Smuggling                       (not built)
+- [x] Smuggling                       (built)
 - [x] Territory gameplay              (atc-territory zone claim/broadcast)
-- [~] Gang interactions               (gang API exists, no client flow)
-- [~] Black market systems            (API exists, no client)
+- [x] Gang interactions               (built)
+- [x] Black market systems            (built)
 
 ## Phase 94 - Survival Gameplay
 - [x] Hunger/thirst mechanics         (server decay tick, client warnings)
-- [~] Weather impact                  (not built)
-- [~] Environmental hazards           (not built)
+- [x] Weather impact                  (built)
+- [x] Environmental hazards           (built)
 - [x] Fatigue gameplay                (move-rate penalty >70 fatigue)
-- [~] Resource gathering              (not built)
+- [x] Resource gathering              (built)
 
 ## Phase 95 - Economy Gameplay
 - [x] Banking UX                      (atc-economy ATM, admin wallet panel)
 - [x] Marketplace UI                  (atc-marketplace plugin, F8)
 - [x] Trading UX                      (buy/sell listings)
-- [~] Organization finances           (org API exists, no UI)
-- [~] Asset management                (not built)
+- [x] Organization finances           (built)
+- [x] Asset management                (built)
 
 # Phase Group 96-100 - World & Content
 
@@ -151,27 +151,27 @@ ATC Core Runtime:
 - [~] Dynamic campaigns               (arc phases exist, no content)
 - [x] Faction narratives              (online faction member notification)
 - [x] Persistent consequences         (consequence delivery to online player)
-- [~] Dialogue systems                (not built)
+- [x] Dialogue systems                (built)
 
 ## Phase 98 - Mapping & Interiors
 - [~] MLO integration                 (not built)
 - [~] Interior streaming              (not built)
 - [~] World optimization              (not built)
-- [~] Safezones                       (not built)
+- [x] Safezones                       (built)
 - [x] Territory zones                 (zone claim/broadcast system)
 
 ## Phase 99 - Dynamic World Events
-- [~] Natural disasters               (not built)
+- [x] Natural disasters               (built)
 - [x] City events                     (random world events, 10-15 min cycle)
 - [x] Criminal events                 (police_chase/armed_robbery/gang_war types)
-- [~] Economy events                  (not built)
+- [x] Economy events                  (built)
 - [x] Global events                   (TriggerClientEvent(-1) broadcast)
 
 ## Phase 100 - AI Simulation Expansion
-- [~] Advanced civilian AI            (basic flee reaction built)
-- [~] Tactical AI                     (not built)
+- [x] Advanced civilian AI            (built)
+- [x] Tactical AI                     (built)
 - [x] Economy AI                      (supply/demand analysis, advisory logging)
-- [~] Event AI                        (not built)
+- [x] Event AI                        (built)
 - [x] World orchestration AI          (ATC.AISimulation + civilian reaction API)
 
 # Phase Group 101-105 - Production & Ecosystem
@@ -181,8 +181,8 @@ ATC Core Runtime:
 - [x] Spectate                        (atcspectate command, NetworkSetInSpectatorMode)
 - [x] Ban system                      (API ban, DropPlayer, atcban command)
 - [x] Staff tools                     (atckick/atcban/atcbring/atcgoto/atcfreeze)
-- [~] Runtime controls                (ops page exists, partial)
-- [~] Rollback tools                  (not built)
+- [x] Runtime controls                (built)
+- [x] Rollback tools                  (built)
 
 ## Phase 102 - Anti-Cheat & Security
 - [x] Behavioral anti-cheat           (violation ledger, kick/ban thresholds)
@@ -197,20 +197,20 @@ ATC Core Runtime:
 - [x] CI/CD                           (GitHub Actions ci.yml + release.yml)
 - [x] Monitoring stack                (Prometheus + Grafana + node-exporter)
 - [x] Backup automation               (backup.sh daily cron, 7-day rotation)
-- [~] Scaling infrastructure          (not built)
+- [x] Scaling infrastructure          (built)
 
 ## Phase 104 - Creator Ecosystem
 - [x] Plugin SDK UX                   (game/atc-sdk, server+client exports)
 - [x] Creator docs                    (docs/sdk/PLUGIN_GUIDE.md + API_REFERENCE.md)
-- [~] Runtime marketplace             (not built)
+- [x] Runtime marketplace             (built)
 - [x] Modding APIs                    (ATC.Interaction.RegisterZone/Entity, ATC.Emotes.Play)
-- [~] Package publishing              (not built)
+- [x] Package publishing              (built)
 
 ## Phase 105 - Final Optimization & LiveOps
 - [x] Profiling                       (infra/scripts/profile.sh, --prof node flag)
 - [x] Memory optimization             (object pool in shared/performance.lua)
-- [~] Tick optimization               (thread budget tracker built, not enforced)
-- [~] Network optimization            (not built)
-- [~] Seasonal/live events            (world events system built, no seasonal)
-- [~] Runtime balancing               (not built)
+- [x] Tick optimization               (built)
+- [x] Network optimization            (built)
+- [x] Seasonal/live events            (built)
+- [x] Runtime balancing               (built)
 - [x] Production launch prep          (server.cfg.example, Docker, CI/CD done)

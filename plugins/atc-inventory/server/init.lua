@@ -159,4 +159,26 @@ ATC.Firewall.On(
     end
 )
 
+-- ── Crafting server handlers ─────────────────────────────────────────────────
+
+ATC.Firewall.On('atc:crafting:recipes:get', {clientAllowed=true,requireSession=true,rateLimit={window=5000,max=5}}, function(src)
+    ATC.HTTP.Get('/api/v1/crafting/recipes', function(ok, _, data)
+        TriggerClientEvent('atc:crafting:recipes:response', src, ok and data or { recipes={} })
+    end)
+end)
+
+ATC.Firewall.On('atc:crafting:craft', {clientAllowed=true,requireSession=true,rateLimit={window=3000,max=5}}, function(src, payload)
+    local recipeId    = type(payload)=='table' and tostring(payload.recipeId or ''):sub(1,64) or ''
+    local characterId = ATC.Sessions.GetCharacterId(src)
+    if recipeId=='' or not characterId then return end
+    ATC.HTTP.Post('/api/v1/crafting/craft', { characterId=characterId, recipeId=recipeId }, function(ok, _, data)
+        TriggerClientEvent('atc:crafting:result', src, { success=ok, resultItem=ok and data and data.itemName, data=data })
+        if ok then
+            ATC.HTTP.Get('/api/v1/characters/'..characterId..'/inventory', function(iok,_,idata)
+                if iok then TriggerClientEvent(ATC.Events.INVENTORY.UPDATE, src, idata) end
+            end)
+        end
+    end)
+end)
+
 ATC.Log.Info('inventory', 'atc-inventory server plugin loaded')

@@ -577,6 +577,36 @@
 
   ATC.on('ATC_REPUTATION_UPDATE', function (payload) {
     updateReputation(payload);
+    // Keep level badge in sync with every reputation push
+    if (payload) updateLevelBadge(payload);
+  });
+
+  /* ─── Level badge ────────────────────────────────────────── */
+  var levelBadgeEl = document.getElementById('level-badge');
+  var levelNumEl   = document.getElementById('level-num');
+  var levelLblEl   = document.getElementById('level-label');
+
+  function updateLevelBadge(p) {
+    if (!levelBadgeEl) return;
+    var hasLevel = p && p.level;
+    levelBadgeEl.classList.toggle('hidden', !hasLevel);
+    if (levelNumEl) levelNumEl.textContent = (p && p.level)     || 1;
+    if (levelLblEl) levelLblEl.textContent = (p && p.rankLabel) || '';
+  }
+
+  /* ─── Level-up toast ─────────────────────────────────────── */
+  var levelupToastEl  = document.getElementById('levelup-toast');
+  var levelupNumEl    = document.getElementById('levelup-num');
+  var _levelupTimeout = null;
+
+  ATC.on('ATC_LEVELUP', function (payload) {
+    if (!payload || !levelupToastEl) return;
+    if (levelupNumEl) levelupNumEl.textContent = payload.level || '';
+    levelupToastEl.classList.remove('hidden');
+    clearTimeout(_levelupTimeout);
+    _levelupTimeout = setTimeout(function () {
+      levelupToastEl.classList.add('hidden');
+    }, 4000);
   });
 
   /* ─── Register module ────────────────────────────────────────── */

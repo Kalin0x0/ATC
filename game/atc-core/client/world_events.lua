@@ -108,3 +108,54 @@ end)
 function ATC.GetActiveWorldEvents()
     return _activeEvents
 end
+
+-- ---------------------------------------------------------------------------
+-- Natural disaster feedback
+-- ---------------------------------------------------------------------------
+
+RegisterNetEvent('atc:world:disaster')
+AddEventHandler('atc:world:disaster', function(data)
+    if not data then return end
+    SendNUIMessage({
+        type    = 'ATC_NOTIFICATION',
+        payload = {
+            message  = 'DISASTER WARNING: ' .. tostring(data.type or 'event') .. ' in your area!',
+            level    = 'error',
+            duration = 10000,
+        },
+    })
+    -- Screen shake proportional to intensity
+    ShakeGameplayCam('EXPLOSION_SHAKE', 0.3)
+    Citizen.SetTimeout(5000, function() StopGameplayCamShaking(false) end)
+end)
+
+-- ---------------------------------------------------------------------------
+-- Economy event HUD notification
+-- ---------------------------------------------------------------------------
+
+RegisterNetEvent('atc:world:economy:event')
+AddEventHandler('atc:world:economy:event', function(data)
+    if not data then return end
+    SendNUIMessage({
+        type    = 'ATC_NOTIFICATION',
+        payload = {
+            message  = tostring(data.message or 'Market event'),
+            level    = 'warning',
+            duration = 8000,
+        },
+    })
+end)
+
+-- ---------------------------------------------------------------------------
+-- Seasonal event client handlers
+-- ---------------------------------------------------------------------------
+RegisterNetEvent('atc:world:seasonal:start')
+AddEventHandler('atc:world:seasonal:start', function(data)
+    if not data then return end
+    SendNUIMessage({ type='ATC_NOTIFICATION', payload={ message='Seasonal Event: '..tostring(data.name or 'Event')..' has started!', level='success', duration=10000 } })
+end)
+
+RegisterNetEvent('atc:world:seasonal:end')
+AddEventHandler('atc:world:seasonal:end', function(data)
+    SendNUIMessage({ type='ATC_NOTIFICATION', payload={ message='Seasonal event has ended', level='info', duration=5000 } })
+end)

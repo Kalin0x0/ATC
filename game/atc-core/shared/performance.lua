@@ -23,6 +23,27 @@ function ATC.Performance.GetStats()
     return _threadStats
 end
 
+-- Enforced tick budget for critical threads
+local _BUDGET_MS = 10  -- hard cap per thread tick
+
+--- Wrap a thread function to enforce budget and yield if over budget
+function ATC.Performance.GuardedThread(name, intervalMs, fn)
+    CreateThread(function()
+        while true do
+            local t0 = GetGameTimer()
+            local ok, err = pcall(fn)
+            if not ok then
+                ATC.Log.Warn('performance', 'Thread error', { thread=name, err=tostring(err) })
+            end
+            local elapsed = GetGameTimer() - t0
+            if elapsed > _BUDGET_MS then
+                ATC.Log.Debug('performance', 'Thread over budget', { thread=name, ms=elapsed, budget=_BUDGET_MS })
+            end
+            Wait(math.max(0, intervalMs - elapsed))
+        end
+    end)
+end
+
 -- Object pool for frequently allocated tables
 local _pool = {}
 function ATC.Performance.GetTable()

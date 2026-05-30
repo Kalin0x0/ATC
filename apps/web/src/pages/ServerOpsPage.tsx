@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Card, Badge, Button, Modal, Input, Spinner, Alert, StatusDot } from '@atc/ui'
 import { api, ApiError } from '../lib/api'
 
@@ -44,6 +44,14 @@ export function ServerOpsPage() {
   const [loading, setLoading] = useState(true)
   const [errors, setErrors] = useState<string[]>([])
 
+  // Runtime controls state
+  const [announceText, setAnnounceText] = useState('')
+  const [announceLoading, setAnnounceLoading] = useState(false)
+  const [announceResult, setAnnounceResult] = useState<{ ok: boolean; msg: string } | null>(null)
+  const [gcLoading, setGcLoading] = useState(false)
+  const [gcResult, setGcResult] = useState<{ ok: boolean; msg: string } | null>(null)
+  const [exportLoading, setExportLoading] = useState(false)
+
   // Danger zone modal state
   const [opModal, setOpModal] = useState<{ action: string; label: string } | null>(null)
   const [confirmText, setConfirmText] = useState('')
@@ -81,6 +89,52 @@ export function ServerOpsPage() {
   useEffect(() => {
     void fetchAll()
   }, [])
+
+  async function broadcastAnnounce() {
+    if (!announceText.trim()) return
+    setAnnounceLoading(true)
+    setAnnounceResult(null)
+    try {
+      await api.post('/api/v1/ops/announce', { message: announceText })
+      setAnnounceResult({ ok: true, msg: 'Announcement broadcast to all players.' })
+      setAnnounceText('')
+    } catch (err) {
+      setAnnounceResult({ ok: false, msg: err instanceof ApiError ? err.message : 'Announce failed.' })
+    } finally {
+      setAnnounceLoading(false)
+    }
+  }
+
+  async function forceGC() {
+    setGcLoading(true)
+    setGcResult(null)
+    try {
+      await api.post('/api/v1/ops/gc', {})
+      setGcResult({ ok: true, msg: 'Garbage collection triggered.' })
+    } catch (err) {
+      setGcResult({ ok: false, msg: err instanceof ApiError ? err.message : 'GC failed.' })
+    } finally {
+      setGcLoading(false)
+    }
+  }
+
+  async function exportMetrics() {
+    setExportLoading(true)
+    try {
+      const data = await api.get<unknown>('/api/v1/metrics')
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `atc-metrics-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      // silent — metrics export failure is non-critical
+    } finally {
+      setExportLoading(false)
+    }
+  }
 
   async function executeOp(action: string) {
     setOpLoading(true)
@@ -203,6 +257,73 @@ export function ServerOpsPage() {
               </div>
             </Card>
           )}
+
+          {/* Runtime Controls */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Announce */}
+            <Card title="Announce" subtitle="Broadcast message to all players">
+              <div className="space-y-2">
+                {announceResult && (
+                  <Alert variant={announceResult.ok ? 'success' : 'danger'} onDismiss={() => setAnnounceResult(null)}>
+                    {announceResult.msg}
+                  </Alert>
+                )}
+                <Input
+                  placeholder="Message to broadcast…"
+                  value={announceText}
+                  onChange={setAnnounceText}
+                />
+                <Button
+                  variant="primary"
+                  size="sm"
+                  loading={announceLoading}
+                  disabled={!announceText.trim()}
+                  onClick={broadcastAnnounce}
+                >
+                  Broadcast
+                </Button>
+              </div>
+            </Card>
+
+            {/* Force GC */}
+            <Card title="Force GC" subtitle="Trigger server-side garbage collection">
+              <div className="space-y-2">
+                {gcResult && (
+                  <Alert variant={gcResult.ok ? 'success' : 'danger'} onDismiss={() => setGcResult(null)}>
+                    {gcResult.msg}
+                  </Alert>
+                )}
+                <p className="text-[#8888aa] text-xs">
+                  Forces immediate garbage collection on the API process. Use if memory usage is elevated.
+                </p>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  loading={gcLoading}
+                  onClick={forceGC}
+                >
+                  Run GC
+                </Button>
+              </div>
+            </Card>
+
+            {/* Export Metrics */}
+            <Card title="Export Metrics" subtitle="Download current metrics snapshot as JSON">
+              <div className="space-y-2">
+                <p className="text-[#8888aa] text-xs">
+                  Fetches <span className="font-mono text-[#d4af37]">GET /api/v1/metrics</span> and downloads the response as a timestamped JSON file.
+                </p>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  loading={exportLoading}
+                  onClick={exportMetrics}
+                >
+                  Export JSON
+                </Button>
+              </div>
+            </Card>
+          </div>
 
           {/* Danger Zone */}
           <Card

@@ -41,6 +41,10 @@ RegisterNetEvent(ATC.Events.INVENTORY.UPDATE)
 AddEventHandler(ATC.Events.INVENTORY.UPDATE, function(data)
     _items = (data and data.slots) or {}
     SendNUIMessage({ type = 'ATC_INVENTORY_UPDATE', payload = _items })
+    -- Sync first 5 slots into the hotbar (hotbar.lua owns no net event)
+    if ATC.Hotbar and ATC.Hotbar.SyncFromInventory then
+        ATC.Hotbar.SyncFromInventory(_items)
+    end
 end)
 
 -- Server confirms a successful item use

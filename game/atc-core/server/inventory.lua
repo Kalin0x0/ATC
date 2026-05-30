@@ -425,6 +425,62 @@ end
 -- Rate-limited to 5 per 30 seconds. Client sends {} or nil.
 -- Server responds with atc:inventory:update on the requesting client.
 
+-- ── Resource gathering event (client → server) ───────────────────────────────
+-- Rate-limited; enforces a 30 s per-spot cooldown server-side.
+
+local _gatherCooldowns = {}   -- "<source>:<spotId>" → os.time()
+
+ATC.Firewall.On('atc:gathering:collect', {
+    clientAllowed  = true,
+    requireSession = true,
+    rateLimit      = { window = 3000, max = 5 },
+}, function(src, payload)
+    local resource = type(payload) == 'table' and tostring(payload.resource or ''):sub(1, 32) or ''
+    local spotId   = type(payload) == 'table' and tostring(payload.spotId   or ''):sub(1, 64) or ''
+    if resource == '' or spotId == '' then return end
+
+    local key = tostring(src) .. ':' .. spotId
+    local now = os.time()
+    if _gatherCooldowns[key] and now - _gatherCooldowns[key] < 30 then
+        TriggerClientEvent('atc:gathering:result', src, { success = false, reason = 'Cooldown active' })
+        return
+    end
+    _gatherCooldowns[key] = now
+
+    local characterId = ATC.Sessions.GetCharacterId(src)
+    if not characterId then return end
+
+    local qty = math.random(1, 3)
+    ATC.HTTP.Post('/api/v1/inventory/add', {
+        characterId = characterId,
+        itemName    = resource,
+        quantity    = qty,
+        metadata    = {},
+    }, function(ok)
+        TriggerClientEvent('atc:gathering:result', src, {
+            success  = ok,
+            resource = resource,
+            quantity = ok and qty or 0,
+        })
+    end)
+end)
+
+-- ── Ground loot pickup ───────────────────────────────────────────────────────
+ATC.Firewall.On('atc:loot:pickup', {clientAllowed=true,requireSession=true,rateLimit={window=2000,max=5}}, function(src, payload)
+    local lootId = type(payload)=='table' and tostring(payload.lootId or ''):sub(1,64) or ''
+    if lootId == '' then return end
+    local characterId = ATC.Sessions.GetCharacterId(src)
+    if not characterId then return end
+    ATC.HTTP.Post('/api/v1/inventory/loot/'..lootId..'/pickup', { characterId=characterId }, function(ok, _, data)
+        if ok then
+            TriggerClientEvent('atc:loot:remove', src, { id=lootId })
+            TriggerClientEvent('atc:loot:remove', -1, { id=lootId })  -- remove for all
+            TriggerClientEvent(ATC.Events.INVENTORY.UPDATE, src, data)
+            SendNUIMessage({ type='ATC_NOTIFICATION', payload={ message='Items picked up', level='success', duration=2000 } })
+        end
+    end)
+end)
+
 ATC.Firewall.On(ATC.Events.INVENTORY.REQUEST, {
     clientAllowed  = true,
     requireSession = true,

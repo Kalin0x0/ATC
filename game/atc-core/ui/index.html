@@ -167,6 +167,18 @@
       <ul id="mission-objectives"></ul>
     </div>
 
+    <!-- LEVEL BADGE — top-center -->
+    <div id="level-badge" class="hidden">
+      <span id="level-num">1</span>
+      <span id="level-label">Civilian</span>
+    </div>
+
+    <!-- LEVEL-UP TOAST — center screen -->
+    <div id="levelup-toast" class="hidden">
+      <div class="levelup-icon">&#x2B06;</div>
+      <div class="levelup-text">Level <span id="levelup-num"></span></div>
+    </div>
+
   </div>
   <!-- /#atc-hud -->
 
@@ -241,6 +253,19 @@
 
 
   <!-- ═══════════════════════════════════════════════
+       CRAFTING PANEL
+  ═══════════════════════════════════════════════ -->
+  <div id="crafting-panel" class="panel hidden">
+    <div class="panel-header">
+      <span>Crafting</span>
+      <button onclick="ATC.nuiCallback('atc:crafting:close',{})" class="btn-ghost">&#x2715;</button>
+    </div>
+    <div id="crafting-recipes"></div>
+    <div id="crafting-result" class="hidden"></div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════
        CONTAINER / STASH PANEL
   ═══════════════════════════════════════════════ -->
   <div id="container-panel" class="panel hidden">
@@ -290,8 +315,38 @@
 
 
   <!-- ═══════════════════════════════════════════════
+       ACTIVITY BROWSER
+  ═══════════════════════════════════════════════ -->
+  <div id="activity-browser" class="screen hidden">
+    <div class="screen-header">
+      <span>Activity Browser</span>
+      <button onclick="ATC.Windows.close('activity-browser'); ATC.nuiCallback('atc:activity:close',{})" class="btn-ghost">&#x2715;</button>
+    </div>
+    <div class="activity-tabs">
+      <button class="activity-tab active" onclick="filterActivities('all')">All</button>
+      <button class="activity-tab" onclick="filterActivities('jobs')">Jobs</button>
+      <button class="activity-tab" onclick="filterActivities('missions')">Missions</button>
+      <button class="activity-tab" onclick="filterActivities('events')">World Events</button>
+    </div>
+    <div id="activity-list"></div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════
+       DIALOGUE PANEL
+  ═══════════════════════════════════════════════ -->
+  <div id="dialogue-panel" class="screen hidden">
+    <div id="dialogue-portrait">&#x1F9CD;</div>
+    <div id="dialogue-name"></div>
+    <div id="dialogue-text"></div>
+    <div id="dialogue-options"></div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════
        SCRIPTS — order matters
   ═══════════════════════════════════════════════ -->
+  <script src="js/windows.js"></script>
   <script src="js/core.js"></script>
   <script src="js/hud.js"></script>
   <script src="js/character-select.js"></script>

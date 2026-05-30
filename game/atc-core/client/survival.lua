@@ -104,3 +104,27 @@ AddEventHandler('atc:survival:decay:tick', function()
         })
     end
 end)
+
+-- ── Weather-based survival effects ───────────────────────────
+-- Runs every 30 s; applies stress debuffs based on active weather.
+
+CreateThread(function()
+    while true do
+        Wait(30000)
+        if not (ATC.Core.IsReady() and ATC.Characters and ATC.Characters.IsSpawned()) then goto skip end
+        local weather = GetPrevWeatherTypeHashName()
+        -- Rain: wet and cold debuff
+        if weather == GetHashKey('CLEARING') or weather == GetHashKey('RAIN') or weather == GetHashKey('THUNDER') then
+            if not IsPedInAnyVehicle(PlayerPedId(), false) then
+                ATC.Survival.AddStress(5)
+                TriggerServerEvent('atc:survival:weather:tick', { weather='rain', outdoor=true })
+            end
+        end
+        -- Snow/cold (modded weather)
+        if weather == GetHashKey('SNOWLIGHT') or weather == GetHashKey('BLIZZARD') then
+            ATC.Survival.AddStress(10)
+            TriggerServerEvent('atc:survival:weather:tick', { weather='cold', outdoor=not IsPedInAnyVehicle(PlayerPedId(), false) })
+        end
+        ::skip::
+    end
+end)
