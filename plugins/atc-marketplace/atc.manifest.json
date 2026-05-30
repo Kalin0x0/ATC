@@ -1,0 +1,8 @@
+{
+  "id": "atc-marketplace",
+  "name": "ATC Marketplace",
+  "version": "0.1.0",
+  "description": "Player-to-player marketplace and trading",
+  "dependencies": ["atc-core"],
+  "permissions": ["economy:read", "economy:write"]
+}

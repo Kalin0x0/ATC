@@ -1431,3 +1431,54 @@ body.cinematic::after  { bottom:0; }
   color: var(--text-primary);
   background: rgba(255, 255, 255, 0.06);
 }
+
+/* ── MISSION TRACKER (Phase 90) ─────────────────────────────── */
+#mission-tracker {
+  position: fixed;
+  top: 80px;
+  right: 16px;
+  width: 220px;
+  background: rgba(13, 13, 26, 0.88);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  border-radius: 8px;
+  padding: 10px 12px;
+  backdrop-filter: blur(6px);
+  z-index: 50;
+}
+
+#mission-title {
+  color: #d4af37;
+  font-weight: 700;
+  font-size: 12px;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+#mission-objectives {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+#mission-objectives li {
+  font-size: 11px;
+  color: #8888aa;
+  padding: 2px 0;
+  transition: color 0.2s ease;
+}
+
+#mission-objectives li::before {
+  content: '- ';
+  color: rgba(212, 175, 55, 0.5);
+}
+
+#mission-objectives li.done {
+  text-decoration: line-through;
+  color: #52c052;
+}
+
+#mission-objectives li.done::before {
+  content: '\2713 ';
+  color: #52c052;
+}

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ATC Marketplace</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/marketplace.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════
+       MARKETPLACE OVERLAY (hidden by default)
+  ═══════════════════════════════════════════════ -->
+  <div id="mp-overlay">
+    <div id="mp-panel">
+
+      <!-- ── Header ───────────────────────────────── -->
+      <div id="mp-header">
+        <span id="mp-title">Marketplace</span>
+
+        <div id="mp-balance-block">
+          <span>Balance:</span>
+          <span id="mp-balance-amount">$0</span>
+        </div>
+
+        <button id="mp-btn-list">+ List Item</button>
+        <button id="mp-btn-close" title="Close">&times;</button>
+      </div>
+
+      <!-- ── Body ─────────────────────────────────── -->
+      <div id="mp-body">
+
+        <!-- Left sidebar: search + categories -->
+        <aside id="mp-sidebar">
+          <input
+            id="mp-search"
+            type="text"
+            placeholder="Search items..."
+            autocomplete="off"
+            spellcheck="false"
+          />
+
+          <!-- Category tabs (built by JS) -->
+          <div id="mp-categories"></div>
+
+          <div id="mp-listing-count">0 listings</div>
+        </aside>
+
+        <!-- Right content: listing grid -->
+        <div id="mp-content">
+          <div id="mp-grid"></div>
+
+          <div id="mp-empty">
+            <span>No listings found</span>
+            <span style="font-size:11px;color:#5a5a72">Try a different category or search term</span>
+          </div>
+        </div>
+
+      </div>
+      <!-- /#mp-body -->
+
+      <!-- ── List-item modal (inside panel for border-radius clip) -->
+      <div id="mp-modal-overlay">
+        <div id="mp-modal">
+          <div id="mp-modal-title">List Item for Sale</div>
+
+          <div class="mp-field">
+            <label for="mp-in-name">Item Name</label>
+            <input
+              id="mp-in-name"
+              type="text"
+              placeholder="e.g. water_bottle"
+              maxlength="64"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </div>
+
+          <div class="mp-field">
+            <label for="mp-in-qty">Quantity</label>
+            <input
+              id="mp-in-qty"
+              type="number"
+              value="1"
+              min="1"
+              max="99"
+              step="1"
+            />
+          </div>
+
+          <div class="mp-field">
+            <label for="mp-in-price">Price ($)</label>
+            <input
+              id="mp-in-price"
+              type="number"
+              placeholder="e.g. 500"
+              min="1"
+              max="1000000"
+              step="1"
+            />
+          </div>
+
+          <div id="mp-modal-error"></div>
+
+          <div class="mp-modal-actions">
+            <button id="mp-btn-cancel" class="mp-btn-cancel">Cancel</button>
+            <button id="mp-btn-confirm" class="mp-btn-confirm">List Item</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <!-- /#mp-panel -->
+  </div>
+  <!-- /#mp-overlay -->
+
+  <script src="js/marketplace.js"></script>
+</body>
+</html>

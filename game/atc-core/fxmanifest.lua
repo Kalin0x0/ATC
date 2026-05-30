@@ -1,4 +1,4 @@
-fx_version 'cerulean'
+﻿fx_version 'cerulean'
 game 'gta5'
 
 name 'atc-core'
@@ -13,6 +13,7 @@ shared_scripts {
     'shared/config.lua',
     'shared/events.lua',
     'shared/locales.lua',
+    'shared/performance.lua',
 }
 
 server_scripts {
@@ -90,6 +91,12 @@ server_scripts {
     'server/release_governance.lua',
     'server/enterprise_readiness.lua',
     'server/core_closure.lua',
+    'server/spectate.lua',
+    'server/anticheat.lua',
+    'server/npc_world.lua',
+    'server/narrative_world.lua',
+    'server/world_events.lua',
+    'server/ai_simulation.lua',
     'server/main.lua',
 }
 
@@ -108,7 +115,13 @@ client_scripts {
     'client/interaction.lua',
     'client/voice.lua',
     'client/emotes.lua',
+    'client/survival.lua',
+    'client/missions.lua',
+    'client/npc_world.lua',
+    'client/world_events.lua',
     'client/hud.lua',
+    'client/spectate.lua',
+    'client/anticheat.lua',
     'client/main.lua',
 }
 

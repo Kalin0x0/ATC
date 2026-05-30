@@ -65,3 +65,10 @@ dump*.sql
 tmp/
 temp/
 *.tmp
+
+# Infrastructure secrets (never commit)
+infra/.env
+infra/nginx/ssl/
+
+# Grafana provisioning (environment-specific, not committed)
+infra/monitoring/grafana/provisioning/

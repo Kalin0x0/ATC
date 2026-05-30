@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ATC — Atlantic Core NUI
  * core.js — NUI message router, global state store, event bus
  *
@@ -273,6 +273,45 @@
     emit('ATC_EMOTE_WHEEL_OPEN', payload);
   };
 
+
+  /* ── XSS-safe HTML escaper (used by mission tracker) ──────── */
+  function _escHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  /* ── Mission Tracker handlers (Phase 90) ──────────────────── */
+  handlers['ATC_MISSION_START'] = function (p) {
+    if (!p) return;
+    var tEl = document.getElementById('mission-title');
+    var ol  = document.getElementById('mission-objectives');
+    var el  = document.getElementById('mission-tracker');
+    if (tEl) tEl.textContent = p.title || 'Mission';
+    if (ol)  ol.innerHTML    = (p.objectives || []).map(function (o) {
+      return '<li>' + _escHtml(o.label || '') + '</li>';
+    }).join('');
+    if (el) el.classList.remove('hidden');
+    emit('ATC_MISSION_START', p);
+  };
+
+  handlers['ATC_MISSION_UPDATE'] = function (p) {
+    if (!p || !p.objectives) return;
+    var ol = document.getElementById('mission-objectives');
+    if (ol) ol.innerHTML = p.objectives.map(function (o) {
+      var cls = o.completed ? 'done' : '';
+      return '<li class="' + cls + '">' + _escHtml(o.label || '') + '</li>';
+    }).join('');
+    emit('ATC_MISSION_UPDATE', p);
+  };
+
+  handlers['ATC_MISSION_END'] = function (p) {
+    var el = document.getElementById('mission-tracker');
+    if (el) el.classList.add('hidden');
+    emit('ATC_MISSION_END', p);
+  };
   /* ─── Dispatcher ─────────────────────────────────────────────── */
   function dispatch(msg) {
     if (!msg || typeof msg.type !== 'string') return;

@@ -1,0 +1,15 @@
+{
+  "id": "atc-example-shop",
+  "name": "ATC Example Shop",
+  "version": "0.1.0",
+  "description": "Reference implementation: NPC shop using ATC SDK",
+  "author": "Atlantic Community",
+  "license": "MIT",
+  "atcMinVersion": "0.1.0",
+  "dependencies": ["atc-core"],
+  "permissions": ["economy:charge", "inventory:write"],
+  "events": {
+    "emits":     ["atc:example_shop:catalog:response", "atc:example_shop:buy:result"],
+    "listensTo": ["atc:example_shop:catalog", "atc:example_shop:buy"]
+  }
+}
