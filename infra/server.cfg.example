@@ -61,6 +61,14 @@ start atc-combat
 start atc-territory
 start atc-dispatch
 start atc-admin
+start atc-phone
+start atc-mdt
+start atc-ems
+start atc-criminal
+start atc-marketplace
+
+# Reference / example plugin (optional — demonstrates ATC SDK usage)
+# start atc-example-shop
 
 # Compatibility bridges (only enable if you use these frameworks)
 # start atc-bridge-qb
