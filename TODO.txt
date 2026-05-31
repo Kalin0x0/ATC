@@ -45,7 +45,7 @@ ATC Core Runtime:
 - [x] Item actions                    (double-click use, server validates)
 - [x] Container/stash UI              (left-side panel, container-grid)
 - [x] Ground loot                     (built)
-- [~] Weapon attachment UI            (not built)
+- [x] Weapon attachment UI            (atc-combat F10, 5-slot toggle, server-persisted)
 - [x] Crafting interaction UX         (built)
 
 ## Phase 85 - Interaction Framework
@@ -53,7 +53,7 @@ ATC Core Runtime:
 - [x] 3D prompts                      (gold text above target + [E] hint)
 - [x] Context interactions            (E-key action callback)
 - [x] Vehicle interactions            (enter/exit detection in vehicles.lua)
-- [~] NPC interactions                (dialogue system built, no full NPC AI yet)
+- [x] NPC interactions                (interactable NPCs + dialogue trees via Interaction framework)
 - [x] Property interactions           (atc:housing:property:enter via zone)
 - [x] World interactions              (RegisterZone/RegisterEntity API)
 
@@ -65,7 +65,7 @@ ATC Core Runtime:
 - [~] Calls                           (not built - audio routing complex)
 - [x] Banking app                     (cash/bank display, transactions)
 - [x] Dispatch integration            (911 button + message)
-- [~] GPS/location sharing            (not fully built)
+- [x] GPS/location sharing            (phone Maps app, waypoints, live location share + blips)
 
 ## Phase 87 - Voice & Radio Runtime
 - [x] Proximity voice                 (NetworkIsPlayerTalking detection)
