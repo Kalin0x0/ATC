@@ -93,3 +93,20 @@ ATC.Firewall.On('atc:phone:911', {
 
     TriggerClientEvent('atc:phone:911:sent', src, { success = true })
 end)
+
+-- ─── Live Location Sharing ───────────────────────────────────────────────────────
+-- Player shares coords with a target character, delivered if online
+ATC.Firewall.On('atc:phone:location:share', { clientAllowed = true, requireSession = true, rateLimit = { window = 3000, max = 10 } }, function(src, payload)
+  local to = type(payload) == 'table' and type(payload.to) == 'string' and payload.to or ''
+  local x  = tonumber(payload and payload.x); local y = tonumber(payload and payload.y); local z = tonumber(payload and payload.z)
+  if to == '' or not x or not y then return end
+  local fromId = ATC.Sessions.GetCharacterId(src)
+  if not fromId then return end
+  for _, pid in ipairs(GetPlayers()) do
+    local p = tonumber(pid)
+    if ATC.Sessions.GetCharacterId(p) == to then
+      TriggerClientEvent('atc:phone:location:received', p, { from = fromId, x = x, y = y, z = z, ts = os.time() })
+    end
+  end
+  TriggerClientEvent('atc:phone:location:shared', src, { to = to })
+end)

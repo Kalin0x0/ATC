@@ -130,6 +130,7 @@ client_scripts {
     'client/ground_loot.lua',
     'client/reputation.lua',
     'client/dialogue.lua',
+    'client/npc_interactions.lua',
     'client/hud.lua',
     'client/spectate.lua',
     'client/anticheat.lua',

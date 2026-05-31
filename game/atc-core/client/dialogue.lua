@@ -47,6 +47,8 @@ RegisterNUICallback('atc:dialogue:choose', function(data, cb)
                 action = opt.action,
                 npcId  = _tree.npcId
             })
+            -- Also fire a local client-side action so client-only handlers work
+            TriggerEvent('atc:dialogue:action:client', opt.action)
             ATC.Dialogue.Close()
         else
             ATC.Dialogue.Close()

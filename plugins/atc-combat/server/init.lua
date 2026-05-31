@@ -108,3 +108,26 @@ ATC.Firewall.On(ATC.Events.PLAYER.REQUEST_RESPAWN, {
 
     ATC.Log.Info('combat', 'Player self-respawned at hospital', { source = src })
 end)
+
+-- ── Weapon Attachment Persistence ─────────────────────────────────────────────
+-- The client toggles GTA weapon components locally for instant feedback; the
+-- server records the change but never trusts the client for combat math.
+-- Component string is hard-clamped to 64 chars to bound payload size.
+ATC.Firewall.On('atc:combat:weapon:attachment', {
+    clientAllowed  = true,
+    requireSession = true,
+    rateLimit      = { window = 2000, max = 10 },
+}, function(src, payload)
+    local action    = type(payload) == 'table' and tostring(payload.action or '') or ''
+    local component = type(payload) == 'table' and tostring(payload.component or ''):sub(1, 64) or ''
+    if (action ~= 'add' and action ~= 'remove') or component == '' then return end
+
+    local principalId = ATC.Accounts.GetPrincipalId(src)
+    if not principalId then return end
+
+    ATC.HTTP.Post('/api/v1/combat/weapons/attachment', {
+        principalId = principalId,
+        action      = action,
+        component   = component,
+    }, function() end)
+end)

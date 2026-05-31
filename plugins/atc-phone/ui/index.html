@@ -540,6 +540,126 @@
     flex-shrink:   0;
   }
 
+  /* ── Maps / GPS screen ──────────────────────────────────────────────────── */
+  .app-icon.maps svg { color: #5dade2; }
+
+  .map-canvas {
+    position:      relative;
+    height:        120px;
+    border-radius: var(--radius);
+    border:        1px solid #2a2a4a;
+    margin-bottom: 12px;
+    overflow:      hidden;
+    background-color: var(--bg-card);
+    background-image:
+      linear-gradient(rgba(212,175,55,.10) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(212,175,55,.10) 1px, transparent 1px),
+      radial-gradient(circle at 50% 50%, var(--bg-surface) 0%, var(--bg) 100%);
+    background-size: 22px 22px, 22px 22px, 100% 100%;
+  }
+  .map-canvas .map-pin {
+    position:  absolute;
+    top:       50%;
+    left:      50%;
+    transform: translate(-50%, -100%);
+    color:     var(--gold);
+  }
+  .map-canvas .map-pin svg { width: 26px; height: 26px; display: block; }
+  .map-canvas .map-pulse {
+    position:      absolute;
+    top:           50%;
+    left:          50%;
+    width:         14px;
+    height:        14px;
+    border-radius: 50%;
+    transform:     translate(-50%, -50%);
+    background:    rgba(212,175,55,.4);
+    animation:     mapPulse 2s ease-out infinite;
+  }
+  @keyframes mapPulse {
+    0%   { transform: translate(-50%,-50%) scale(.4); opacity: .8; }
+    100% { transform: translate(-50%,-50%) scale(3);  opacity: 0;  }
+  }
+  .map-canvas .map-label {
+    position:      absolute;
+    bottom:        6px;
+    left:          8px;
+    font-size:     9px;
+    font-weight:   600;
+    color:         var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .maps-section-title {
+    font-size:      11px;
+    font-weight:    700;
+    color:          var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    margin:         12px 0 8px;
+  }
+
+  .place-item {
+    display:         flex;
+    align-items:     center;
+    justify-content: space-between;
+    gap:             10px;
+    padding:         9px 10px;
+    background:      var(--bg-card);
+    border:          1px solid #2a2a4a;
+    border-radius:   10px;
+    margin-bottom:   6px;
+  }
+  .place-info { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .place-icon {
+    width:           32px;
+    height:          32px;
+    border-radius:   8px;
+    background:      var(--bg-surface);
+    display:         flex;
+    align-items:     center;
+    justify-content: center;
+    flex-shrink:     0;
+    color:           var(--gold);
+  }
+  .place-icon svg { width: 16px; height: 16px; }
+  .place-name { font-weight: 600; font-size: 12px; }
+  .place-coords { font-size: 9px; color: var(--text-dim); margin-top: 1px; }
+
+  .btn-gps {
+    background:    var(--bg-surface);
+    color:         var(--gold);
+    border:        1px solid var(--gold-dim);
+    border-radius: 8px;
+    padding:       6px 10px;
+    font-weight:   700;
+    font-size:     10px;
+    cursor:        pointer;
+    transition:    background .2s, color .2s;
+    flex-shrink:   0;
+  }
+  .btn-gps:hover { background: var(--gold); color: #000; }
+
+  .share-row {
+    display:    flex;
+    gap:        6px;
+    margin-top: 4px;
+  }
+  .share-select {
+    flex:          1;
+    background:    var(--bg-card);
+    border:        1px solid #2a2a4a;
+    border-radius: 8px;
+    padding:       7px 10px;
+    color:         var(--text);
+    font-size:     12px;
+    outline:       none;
+    font-family:   inherit;
+    transition:    border-color .2s;
+  }
+  .share-select:focus { border-color: var(--gold-dim); }
+
   /* ── Scrollbar ──────────────────────────────────────────────────────────── */
   ::-webkit-scrollbar { width: 3px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -603,7 +723,11 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           Emergency
         </div>
-        <div class="app-icon settings" onclick="">
+        <div class="app-icon maps" onclick="showScreen('maps')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+          Maps
+        </div>
+        <div class="app-icon settings">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
           Settings
         </div>
@@ -700,6 +824,36 @@
       <div class="emergency-status" id="emergency-status"></div>
     </div>
 
+    <!-- MAPS / GPS -->
+    <div class="screen" id="screen-maps">
+      <div class="screen-header">
+        <button class="btn-back" onclick="showScreen('home')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <span class="screen-title">Maps</span>
+        <div style="width:24px"></div>
+      </div>
+
+      <div class="map-canvas">
+        <div class="map-pulse"></div>
+        <div class="map-pin">
+          <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
+        </div>
+        <div class="map-label">Live Position</div>
+      </div>
+
+      <div class="maps-section-title">Saved Locations</div>
+      <div id="places-list"></div>
+
+      <div class="maps-section-title">Share My Location</div>
+      <div class="share-row">
+        <select class="share-select" id="share-contact">
+          <option value="">Select a contact…</option>
+        </select>
+        <button class="btn-send" style="align-self:stretch;height:auto" onclick="shareLocation()">Share</button>
+      </div>
+    </div>
+
   </div><!-- /screen-area -->
 
   <!-- Nav dock -->
@@ -719,6 +873,10 @@
     <button class="nav-btn" id="nav-bank"      onclick="openBank()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
       Bank
+    </button>
+    <button class="nav-btn" id="nav-maps"      onclick="showScreen('maps')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+      Maps
     </button>
     <button class="nav-btn" id="nav-emergency" onclick="showScreen('emergency')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -772,6 +930,11 @@ function showScreen(name) {
 
   const navEl = document.getElementById('nav-' + name);
   if (navEl) navEl.classList.add('active');
+
+  if (name === 'maps') {
+    renderPlaces();
+    renderShareContacts();
+  }
 
   state.currentScreen = name;
 }
@@ -932,6 +1095,54 @@ function call911() {
   nuiCallback('atc:phone:911', { message: msg });
 }
 
+/* ── Maps / GPS ───────────────────────────────────────────────────────────────── */
+// Static saved locations (GTA V map coords). Icons are fixed/trusted SVG markup.
+const SAVED_PLACES = [
+  { key: 'home',     name: 'Home',     x: -1037.0,  y: -2738.0, icon: '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>' },
+  { key: 'bank',     name: 'Bank',     x:  150.0,   y: -1040.0, icon: '<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>' },
+  { key: 'hospital', name: 'Hospital', x:  295.0,   y: -1448.0, icon: '<path d="M12 2v20M2 12h20"/>' },
+  { key: 'garage',   name: 'Garage',   x: -340.0,   y: -1280.0, icon: '<rect x="3" y="11" width="18" height="10" rx="1"/><path d="M5 11V7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v4"/><line x1="3" y1="15" x2="21" y2="15"/>' },
+];
+
+function renderPlaces() {
+  const container = document.getElementById('places-list');
+  container.innerHTML = SAVED_PLACES.map(p => `
+    <div class="place-item">
+      <div class="place-info">
+        <div class="place-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${p.icon}</svg>
+        </div>
+        <div>
+          <div class="place-name">${escHtml(p.name)}</div>
+          <div class="place-coords">${p.x.toFixed(0)}, ${p.y.toFixed(0)}</div>
+        </div>
+      </div>
+      <button class="btn-gps" onclick="setGps(${p.x}, ${p.y})">Set GPS</button>
+    </div>`).join('');
+}
+
+function setGps(x, y) {
+  nuiCallback('atc:phone:gps:waypoint', { x, y });
+  showNotification('GPS waypoint set');
+}
+
+function renderShareContacts() {
+  const sel = document.getElementById('share-contact');
+  const prev = sel.value;
+  let html = '<option value="">Select a contact…</option>';
+  html += state.contacts.map(c =>
+    `<option value="${escHtml(c.id || '')}">${escHtml(c.name || c.id || 'Unknown')}</option>`
+  ).join('');
+  sel.innerHTML = html;
+  sel.value = prev;
+}
+
+function shareLocation() {
+  const to = document.getElementById('share-contact').value;
+  if (!to) { showNotification('Pick a contact first'); return; }
+  nuiCallback('atc:phone:location:share', { to });
+}
+
 /* ── NUI Message handler ─────────────────────────────────────────────────────── */
 window.addEventListener('message', function(event) {
   const { type, payload } = event.data || {};
@@ -951,6 +1162,7 @@ window.addEventListener('message', function(event) {
       const contacts = (payload && payload.contacts) ? payload.contacts : [];
       state.contacts = contacts;
       renderContacts(contacts);
+      renderShareContacts();
       break;
     }
 
