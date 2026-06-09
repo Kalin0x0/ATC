@@ -5,7 +5,9 @@ Complete reference for where everything lives in ATC.
 ```
 d:\ATC/
 │
-├── CLAUDE.md                          # Project bible — read first
+├── README.md                          # Project overview — read first
+├── CONTRIBUTING.md                    # Contribution guide & conventions
+├── LICENSE                            # Naiemi Group Open Development License
 ├── package.json                       # Root workspace (devDependencies only)
 ├── pnpm-workspace.yaml                # pnpm workspace config
 ├── turbo.json                         # TurboRepo pipeline config

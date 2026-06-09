@@ -140,7 +140,7 @@ Every PR must have:
 - [ ] No new `any` types introduced
 - [ ] No hardcoded strings (use translation keys)
 - [ ] No direct DB access outside repository layer
-- [ ] Security checklist reviewed (see CLAUDE.md)
+- [ ] Security checklist reviewed (see CONTRIBUTING.md)
 - [ ] If new DB table: migration file included
 
 ### PR Size Targets

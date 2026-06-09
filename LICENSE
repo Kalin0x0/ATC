@@ -1,0 +1,117 @@
+Naiemi Group Open Development License (NG-ODL) v1.0
+Copyright (c) 2026 Naiemi Group. All rights reserved.
+
+Atlantic Core ("ATC", the "Software") is an open-development project published
+by Naiemi Group. The source code is made public so that the community can read
+it, learn from it, run it, and help improve it. It is open in spirit and
+source-available in law: you are welcome to build on ATC, but you may not take
+it and pass it off as your own.
+
+Please read these terms before using the Software.
+
+--------------------------------------------------------------------------------
+1. DEFINITIONS
+--------------------------------------------------------------------------------
+"Naiemi Group" is the copyright holder and steward of the Software.
+"You" means any individual or organization exercising rights under this License.
+"Deploy" means to run or host the Software to operate your own game server or
+   service, whether private or open to players.
+"Modify" means to change, extend, configure, or build upon the source code.
+"Distribute" means to publish, share, mirror, sell, sublicense, host for
+   download, or otherwise make the source code (original or modified) available
+   to any third party as software they could obtain or reuse.
+"Contribution" means any change you submit back to the official ATC repository.
+
+--------------------------------------------------------------------------------
+2. WHAT YOU MAY DO
+--------------------------------------------------------------------------------
+Subject to your compliance with this License, Naiemi Group grants You a
+worldwide, royalty-free, non-exclusive, non-transferable right to:
+
+  (a) VIEW & STUDY the source code for any lawful purpose.
+  (b) USE & DEPLOY the Software to run your own server(s) or service(s),
+      including for commercial operation of a game server.
+  (c) MODIFY the Software and run your modified version on your own
+      deployment(s).
+  (d) CONTRIBUTE improvements back to the official ATC project under Section 5.
+
+These rights are granted to You for as long as You comply with this License.
+
+--------------------------------------------------------------------------------
+3. WHAT YOU MAY NOT DO
+--------------------------------------------------------------------------------
+Without prior written permission from Naiemi Group, You may NOT:
+
+  (a) DISTRIBUTE the Software or any modified version of it, in whole or in
+      part — this includes re-uploading, mirroring, re-publishing, or hosting
+      the source for download.
+  (b) CLONE OR COPY the project to present, release, or maintain it as a
+      separate or competing product, framework, or distribution.
+  (c) SUBLICENSE, sell, rent, or relicense the Software or its source code.
+  (d) Remove, alter, or obscure copyright notices, this License, or attribution
+      to Naiemi Group.
+  (e) Use the names "Atlantic Core", "ATC", or "Naiemi Group", or related marks,
+      to endorse or promote products derived from the Software without
+      permission.
+
+Forking the official repository for the sole purpose of preparing a
+Contribution under Section 5 is permitted. Keeping that fork private to operate
+your own deployment is permitted. Publishing it as a distributable copy of ATC
+is not.
+
+--------------------------------------------------------------------------------
+4. SELF-HOSTING & SERVER OPERATORS
+--------------------------------------------------------------------------------
+Running ATC to operate a game server — including charging players, accepting
+donations, or otherwise commercializing your server — is expressly allowed and
+encouraged. The restriction in Section 3 is about redistributing the SOFTWARE
+itself, not about operating a service built with it.
+
+--------------------------------------------------------------------------------
+5. CONTRIBUTIONS
+--------------------------------------------------------------------------------
+If You submit a Contribution to the official ATC project, You grant Naiemi Group
+a perpetual, worldwide, royalty-free, irrevocable license to use, reproduce,
+modify, and incorporate that Contribution into the Software and to license it
+under this License (or a later version of it). You confirm You have the right to
+grant this license for what You submit.
+
+--------------------------------------------------------------------------------
+6. THIRD-PARTY SOFTWARE & ASSETS
+--------------------------------------------------------------------------------
+ATC depends on and recommends third-party software that is licensed separately;
+those components remain under their own licenses. See THIRD_PARTY.md. ATC ships
+no Rockstar / Take-Two game assets. Operators are responsible for licensing any
+game assets, maps, clothing, peds, or audio their deployment requires, and for
+complying with the FiveM / CitizenFX Platform Agreement.
+
+--------------------------------------------------------------------------------
+7. NO WARRANTY
+--------------------------------------------------------------------------------
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+
+--------------------------------------------------------------------------------
+8. LIMITATION OF LIABILITY
+--------------------------------------------------------------------------------
+IN NO EVENT SHALL NAIEMI GROUP BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM,
+OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+--------------------------------------------------------------------------------
+9. TERMINATION
+--------------------------------------------------------------------------------
+Any breach of Sections 3 or 6 automatically terminates the rights granted to You
+under this License. Upon termination You must stop using the Software and delete
+all copies in your possession, except as required to comply with law.
+
+--------------------------------------------------------------------------------
+10. GRANTS BEYOND THIS LICENSE
+--------------------------------------------------------------------------------
+Naiemi Group may grant additional rights (including redistribution rights) under
+a separate written agreement. For permissions beyond this License, contact
+Naiemi Group.
+
+Atlantic Core — an open project by Naiemi Group.

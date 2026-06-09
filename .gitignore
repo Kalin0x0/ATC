@@ -72,3 +72,7 @@ infra/nginx/ssl/
 
 # Grafana provisioning (environment-specific, not committed)
 infra/monitoring/grafana/provisioning/
+
+# Local tooling / editor agent state (not part of the project)
+.claude/
+*.lock.tmp

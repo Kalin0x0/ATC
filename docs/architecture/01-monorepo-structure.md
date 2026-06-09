@@ -85,7 +85,8 @@ d:\ATC/
 ├── package.json                   # Root package (devDependencies only)
 ├── .gitignore
 ├── .env.example
-└── CLAUDE.md                      # Project bible (this repo)
+├── README.md                      # Project overview
+└── CONTRIBUTING.md                # Contribution guide & conventions
 ```
 
 ---

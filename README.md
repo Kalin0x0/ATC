@@ -1,145 +1,211 @@
-# ATC — Atlantic Core
+<div align="center">
 
-> Enterprise-grade, modular **MMO-style persistent-world platform** built on FiveM for the Atlantic Community.
+# Atlantic Core
 
-Atlantic Core (ATC) is not a traditional FiveM roleplay framework — it is a live-service game platform with MMO architecture. The gameplay runtime is written in **Lua 5.4** (FiveM), backed by a **TypeScript** business-logic API (Node.js 22, Fastify), **MariaDB 11** for persistence and **Redis 7** for runtime state, with a **React 19** admin panel. Everything is organized as a TurboRepo + pnpm monorepo so that game logic, services, and tooling share a single, type-safe source of truth.
+**A modern, modular world platform for FiveM — by Naiemi Group.**
 
-<!-- Badges are placeholders until CI/registry endpoints are wired up. Replace OWNER/REPO. -->
-[![Build](https://img.shields.io/badge/build-pending-lightgrey)](#)
-[![License](https://img.shields.io/badge/license-Proprietary-red)](#license)
-[![Node](https://img.shields.io/badge/node-%3E%3D22-339933)](#)
-[![pnpm](https://img.shields.io/badge/pnpm-%3E%3D9-f69220)](#)
+Atlantic Core (ATC) is what you reach for when a normal roleplay framework
+stops being enough. It runs your server like a live game: persistent players,
+a real economy, jobs, vehicles, property, crime, emergency services, and a
+clean phone/HUD — all backed by a proper API, database, and admin panel
+instead of a pile of loosely glued scripts.
 
----
+Open project · source-available · built to be extended.
 
-## Architecture
-
-ATC is layered: FiveM client (NUI/Lua) → Lua SDK → FiveM server (game logic) → server SDK → TypeScript API → Redis + MariaDB.
-
-See the full design in **[docs/architecture/00-overview.md](docs/architecture/00-overview.md)** (20 Phase-0 architecture documents plus ADRs).
-
-```
-┌─────────────────────────────────────────┐
-│           FiveM Client (Lua)            │  NUI, input, rendering
-├─────────────────────────────────────────┤
-│           ATC SDK (Lua / Client)        │  read-only client state
-├─────────────────────────────────────────┤
-│     FiveM Server (Lua) — ATC Core       │  game logic, event handling
-├─────────────────────────────────────────┤
-│           ATC SDK (Lua / Server)        │  service calls
-├─────────────────────────────────────────┤
-│     ATC API Server (TypeScript)         │  REST API, business logic
-├─────────────────────────────────────────┤
-│  Redis (runtime state)  MariaDB (data)  │  persistence layer
-└─────────────────────────────────────────┘
-```
+</div>
 
 ---
 
-## Quick Start
+## What is this, really?
 
-### Prerequisites
-- Node.js **>= 22**, pnpm **>= 9**
-- Docker + Docker Compose (for MariaDB, Redis, nginx)
-- A FiveM (FXServer) installation for the game layer
+Most FiveM servers are built from dozens of community resources that each keep
+their own state, talk to the database their own way, and break in their own
+way. ATC takes the opposite approach. It treats your server as one platform:
 
-### 1. Bring up infrastructure (MariaDB + Redis + nginx)
+- **One source of truth.** Player data, money, items, vehicles, and jobs live
+  behind a single TypeScript API with a real database (MariaDB) and a fast
+  runtime cache (Redis). The game never trusts the client for anything that
+  matters.
+- **Everything is a plugin.** Identity, inventory, economy, housing, vehicles,
+  jobs, police, EMS, crime, the phone, the marketplace — each is a self-contained
+  module that talks to the core through one SDK. Turn them on and off in your
+  `server.cfg`.
+- **A real admin panel.** Manage players, sessions, bans, the economy, and
+  server operations from a web dashboard, not from chat commands.
+- **Made to build on.** Clear SDK, documented events, a plugin guide, and an
+  example plugin so you can add your own gameplay without forking the core.
+
+If you run a server, ATC gives you a solid foundation. If you build for FiveM,
+it gives you a clean platform to build on.
+
+---
+
+## What's in the box
+
+**For players (in-game UI):** character creation, a smartphone (contacts,
+messages, banking, GPS, 911), an inventory with hotbar and drag-and-drop, a
+vitals/armor/job HUD, an emote wheel, an interaction system, garages, an ATM,
+a marketplace, a police MDT, an EMS panel, and more. Every interface is dark,
+modern, and responsive from 720p up to 4K.
+
+**For server owners:** Docker setup for the API + MariaDB + Redis + nginx, an
+example `server.cfg`, a web admin panel, optional Prometheus/Grafana monitoring,
+backup scripts, and an anti-cheat layer.
+
+**For developers:** a typed monorepo (TurboRepo + pnpm), an SDK for Lua and
+TypeScript, a documented event bus, ~80 domain runtime packages, database
+migrations, a test suite, and compatibility bridges for QBCore and ESX.
+
+> Want the full picture of every interface? See
+> **[docs/screenshots/](docs/screenshots/)** for captured UI shots, and
+> **[TODO.txt](TODO.txt)** for the phase-by-phase feature status.
+
+---
+
+## How it fits together
+
+```
+   FiveM Client (Lua)            UI, input, rendering (NUI)
+        │
+   ATC SDK (client)              read-only client state
+        │
+   ATC Core (Lua server)         game logic, event handling, security
+        │
+   ATC SDK (server)              service calls
+        │
+   ATC API (TypeScript)          REST API + business rules (Fastify, Node 22)
+        │
+   Redis  +  MariaDB             runtime state  +  persistent data
+```
+
+The full design — service boundaries, event standards, security model, and the
+architecture decision records — lives in
+**[docs/architecture/](docs/architecture/)**.
+
+---
+
+## Tech stack
+
+| Layer | Technology |
+|---|---|
+| Game runtime | FiveM, Lua 5.4 |
+| API server | Node.js 22, TypeScript 5, Fastify |
+| Admin panel | React 19, Tailwind 4, Vite, Zustand |
+| Database | MariaDB 11 |
+| Cache / runtime state | Redis 7 |
+| Monorepo | TurboRepo + pnpm workspaces |
+| Infra | Docker, nginx, HAProxy, Prometheus, Grafana |
+
+---
+
+## Quick start
+
+You'll need Node.js 22+, pnpm 9+, Docker, and a FiveM (FXServer) install.
+
+**1 — Bring up the backend (database, cache, API):**
 
 ```bash
-cp infra/.env.example infra/.env          # set DB/Redis passwords
+cp infra/.env.example infra/.env      # set your DB and Redis passwords
 docker compose -f infra/docker-compose.yml up -d
-# Dev variant (no nginx, API on :3000):  infra/docker-compose.dev.yml
-# Monitoring (Prometheus/Grafana):       infra/monitoring/docker-compose.monitoring.yml
-# Scaled (HAProxy):                       infra/docker-compose.scaled.yml
 ```
 
-### 2. Install, build, and test the monorepo
+**2 — Install and build the monorepo:**
 
 ```bash
 pnpm install
-pnpm turbo build      # or: pnpm build
-pnpm turbo test       # or: pnpm test
-pnpm db:migrate       # apply database migrations (@atc/db)
+pnpm turbo build
+pnpm turbo test
+pnpm db:migrate
 ```
 
-### 3. Configure and run the game layer
+**3 — Set up the game server:**
 
 ```bash
-cp infra/server.cfg.example server.cfg    # adjust resource paths / convars
-# Ensure the FXServer resource list starts: game/atc-sdk, game/atc-core, then plugins/*
+cp infra/server.cfg.example server.cfg   # fill in your tokens and convars
+# Start order in server.cfg: atc-core, atc-sdk, then the plugins you want.
 ```
 
-The TypeScript API server runs from `apps/api` (`pnpm --filter @atc/api start`), and the React admin panel from `apps/web` (`pnpm --filter @atc/web dev`).
+The API runs from `apps/api`, and the admin panel from `apps/web`
+(`pnpm --filter @atc/web dev`). New to building plugins? Start with
+**[docs/sdk/PLUGIN_GUIDE.md](docs/sdk/PLUGIN_GUIDE.md)**.
 
 ---
 
-## Repository Layout
+## Repository layout
 
-| Path | Contents |
+| Path | What lives here |
 |---|---|
-| `apps/` | `api` (Node.js + Fastify REST API) and `web` (React 19 admin panel) |
-| `packages/` | Shared domain runtimes & libraries: `db`, `cache`, `events`, `schemas`, `shared-types`, `sdk`, `telemetry`, `ui`, plus the gameplay/system runtime packages |
-| `plugins/` | First-party ATC gameplay plugins (see [Plugins](#plugins)) |
-| `bridges/` | Legacy framework adapters — `qb-core`, `esx` (compatibility only) |
-| `game/` | FiveM Lua resources: `atc-core` (server/client game logic + NUI) and `atc-sdk` (Lua SDK) |
-| `infra/` | Docker Compose, nginx, HAProxy, monitoring, `server.cfg.example`, `.env.example` |
-| `docs/` | Architecture docs (`architecture/`, including ADRs) and SDK docs (`sdk/`) |
-| `tools/` | Shared `tsconfig`, `eslint-config`, and repo scripts |
+| `apps/` | `api` (Fastify REST API) and `web` (React admin panel) |
+| `packages/` | Shared libraries and domain runtimes (`db`, `cache`, `events`, `schemas`, `sdk`, `ui`, and the gameplay/system packages) |
+| `plugins/` | First-party gameplay plugins (identity, economy, housing, jobs, combat, phone, MDT, EMS, and more) |
+| `bridges/` | Compatibility adapters for QBCore and ESX |
+| `game/` | FiveM Lua resources: `atc-core` (server/client + NUI) and `atc-sdk` |
+| `infra/` | Docker, nginx, HAProxy, monitoring, backup, `server.cfg.example` |
+| `docs/` | Architecture, SDK guides, and UI screenshots |
+| `tools/` | Shared TS config, lint config, and repo scripts |
 
 ---
 
-## Feature Matrix
+## Plugins & keybinds
 
-The complete, phase-by-phase feature status (done / partial / not done) is tracked in **[TODO.txt](TODO.txt)**. The core runtime (Phases 1–80) is complete; gameplay-UX phases (81+) are documented there with honest `[x]` / `[~]` / `[ ]` markers.
+Plugins live in `plugins/` and depend on `atc-core`. The default keys below are
+registered with `RegisterKeyMapping`, so players can rebind them in the FiveM
+settings menu.
 
----
-
-## Plugins
-
-First-party plugins live in `plugins/` and depend on `atc-core`. All game interactions go through `ATC.SDK.*`. Keybinds below are the in-repo defaults registered via `RegisterKeyMapping` and are **rebindable** by players in the FiveM settings menu.
-
-| Plugin | Description | Default keybind |
+| Plugin | What it does | Default key |
 |---|---|---|
-| `atc-identity` | Character creation and customization | — |
-| `atc-inventory` | Item-use effects and inventory management (crafting UI) | **F7** crafting · **TAB** inventory* |
-| `atc-economy` | Money handling, ATM, shop integration | **F5** ATM |
-| `atc-housing` | Property ownership, access control, lock management | **F3** housing |
-| `atc-vehicles` | Vehicle spawning, garage management, impound | **F1** garage |
-| `atc-jobs` | Job assignment, duty toggling, payroll tick | **F4** job menu · **F6** duty |
-| `atc-combat` | Death, revive, respawn, EMS dispatch bridge | **F10** weapon attachments |
-| `atc-territory` | Faction zone control, capture, broadcast | **F2** territory map |
-| `atc-dispatch` | 911 calls, internal dispatch routing, LEO notifications | — |
-| `atc-admin` | In-game admin commands (kick, ban, bring, goto, freeze, spectate) | **F6** admin menu |
-| `atc-phone` | In-game smartphone: contacts, messaging, calls, banking, GPS | **NUMPAD0** phone |
-| `atc-mdt` | Mobile Data Terminal for police / emergency services | **F9** MDT · **F12** collect evidence |
-| `atc-ems` | EMS medical gameplay | **F10** check patient |
-| `atc-criminal` | Criminal gameplay — robberies, drugs, territory | **G** gang menu |
-| `atc-marketplace` | Player-to-player marketplace and trading | **F8** marketplace |
-| `atc-example-shop` | Reference implementation: NPC shop using the ATC SDK (MIT) | — |
+| `atc-identity` | Character creation & customization | — |
+| `atc-inventory` | Inventory, item use, crafting | F7 craft · TAB inventory\* |
+| `atc-economy` | Money, ATM, shops | F5 ATM |
+| `atc-housing` | Property ownership, access, locks | F3 |
+| `atc-vehicles` | Garage, spawning, impound | F1 |
+| `atc-jobs` | Jobs, duty, payroll | F4 menu · F6 duty |
+| `atc-combat` | Death, revive, weapon attachments | F10 attachments |
+| `atc-territory` | Faction zone control | F2 map |
+| `atc-dispatch` | 911 calls and unit routing | — |
+| `atc-admin` | In-game staff tools | F6 menu |
+| `atc-phone` | Smartphone: contacts, messages, bank, GPS, 911 | NUMPAD0 |
+| `atc-mdt` | Police mobile data terminal | F9 · F12 evidence |
+| `atc-ems` | Medical gameplay | F10 patient |
+| `atc-criminal` | Robberies, drugs, gangs, smuggling | G gang menu |
+| `atc-marketplace` | Player-to-player trading | F8 |
+| `atc-example-shop` | Reference plugin using the SDK | — |
 
-\* `TAB` inventory, **B** emote wheel, **F11** activity browser, and number-key hotbar are registered in `game/atc-core` (the core resource), not in a plugin.
-
-> Note on keybind collisions: `atc-jobs` duty and `atc-admin` menu both default to **F6**, and `atc-combat` weapon-mods and `atc-ems` check both default to **F10**. Rebind one of each pair per deployment if both plugins are enabled simultaneously.
+\* `TAB` inventory, `B` emote wheel, and `F11` activity browser are part of the
+core resource. A couple of defaults overlap (F6, F10) when many plugins run at
+once — rebind one per pair in your deployment.
 
 ---
 
 ## Documentation
 
-- **[THIRD_PARTY.md](THIRD_PARTY.md)** — third-party dependency & attribution notice
-- **[docs/sdk/PLUGIN_GUIDE.md](docs/sdk/PLUGIN_GUIDE.md)** — building ATC plugins
-- **[docs/sdk/API_REFERENCE.md](docs/sdk/API_REFERENCE.md)** — SDK / API reference
-- **[docs/architecture/00-overview.md](docs/architecture/00-overview.md)** — architecture overview
+- **[docs/architecture/](docs/architecture/)** — how ATC is designed
+- **[docs/sdk/PLUGIN_GUIDE.md](docs/sdk/PLUGIN_GUIDE.md)** — build your own plugin
+- **[docs/sdk/API_REFERENCE.md](docs/sdk/API_REFERENCE.md)** — SDK & API reference
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** — how to contribute
+- **[THIRD_PARTY.md](THIRD_PARTY.md)** — third-party software & attribution
 
 ---
 
 ## License
 
-**Proprietary / All rights reserved** (placeholder).
+Atlantic Core is an open project by **Naiemi Group**, released under the
+**Naiemi Group Open Development License** — see **[LICENSE](LICENSE)**.
 
-> The repository ships no explicit `LICENSE` file yet. The intended license above is a placeholder — **confirm the final license with the project owner before any public distribution.** The `atc-example-shop` plugin declares MIT in its own manifest.
+In plain terms: you can read the code, run it on your own server (commercial
+servers included), and modify it however you like. What you can't do is
+redistribute it, re-publish it, or clone it into a separate or competing
+product. Improvements are welcome back in the main project — see
+[CONTRIBUTING.md](CONTRIBUTING.md).
+
+ATC ships no GTA V game assets. Server operators are responsible for licensing
+any assets their deployment needs and for following the FiveM / CitizenFX
+Platform Agreement.
 
 ---
 
-## Attribution
+<div align="center">
 
-All first-party ATC code is original work. Third-party software that ATC bundles or recommends — and a notice that **no GTA V game assets are shipped** — is documented in **[THIRD_PARTY.md](THIRD_PARTY.md)**.
+**Atlantic Core** · maintained by Naiemi Group
+
+</div>
