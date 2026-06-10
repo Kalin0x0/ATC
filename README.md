@@ -115,8 +115,13 @@ docker compose -f infra/docker-compose.yml up -d
 pnpm install
 pnpm turbo build
 pnpm turbo test
-pnpm db:migrate
 ```
+
+**2b — Set up the database.** Either let the migration runner build it
+(`pnpm db:migrate`), or — the simple QBCore/ESX-style way — import the single
+schema file **[`database/atc.sql`](database/)** into a fresh `atc` database.
+Step-by-step import instructions for Windows in **English, فارسی, Türkçe,
+Español, and Deutsch** are in **[database/README.md](database/README.md)**.
 
 **3 — Set up the game server:**
 
@@ -141,6 +146,7 @@ The API runs from `apps/api`, and the admin panel from `apps/web`
 | `bridges/` | Compatibility adapters for QBCore and ESX |
 | `game/` | FiveM Lua resources: `atc-core` (server/client + NUI) and `atc-sdk` |
 | `infra/` | Docker, nginx, HAProxy, monitoring, backup, `server.cfg.example` |
+| `database/` | One-file schema (`atc.sql`) + multi-language import guide |
 | `docs/` | Architecture, SDK guides, and UI screenshots |
 | `tools/` | Shared TS config, lint config, and repo scripts |
 
