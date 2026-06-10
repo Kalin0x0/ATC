@@ -12,6 +12,12 @@ instead of a pile of loosely glued scripts.
 
 Open project · source-available · built to be extended.
 
+<br/>
+
+🌐 **Setup guide in your language — click a code:**
+
+**[🇬🇧 EN](database/README.md#english)**  ·  **[🇮🇷 FA — فارسی](database/README.md#فارسی-farsi)**  ·  **[🇹🇷 TR — Türkçe](database/README.md#türkçe-turkish)**  ·  **[🇪🇸 ES — Español](database/README.md#español-spanish)**  ·  **[🇩🇪 DE — Deutsch](database/README.md#deutsch-german)**
+
 </div>
 
 ---
