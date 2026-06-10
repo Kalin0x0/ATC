@@ -9,14 +9,20 @@ to use.
 - **Database engine:** MariaDB 11 (recommended) or MySQL 8
 - **Target database name:** `atc`
 
-Pick your language below. / زبان خود را در ادامه انتخاب کنید. / Aşağıdan dilinizi
-seçin. / Elige tu idioma abajo. / Wähle unten deine Sprache.
+<a id="languages"></a>
 
-- [English](#english)
-- [فارسی (Farsi)](#فارسی-farsi)
-- [Türkçe (Turkish)](#türkçe-turkish)
-- [Español (Spanish)](#español-spanish)
-- [Deutsch (German)](#deutsch-german)
+<div align="center">
+
+### 🌐 Choose your language — click a code to jump to that section
+
+**[🇬🇧 EN](#english)**  ·  **[🇮🇷 FA — فارسی](#فارسی-farsi)**  ·  **[🇹🇷 TR — Türkçe](#türkçe-turkish)**  ·  **[🇪🇸 ES — Español](#español-spanish)**  ·  **[🇩🇪 DE — Deutsch](#deutsch-german)**
+
+</div>
+
+Click **EN**, **FA**, **TR**, **ES**, or **DE** above to jump straight to the
+instructions in that language. / روی کد زبان بالا کلیک کنید تا به همان بخش بروید.
+/ Yukarıdaki dil koduna tıklayın. / Haz clic en el código de idioma de arriba. /
+Klicke oben auf das Sprachkürzel.
 
 ---
 
@@ -78,6 +84,8 @@ FLUSH PRIVILEGES;
 
 You're done. Start your server and the resources will use the new database.
 
+<sub>[↑ Back to language menu](#languages)</sub>
+
 ---
 
 ## فارسی (Farsi)
@@ -135,6 +143,8 @@ FLUSH PRIVILEGES;
 ```
 
 تمام شد. سرور را اجرا کنید تا منابع از دیتابیس جدید استفاده کنند.
+
+<sub>[↑ بازگشت به منوی زبان‌ها](#languages)</sub>
 
 ---
 
@@ -196,6 +206,8 @@ FLUSH PRIVILEGES;
 
 Bitti. Sunucunuzu başlatın; kaynaklar yeni veritabanını kullanacak.
 
+<sub>[↑ Dil menüsüne dön](#languages)</sub>
+
 ---
 
 ## Español (Spanish)
@@ -256,6 +268,8 @@ FLUSH PRIVILEGES;
 
 Listo. Inicia tu servidor y los recursos usarán la nueva base de datos.
 
+<sub>[↑ Volver al menú de idiomas](#languages)</sub>
+
 ---
 
 ## Deutsch (German)
@@ -315,6 +329,8 @@ FLUSH PRIVILEGES;
 ```
 
 Fertig. Starte deinen Server — die Ressourcen nutzen jetzt die neue Datenbank.
+
+<sub>[↑ Zurück zur Sprachauswahl](#languages)</sub>
 
 ---
 
