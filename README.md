@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/branding/atlantic-logo.png" alt="Atlantic Core logo" width="280" />
+
 # Atlantic Core
 
 **A modern, modular world platform for FiveM — by Naiemi Group.**
@@ -217,6 +219,8 @@ Platform Agreement.
 ---
 
 <div align="center">
+
+<img src="docs/branding/atlantic-logo.png" alt="Atlantic" width="120" />
 
 **Atlantic Core** · maintained by Naiemi Group
 
