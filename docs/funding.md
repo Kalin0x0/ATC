@@ -65,6 +65,7 @@ drop-down.
 | Option | Value | Status |
 |---|---|---|
 | GitHub Sponsors | `Kalin0x0` | Configured — enable GitHub Sponsors on the account to activate checkout |
+| Ko-fi | `kalin0x` | Active — <https://ko-fi.com/kalin0x> |
 | Custom link | `https://naiemi.com` | Active |
 
 Everything else ships as a commented template in `FUNDING.yml`, ready to switch

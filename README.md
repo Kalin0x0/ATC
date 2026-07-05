@@ -215,6 +215,10 @@ and every contribution, big or small, genuinely means a lot. 🙏
     <img src="https://img.shields.io/badge/Sponsor%20on%20GitHub-%E2%9D%A4-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="Sponsor Atlantic Core on GitHub" />
   </a>
   &nbsp;
+  <a href="https://ko-fi.com/kalin0x">
+    <img src="https://img.shields.io/badge/Ko--fi-Support-FF5E5B?style=for-the-badge&logo=ko-fi&logoColor=white" alt="Support Atlantic Core on Ko-fi" />
+  </a>
+  &nbsp;
   <a href="https://naiemi.com">
     <img src="https://img.shields.io/badge/naiemi.com-Support%20ATC-2EA043?style=for-the-badge" alt="Support Atlantic Core at naiemi.com" />
   </a>
@@ -223,13 +227,15 @@ and every contribution, big or small, genuinely means a lot. 🙏
 <p align="center">
   <strong><a href="https://github.com/sponsors/Kalin0x0">❤️ Become a GitHub Sponsor</a></strong>
   &nbsp;·&nbsp;
+  <strong><a href="https://ko-fi.com/kalin0x">☕ Buy me a Ko-fi</a></strong>
+  &nbsp;·&nbsp;
   <strong><a href="https://naiemi.com">🌐 Other ways to support</a></strong>
 </p>
 
 > The repository's **Sponsor** button (top of the page) is powered by
-> **[.github/FUNDING.yml](.github/FUNDING.yml)**. More platforms — Ko-fi,
-> Buy Me a Coffee, Patreon, Open Collective, and PayPal — can be switched on at
-> any time; the step-by-step guide is in **[docs/funding.md](docs/funding.md)**.
+> **[.github/FUNDING.yml](.github/FUNDING.yml)**. More platforms — Buy Me a
+> Coffee, Patreon, Open Collective, and PayPal — can be switched on at any time;
+> the step-by-step guide is in **[docs/funding.md](docs/funding.md)**.
 
 <!--
   ┌───────────────────────────────────────────────────────────────────────────┐
@@ -238,7 +244,6 @@ and every contribution, big or small, genuinely means a lot. 🙏
   │  .github/FUNDING.yml, then replace <handle> with your username.           │
   └───────────────────────────────────────────────────────────────────────────┘
 
-  [![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E5B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/<handle>)
   [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Donate-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black)](https://www.buymeacoffee.com/<handle>)
   [![Patreon](https://img.shields.io/badge/Patreon-Become%20a%20patron-FF424D?style=for-the-badge&logo=patreon&logoColor=white)](https://www.patreon.com/<handle>)
   [![Open Collective](https://img.shields.io/badge/Open%20Collective-Back%20us-7FADF2?style=for-the-badge&logo=opencollective&logoColor=white)](https://opencollective.com/<handle>)

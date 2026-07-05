@@ -27,6 +27,10 @@
 # GitHub Sponsors is enabled for the account (https://github.com/sponsors).
 github: [Kalin0x0]
 
+# ── Ko-fi ──────────────────────────────────────────────────────────────────
+# One-off tips and monthly support → https://ko-fi.com/kalin0x
+ko_fi: kalin0x
+
 # ── Custom donation links (full URLs, up to 4) ─────────────────────────────
 # Any external support/donation URL. PayPal is not a native GitHub platform,
 # so PayPal.me links belong here too. Swap in a dedicated donate page whenever
@@ -39,7 +43,6 @@ custom:
 #  Optional platforms — uncomment a line and add your handle to activate it.
 #  Handle/username only (no URL, no leading "@").
 # ───────────────────────────────────────────────────────────────────────────
-# ko_fi: <your-ko-fi-handle>                 # Ko-fi           → ko-fi.com/<handle>
 # buy_me_a_coffee: <your-bmac-handle>        # Buy Me a Coffee → buymeacoffee.com/<handle>
 # patreon: <your-patreon-handle>             # Patreon         → patreon.com/<handle>
 # open_collective: <your-collective-slug>    # Open Collective → opencollective.com/<slug>
