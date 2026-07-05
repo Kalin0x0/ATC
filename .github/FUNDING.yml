@@ -1,0 +1,54 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  Atlantic Core (ATC) — Funding / Sponsorship configuration
+#  Maintained by Naiemi Group
+# ───────────────────────────────────────────────────────────────────────────
+#  This file powers the "Sponsor" button that GitHub renders at the top of the
+#  repository and in the right-hand sidebar. GitHub automatically detects a
+#  `.github/FUNDING.yml` on the repository's DEFAULT branch and builds the
+#  button from the entries below.
+#
+#  How it works:
+#    • Only ACTIVE (uncommented) keys that have a real value are shown.
+#    • Single-value platforms take ONE handle; `github` and `custom` also
+#      accept a list of up to 4 entries.
+#    • Provide the HANDLE/USERNAME only — never the full URL — except for
+#      `custom`, which takes full URLs.
+#    • After editing, commit to the DEFAULT branch for the button to update
+#      (changes can take a few minutes to appear).
+#
+#  Full walkthrough & how to add new platforms: ../docs/funding.md
+#  GitHub reference:
+#  https://docs.github.com/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository
+# ═══════════════════════════════════════════════════════════════════════════
+
+# ── GitHub Sponsors ────────────────────────────────────────────────────────
+# The maintainer's GitHub account (users or orgs). Accepts up to 4 handles,
+# e.g. [Kalin0x0, Naiemi-Group]. The in-page one-click checkout activates once
+# GitHub Sponsors is enabled for the account (https://github.com/sponsors).
+github: [Kalin0x0]
+
+# ── Custom donation links (full URLs, up to 4) ─────────────────────────────
+# Any external support/donation URL. PayPal is not a native GitHub platform,
+# so PayPal.me links belong here too. Swap in a dedicated donate page whenever
+# one is available.
+custom:
+  - "https://naiemi.com"
+  # - "https://www.paypal.me/<your-paypal-handle>"   # PayPal (PayPal.me link)
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  Optional platforms — uncomment a line and add your handle to activate it.
+#  Handle/username only (no URL, no leading "@").
+# ───────────────────────────────────────────────────────────────────────────
+# ko_fi: <your-ko-fi-handle>                 # Ko-fi           → ko-fi.com/<handle>
+# buy_me_a_coffee: <your-bmac-handle>        # Buy Me a Coffee → buymeacoffee.com/<handle>
+# patreon: <your-patreon-handle>             # Patreon         → patreon.com/<handle>
+# open_collective: <your-collective-slug>    # Open Collective → opencollective.com/<slug>
+
+# ── Other platforms GitHub natively supports (reference) ───────────────────
+# liberapay: <your-handle>                   # Liberapay
+# polar: <your-handle>                       # Polar
+# tidelift: npm/<your-package>               # Tidelift  (platform/package)
+# thanks_dev: <your-handle>                  # thanks.dev
+# issuehunt: <your-handle>                   # IssueHunt
+# community_bridge: <your-project>           # LFX / Community Bridge
+# lfx_crowdfunding: <your-project>           # LFX Crowdfunding

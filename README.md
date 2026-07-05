@@ -198,6 +198,52 @@ once — rebind one per pair in your deployment.
 - **[docs/sdk/API_REFERENCE.md](docs/sdk/API_REFERENCE.md)** — SDK & API reference
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** — how to contribute
 - **[THIRD_PARTY.md](THIRD_PARTY.md)** — third-party software & attribution
+- **[docs/funding.md](docs/funding.md)** — support & sponsorship guide
+
+---
+
+## 💜 Support this Project
+
+Atlantic Core is an open, source-available platform built and maintained in the
+open by **Naiemi Group**. If ATC powers your server, saves you time, or you'd
+simply like to see it grow, please consider supporting its development. Your
+support goes straight into new plugins, better docs, and long-term maintenance —
+and every contribution, big or small, genuinely means a lot. 🙏
+
+<p align="center">
+  <a href="https://github.com/sponsors/Kalin0x0">
+    <img src="https://img.shields.io/badge/Sponsor%20on%20GitHub-%E2%9D%A4-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="Sponsor Atlantic Core on GitHub" />
+  </a>
+  &nbsp;
+  <a href="https://naiemi.com">
+    <img src="https://img.shields.io/badge/naiemi.com-Support%20ATC-2EA043?style=for-the-badge" alt="Support Atlantic Core at naiemi.com" />
+  </a>
+</p>
+
+<p align="center">
+  <strong><a href="https://github.com/sponsors/Kalin0x0">❤️ Become a GitHub Sponsor</a></strong>
+  &nbsp;·&nbsp;
+  <strong><a href="https://naiemi.com">🌐 Other ways to support</a></strong>
+</p>
+
+> The repository's **Sponsor** button (top of the page) is powered by
+> **[.github/FUNDING.yml](.github/FUNDING.yml)**. More platforms — Ko-fi,
+> Buy Me a Coffee, Patreon, Open Collective, and PayPal — can be switched on at
+> any time; the step-by-step guide is in **[docs/funding.md](docs/funding.md)**.
+
+<!--
+  ┌───────────────────────────────────────────────────────────────────────────┐
+  │  READY-TO-USE BADGES                                                       │
+  │  Uncomment a line below once you add the matching handle to               │
+  │  .github/FUNDING.yml, then replace <handle> with your username.           │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  [![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E5B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/<handle>)
+  [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Donate-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black)](https://www.buymeacoffee.com/<handle>)
+  [![Patreon](https://img.shields.io/badge/Patreon-Become%20a%20patron-FF424D?style=for-the-badge&logo=patreon&logoColor=white)](https://www.patreon.com/<handle>)
+  [![Open Collective](https://img.shields.io/badge/Open%20Collective-Back%20us-7FADF2?style=for-the-badge&logo=opencollective&logoColor=white)](https://opencollective.com/<handle>)
+  [![PayPal](https://img.shields.io/badge/PayPal-Donate-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://www.paypal.me/<handle>)
+-->
 
 ---
 
