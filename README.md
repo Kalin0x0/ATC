@@ -12,7 +12,24 @@ a real economy, jobs, vehicles, property, crime, emergency services, and a
 clean phone/HUD — all backed by a proper API, database, and admin panel
 instead of a pile of loosely glued scripts.
 
+<p align="center">
+  <img src="https://img.shields.io/badge/FiveM-platform-F40552?style=flat-square" alt="FiveM" />
+  <img src="https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript 5" />
+  <img src="https://img.shields.io/badge/Node.js-22-339933?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node.js 22" />
+  <img src="https://img.shields.io/badge/Fastify-API-000000?style=flat-square&logo=fastify&logoColor=white" alt="Fastify" />
+  <img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React 19" />
+  <img src="https://img.shields.io/badge/MariaDB-11-003545?style=flat-square&logo=mariadb&logoColor=white" alt="MariaDB 11" />
+  <img src="https://img.shields.io/badge/Redis-7-DC382D?style=flat-square&logo=redis&logoColor=white" alt="Redis 7" />
+  <img src="https://img.shields.io/badge/Turborepo-monorepo-EF4444?style=flat-square&logo=turborepo&logoColor=white" alt="Turborepo" />
+  <img src="https://img.shields.io/badge/Docker-ready-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker" />
+  <img src="https://img.shields.io/badge/license-Naiemi%20Open%20Dev-6E56CF?style=flat-square" alt="License" />
+</p>
+
 Open project · source-available · built to be extended.
+
+<br/>
+
+**[📸 Screenshots](#-screenshots)** · **[🚀 Quick start](#-quick-start)** · **[📁 Layout](#-repository-layout)** · **[🎮 Plugins](#-plugins-and-keybinds)** · **[📚 Docs](#-documentation)** · **[💜 Support](#-support-this-project)**
 
 <br/>
 
@@ -24,7 +41,102 @@ Open project · source-available · built to be extended.
 
 ---
 
-## What is this, really?
+## 📸 Screenshots
+
+Captured at 1920×1080 from the live NUI. Dark anthracite (`#1a1a2e`) + gold
+(`#d4af37`) design system — every panel is responsive, verified from 720p up to
+4K and in portrait.
+
+<table>
+  <tr>
+    <td width="50%" align="center">
+      <img src="docs/screenshots/16-character-select.jpeg" alt="Character Select" width="100%" /><br/>
+      <sub><b>Character Select</b> · <code>atc-core</code></sub>
+    </td>
+    <td width="50%" align="center">
+      <img src="docs/screenshots/14-identity.jpeg" alt="Character Creation" width="100%" /><br/>
+      <sub><b>Character Creation</b> · <code>atc-identity</code></sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <img src="docs/screenshots/17-hud-ingame.jpeg" alt="In-game HUD" width="100%" /><br/>
+      <sub><b>In-game HUD</b> — vitals / wallet / job / rep · <code>atc-core</code></sub>
+    </td>
+    <td width="50%" align="center">
+      <img src="docs/screenshots/02-phone.jpeg" alt="Phone" width="100%" /><br/>
+      <sub><b>Phone</b> — contacts, messages, bank, GPS, 911 · <code>atc-phone</code></sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <img src="docs/screenshots/18-inventory.jpeg" alt="Inventory" width="100%" /><br/>
+      <sub><b>Inventory</b> — 5×10 grid, hotbar, drag &amp; drop · <code>atc-core</code></sub>
+    </td>
+    <td width="50%" align="center">
+      <img src="docs/screenshots/03-bank-atm.jpeg" alt="Bank / ATM" width="100%" /><br/>
+      <sub><b>Bank / ATM</b> · <code>atc-economy</code></sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <img src="docs/screenshots/01-weapon-attachments.jpeg" alt="Weapon Attachments" width="100%" /><br/>
+      <sub><b>Weapon Attachments</b> · <code>atc-combat</code></sub>
+    </td>
+    <td width="50%" align="center">
+      <img src="docs/screenshots/09-jobs.jpeg" alt="Job Menu" width="100%" /><br/>
+      <sub><b>Job Menu</b> · <code>atc-jobs</code></sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <img src="docs/screenshots/08-housing.jpeg" alt="Property Manager" width="100%" /><br/>
+      <sub><b>Property Manager</b> · <code>atc-housing</code></sub>
+    </td>
+    <td width="50%" align="center">
+      <img src="docs/screenshots/11-garage.jpeg" alt="Vehicle Garage" width="100%" /><br/>
+      <sub><b>Vehicle Garage</b> · <code>atc-vehicles</code></sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <img src="docs/screenshots/12-marketplace.jpeg" alt="Marketplace" width="100%" /><br/>
+      <sub><b>Marketplace</b> — player-to-player trading · <code>atc-marketplace</code></sub>
+    </td>
+    <td width="50%" align="center">
+      <img src="docs/screenshots/13-shop.jpeg" alt="24/7 Store" width="100%" /><br/>
+      <sub><b>24/7 Store</b> · <code>atc-example-shop</code></sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <img src="docs/screenshots/06-criminal.jpeg" alt="Criminal Operations" width="100%" /><br/>
+      <sub><b>Criminal Operations</b> · <code>atc-criminal</code></sub>
+    </td>
+    <td width="50%" align="center">
+      <img src="docs/screenshots/10-territory.jpeg" alt="Territory Control" width="100%" /><br/>
+      <sub><b>Territory Control</b> · <code>atc-territory</code></sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <img src="docs/screenshots/07-dispatch.jpeg" alt="Dispatch Terminal" width="100%" /><br/>
+      <sub><b>Dispatch Terminal</b> · <code>atc-dispatch</code></sub>
+    </td>
+    <td width="50%" align="center">
+      <img src="docs/screenshots/15-admin.jpeg" alt="Admin Panel" width="100%" /><br/>
+      <sub><b>Admin Panel</b> · <code>atc-admin</code></sub>
+    </td>
+  </tr>
+</table>
+
+> The **police MDT** (`atc-mdt`, F9) and **EMS** (`atc-ems`, F10) panels are fully
+> implemented; live in-game captures are on the way. See
+> **[docs/screenshots/](docs/screenshots/)** for the full index.
+
+---
+
+## ✨ Why Atlantic Core
 
 Most FiveM servers are built from dozens of community resources that each keep
 their own state, talk to the database their own way, and break in their own
@@ -48,7 +160,7 @@ it gives you a clean platform to build on.
 
 ---
 
-## What's in the box
+## 📦 What's in the box
 
 **For players (in-game UI):** character creation, a smartphone (contacts,
 messages, banking, GPS, 911), an inventory with hotbar and drag-and-drop, a
@@ -60,17 +172,15 @@ modern, and responsive from 720p up to 4K.
 example `server.cfg`, a web admin panel, optional Prometheus/Grafana monitoring,
 backup scripts, and an anti-cheat layer.
 
-**For developers:** a typed monorepo (TurboRepo + pnpm), an SDK for Lua and
-TypeScript, a documented event bus, ~80 domain runtime packages, database
-migrations, a test suite, and compatibility bridges for QBCore and ESX.
+**For developers:** a typed monorepo (TurboRepo + pnpm) with **84 packages**, an
+SDK for Lua and TypeScript, a documented event bus, domain runtime services,
+database migrations, a test suite, and compatibility bridges for QBCore and ESX.
 
-> Want the full picture of every interface? See
-> **[docs/screenshots/](docs/screenshots/)** for captured UI shots, and
-> **[TODO.txt](TODO.txt)** for the phase-by-phase feature status.
+> Want the phase-by-phase feature status? See **[TODO.txt](TODO.txt)**.
 
 ---
 
-## How it fits together
+## 🧱 How it fits together
 
 ```
    FiveM Client (Lua)            UI, input, rendering (NUI)
@@ -92,7 +202,7 @@ architecture decision records — lives in
 
 ---
 
-## Tech stack
+## 🧰 Tech stack
 
 | Layer | Technology |
 |---|---|
@@ -106,7 +216,7 @@ architecture decision records — lives in
 
 ---
 
-## Quick start
+## 🚀 Quick start
 
 You'll need Node.js 22+, pnpm 9+, Docker, and a FiveM (FXServer) install.
 
@@ -121,8 +231,8 @@ docker compose -f infra/docker-compose.yml up -d
 
 ```bash
 pnpm install
-pnpm turbo build
-pnpm turbo test
+pnpm build          # turbo run build
+pnpm test           # turbo run test
 ```
 
 **2b — Set up the database.** Either let the migration runner build it
@@ -144,23 +254,23 @@ The API runs from `apps/api`, and the admin panel from `apps/web`
 
 ---
 
-## Repository layout
+## 📁 Repository layout
 
 | Path | What lives here |
 |---|---|
-| `apps/` | `api` (Fastify REST API) and `web` (React admin panel) |
-| `packages/` | Shared libraries and domain runtimes (`db`, `cache`, `events`, `schemas`, `sdk`, `ui`, and the gameplay/system packages) |
-| `plugins/` | First-party gameplay plugins (identity, economy, housing, jobs, combat, phone, MDT, EMS, and more) |
-| `bridges/` | Compatibility adapters for QBCore and ESX |
-| `game/` | FiveM Lua resources: `atc-core` (server/client + NUI) and `atc-sdk` |
-| `infra/` | Docker, nginx, HAProxy, monitoring, backup, `server.cfg.example` |
+| `apps/` | `api` — Fastify REST API · `web` — React 19 admin panel |
+| `packages/` | **84 packages** — shared libs (`db`, `events`, `schemas`, `sdk`, `ui`, `shared-types`, `iam`, `ledger`, `audit`, `locales`, `telemetry`) plus the domain runtimes (economy, jobs, law, medical, vehicles, housing, criminal, world, transport, dispatch, …) |
+| `plugins/` | **17 first-party gameplay plugins** (see below) |
+| `bridges/` | Compatibility adapters — `esx`, `qb-core` |
+| `game/` | FiveM Lua resources — `atc-core` (`client` · `server` · `shared` · NUI `ui`) and `atc-sdk` (`client` · `server` · `shared`) |
+| `infra/` | Docker, `nginx`, `monitoring` (Prometheus/Grafana), `scripts` (backup/ops) |
 | `database/` | One-file schema (`atc.sql`) + multi-language import guide |
-| `docs/` | Architecture, SDK guides, and UI screenshots |
-| `tools/` | Shared TS config, lint config, and repo scripts |
+| `docs/` | `architecture/` (18 specs + ADRs), `runbooks/`, `sdk/`, `screenshots/`, `branding/`, `funding.md` |
+| `tools/` | Shared config — `eslint-config`, `tsconfig` |
 
 ---
 
-## Plugins & keybinds
+## 🎮 Plugins and keybinds
 
 Plugins live in `plugins/` and depend on `atc-core`. The default keys below are
 registered with `RegisterKeyMapping`, so players can rebind them in the FiveM
@@ -168,7 +278,7 @@ settings menu.
 
 | Plugin | What it does | Default key |
 |---|---|---|
-| `atc-identity` | Character creation & customization | — |
+| `atc-identity` | Character creation & customization | on join |
 | `atc-inventory` | Inventory, item use, crafting | F7 craft · TAB inventory\* |
 | `atc-economy` | Money, ATM, shops | F5 ATM |
 | `atc-housing` | Property ownership, access, locks | F3 |
@@ -183,7 +293,8 @@ settings menu.
 | `atc-ems` | Medical gameplay | F10 patient |
 | `atc-criminal` | Robberies, drugs, gangs, smuggling | G gang menu |
 | `atc-marketplace` | Player-to-player trading | F8 |
-| `atc-example-shop` | Reference plugin using the SDK | — |
+| `atc-example-shop` | Reference plugin using the SDK (24/7 store) | — |
+| `atc-plugin-healthcheck` | Runtime health & readiness checks for plugins | — |
 
 \* `TAB` inventory, `B` emote wheel, and `F11` activity browser are part of the
 core resource. A couple of defaults overlap (F6, F10) when many plugins run at
@@ -191,9 +302,10 @@ once — rebind one per pair in your deployment.
 
 ---
 
-## Documentation
+## 📚 Documentation
 
-- **[docs/architecture/](docs/architecture/)** — how ATC is designed
+- **[docs/architecture/](docs/architecture/)** — how ATC is designed (18 specs + ADRs)
+- **[docs/runbooks/](docs/runbooks/)** — phase-by-phase implementation runbooks
 - **[docs/sdk/PLUGIN_GUIDE.md](docs/sdk/PLUGIN_GUIDE.md)** — build your own plugin
 - **[docs/sdk/API_REFERENCE.md](docs/sdk/API_REFERENCE.md)** — SDK & API reference
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** — how to contribute
@@ -252,7 +364,7 @@ and every contribution, big or small, genuinely means a lot. 🙏
 
 ---
 
-## License
+## 📄 License
 
 Atlantic Core is an open project by **Naiemi Group**, released under the
 **Naiemi Group Open Development License** — see **[LICENSE](LICENSE)**.
