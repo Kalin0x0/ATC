@@ -58,8 +58,18 @@ if errorlevel 1 (
 
 echo.
 echo  [OK] Done. The Atlantic Core schema is installed in "%DBNAME%".
-echo  Next: set your connection string in server.cfg / infra\.env, e.g.
-echo      set mysql_connection_string "mysql://atc:PASSWORD@%DBHOST%/%DBNAME%?charset=utf8mb4"
+echo.
+echo  Next: the ATC API talks to the database, not the game server.
+echo  1) Give the API the database in infra\.env :
+echo         DB_HOST=%DBHOST%
+echo         DB_NAME=%DBNAME%
+echo         DB_USER=%DBUSER%
+echo         DB_PASSWORD=your_password
+echo  2) Point the game server at the API in server.cfg
+echo     (infra\server.cfg.example for FiveM, infra\server.cfg.vmp.example for VMP):
+echo         set atc_api_url "http://localhost:3000"
+echo.
+echo  Note: mysql_connection_string is the QBCore/ESX pattern and is NOT used by ATC.
 echo.
 pause
 endlocal

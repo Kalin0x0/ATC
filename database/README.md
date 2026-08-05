@@ -9,6 +9,10 @@ to use.
 - **Database engine:** MariaDB 11 (recommended) or MySQL 8
 - **Target database name:** `atc`
 
+> The database is the same on **FiveM and VMP** — the schema and the import steps
+> below do not depend on your platform. Only the `server.cfg` you point at the ATC
+> API differs; see [docs/hosting/PUBLISHING.md](../docs/hosting/PUBLISHING.md).
+
 <a id="languages"></a>
 
 <div align="center">
@@ -67,11 +71,36 @@ installed.
 4. Press **F9** (or the blue ▶ "Run" button) to execute.
 
 ### Connect the server to the database
-Tell ATC how to reach the database. Set it in your FiveM `server.cfg`
-(see `infra/server.cfg.example`) and/or in `infra/.env`:
+
+ATC does **not** connect to MySQL from the game server. The Lua resources talk to
+the **ATC API**, and only the API talks to the database:
 
 ```
-set mysql_connection_string "mysql://atc:YOUR_PASSWORD@localhost/atc?charset=utf8mb4"
+FiveM / VMP  →  ATC API (Node)  →  MariaDB
+```
+
+So the database credentials belong to the API, and the game server only needs to
+know where the API is. This is the same on both platforms.
+
+**1 — Give the API the database** (in `infra/.env`, or the API's environment):
+
+```
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_NAME=atc
+DB_USER=atc
+DB_PASSWORD=YOUR_PASSWORD
+```
+
+`DB_NAME`, `DB_USER` and `DB_PASSWORD` are **required** — the API refuses to start
+without them. `DB_HOST` defaults to `127.0.0.1`, `DB_PORT` to `3306`.
+
+**2 — Point the game server at the API** — in your `server.cfg`, from
+`infra/server.cfg.example` (FiveM) or `infra/server.cfg.vmp.example` (VMP):
+
+```cfg
+set atc_api_url   "http://localhost:3000"
+set atc_api_token "your_api_token"   # must match ATC_API_TOKEN in infra/.env
 ```
 
 Create that `atc` user (or use `root` for local testing):
@@ -82,7 +111,10 @@ GRANT ALL PRIVILEGES ON atc.* TO 'atc'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
-You're done. Start your server and the resources will use the new database.
+> **Not `mysql_connection_string`.** That convar is the QBCore/ESX pattern; it is
+> not read anywhere in ATC, so setting it does nothing.
+
+You're done. Start the API, then your game server.
 
 <sub>[↑ Back to language menu](#languages)</sub>
 
@@ -127,11 +159,36 @@ mysql -u root -p atc < atc.sql
 4. کلید **F9** (یا دکمه‌ی آبی ▶ «Run») را برای اجرا بزنید.
 
 ### اتصال سرور به دیتابیس
-به ATC بگویید چطور به دیتابیس وصل شود. این مقدار را در `server.cfg` فایوام
-(نمونه: `infra/server.cfg.example`) و/یا در `infra/.env` تنظیم کنید:
+
+ATC از سمت سرور بازی **مستقیماً** به MySQL وصل نمی‌شود. منابع Lua با **ATC API**
+حرف می‌زنند و فقط API با دیتابیس کار دارد:
 
 ```
-set mysql_connection_string "mysql://atc:YOUR_PASSWORD@localhost/atc?charset=utf8mb4"
+FiveM / VMP  →  ATC API (Node)  →  MariaDB
+```
+
+بنابراین اطلاعات دیتابیس متعلق به API است و سرور بازی فقط باید بداند API کجاست.
+این موضوع روی هر دو پلتفرم یکسان است.
+
+**۱ — دیتابیس را به API بدهید** (در `infra/.env` یا محیط اجرای API):
+
+```
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_NAME=atc
+DB_USER=atc
+DB_PASSWORD=YOUR_PASSWORD
+```
+
+مقادیر `DB_NAME`، `DB_USER` و `DB_PASSWORD` **الزامی** هستند — API بدون آن‌ها اصلاً
+بالا نمی‌آید. مقدار پیش‌فرض `DB_HOST` برابر `127.0.0.1` و `DB_PORT` برابر `3306` است.
+
+**۲ — سرور بازی را به API وصل کنید** — در `server.cfg` خودتان، از روی
+`infra/server.cfg.example` (فایوام) یا `infra/server.cfg.vmp.example` (VMP):
+
+```cfg
+set atc_api_url   "http://localhost:3000"
+set atc_api_token "your_api_token"   # باید با ATC_API_TOKEN در infra/.env یکی باشد
 ```
 
 کاربر `atc` را بسازید (یا برای تست محلی از `root` استفاده کنید):
@@ -142,7 +199,10 @@ GRANT ALL PRIVILEGES ON atc.* TO 'atc'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
-تمام شد. سرور را اجرا کنید تا منابع از دیتابیس جدید استفاده کنند.
+> **نه `mysql_connection_string`.** آن convar الگوی QBCore/ESX است و در هیچ‌جای ATC
+> خوانده نمی‌شود؛ ست کردنش هیچ کاری نمی‌کند.
+
+تمام شد. اول API و سپس سرور بازی را اجرا کنید.
 
 <sub>[↑ بازگشت به منوی زبان‌ها](#languages)</sub>
 
@@ -188,12 +248,37 @@ mysql -u root -p atc < atc.sql
 4. Çalıştırmak için **F9**'a (veya mavi ▶ "Run" düğmesine) basın.
 
 ### Sunucuyu veritabanına bağlama
-ATC'ye veritabanına nasıl ulaşacağını söyleyin. Bunu FiveM `server.cfg`
-dosyanızda (`infra/server.cfg.example` örneğine bakın) ve/veya `infra/.env`
-içinde ayarlayın:
+
+ATC, oyun sunucusundan MySQL'e **doğrudan bağlanmaz**. Lua kaynakları **ATC API**
+ile konuşur ve veritabanıyla yalnızca API ilgilenir:
 
 ```
-set mysql_connection_string "mysql://atc:SIFRENIZ@localhost/atc?charset=utf8mb4"
+FiveM / VMP  →  ATC API (Node)  →  MariaDB
+```
+
+Yani veritabanı kimlik bilgileri API'ye aittir; oyun sunucusunun bilmesi gereken
+tek şey API'nin nerede olduğudur. Bu, her iki platformda da aynıdır.
+
+**1 — Veritabanını API'ye verin** (`infra/.env` içinde veya API'nin ortamında):
+
+```
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_NAME=atc
+DB_USER=atc
+DB_PASSWORD=SIFRENIZ
+```
+
+`DB_NAME`, `DB_USER` ve `DB_PASSWORD` **zorunludur** — API bunlar olmadan hiç
+başlamaz. `DB_HOST` varsayılanı `127.0.0.1`, `DB_PORT` varsayılanı `3306`'dır.
+
+**2 — Oyun sunucusunu API'ye yönlendirin** — `server.cfg` dosyanızda,
+`infra/server.cfg.example` (FiveM) veya `infra/server.cfg.vmp.example` (VMP)
+örneğinden:
+
+```cfg
+set atc_api_url   "http://localhost:3000"
+set atc_api_token "your_api_token"   # infra/.env içindeki ATC_API_TOKEN ile aynı olmalı
 ```
 
 `atc` kullanıcısını oluşturun (veya yerel test için `root` kullanın):
@@ -204,7 +289,10 @@ GRANT ALL PRIVILEGES ON atc.* TO 'atc'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
-Bitti. Sunucunuzu başlatın; kaynaklar yeni veritabanını kullanacak.
+> **`mysql_connection_string` değil.** O convar QBCore/ESX kalıbıdır; ATC'nin
+> hiçbir yerinde okunmaz, dolayısıyla ayarlamanız hiçbir şey yapmaz.
+
+Bitti. Önce API'yi, sonra oyun sunucunuzu başlatın.
 
 <sub>[↑ Dil menüsüne dön](#languages)</sub>
 
@@ -251,11 +339,36 @@ esquema ya está instalado.
 4. Pulsa **F9** (o el botón azul ▶ "Run") para ejecutar.
 
 ### Conectar el servidor a la base de datos
-Indica a ATC cómo llegar a la base de datos. Configúralo en tu `server.cfg` de
-FiveM (mira `infra/server.cfg.example`) y/o en `infra/.env`:
+
+ATC **no** se conecta a MySQL desde el servidor de juego. Los recursos Lua hablan
+con la **ATC API**, y solo la API habla con la base de datos:
 
 ```
-set mysql_connection_string "mysql://atc:TU_CONTRASENA@localhost/atc?charset=utf8mb4"
+FiveM / VMP  →  ATC API (Node)  →  MariaDB
+```
+
+Así que las credenciales de la base de datos pertenecen a la API, y el servidor de
+juego solo necesita saber dónde está la API. Esto es igual en ambas plataformas.
+
+**1 — Dale la base de datos a la API** (en `infra/.env`, o en el entorno de la API):
+
+```
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_NAME=atc
+DB_USER=atc
+DB_PASSWORD=TU_CONTRASENA
+```
+
+`DB_NAME`, `DB_USER` y `DB_PASSWORD` son **obligatorias**: la API se niega a
+arrancar sin ellas. `DB_HOST` usa `127.0.0.1` por defecto y `DB_PORT`, `3306`.
+
+**2 — Apunta el servidor de juego a la API** — en tu `server.cfg`, a partir de
+`infra/server.cfg.example` (FiveM) o `infra/server.cfg.vmp.example` (VMP):
+
+```cfg
+set atc_api_url   "http://localhost:3000"
+set atc_api_token "your_api_token"   # debe coincidir con ATC_API_TOKEN en infra/.env
 ```
 
 Crea el usuario `atc` (o usa `root` para pruebas locales):
@@ -266,7 +379,10 @@ GRANT ALL PRIVILEGES ON atc.* TO 'atc'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
-Listo. Inicia tu servidor y los recursos usarán la nueva base de datos.
+> **No es `mysql_connection_string`.** Esa convar es el patrón de QBCore/ESX; no se
+> lee en ninguna parte de ATC, así que configurarla no hace nada.
+
+Listo. Inicia primero la API y luego tu servidor de juego.
 
 <sub>[↑ Volver al menú de idiomas](#languages)</sub>
 
@@ -313,11 +429,37 @@ installiert.
 4. Drücke **F9** (oder den blauen ▶ "Run"-Button) zum Ausführen.
 
 ### Server mit der Datenbank verbinden
-Sag ATC, wie es die Datenbank erreicht. Trage es in deiner FiveM `server.cfg`
-ein (siehe `infra/server.cfg.example`) und/oder in `infra/.env`:
+
+ATC verbindet sich **nicht** vom Gameserver aus mit MySQL. Die Lua-Ressourcen
+sprechen mit der **ATC-API**, und nur die API spricht mit der Datenbank:
 
 ```
-set mysql_connection_string "mysql://atc:DEIN_PASSWORT@localhost/atc?charset=utf8mb4"
+FiveM / VMP  →  ATC API (Node)  →  MariaDB
+```
+
+Die Datenbank-Zugangsdaten gehören also zur API, und der Gameserver muss nur
+wissen, wo die API liegt. Das ist auf beiden Plattformen identisch.
+
+**1 — Der API die Datenbank geben** (in `infra/.env` oder der Umgebung der API):
+
+```
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_NAME=atc
+DB_USER=atc
+DB_PASSWORD=DEIN_PASSWORT
+```
+
+`DB_NAME`, `DB_USER` und `DB_PASSWORD` sind **Pflicht** — ohne sie startet die API
+gar nicht. `DB_HOST` ist standardmäßig `127.0.0.1`, `DB_PORT` ist `3306`.
+
+**2 — Den Gameserver auf die API zeigen lassen** — in deiner `server.cfg`, auf
+Basis von `infra/server.cfg.example` (FiveM) oder `infra/server.cfg.vmp.example`
+(VMP):
+
+```cfg
+set atc_api_url   "http://localhost:3000"
+set atc_api_token "your_api_token"   # muss ATC_API_TOKEN in infra/.env entsprechen
 ```
 
 Lege den `atc`-Benutzer an (oder nutze `root` für lokale Tests):
@@ -328,7 +470,10 @@ GRANT ALL PRIVILEGES ON atc.* TO 'atc'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
-Fertig. Starte deinen Server — die Ressourcen nutzen jetzt die neue Datenbank.
+> **Nicht `mysql_connection_string`.** Diese Convar ist das QBCore/ESX-Muster; sie
+> wird nirgends in ATC gelesen — sie zu setzen bewirkt nichts.
+
+Fertig. Starte zuerst die API, dann deinen Gameserver.
 
 <sub>[↑ Zurück zur Sprachauswahl](#languages)</sub>
 
