@@ -1,6 +1,42 @@
 ATC = ATC or {}
 ATC.Phone = {}
 
+-- ── API backing ───────────────────────────────────────────────────────────────
+-- The API's /api/v1/comms namespace is a tactical radio system — channels,
+-- broadcasts, signals, jamming, encryption. It is not phone messaging: there is
+-- no contacts endpoint and no messages endpoint, and no table behind either, so
+-- the two requests that used to be here 404'd on every use.
+--
+-- Banking is unaffected; that endpoint exists and is called normally below.
+--
+-- A switch, not a TODO: set it to true once those endpoints exist and the
+-- requests resume unchanged.
+local PHONE_API_ENABLED = false
+
+local _warnedContacts = false
+local _warnedMessages = false
+
+--- Deliver a message to the recipient if they are currently online.
+--- Pure server-side fan-out — needs no API, which is why it is kept out of the
+--- request callback: gating it on a call that cannot succeed meant no message
+--- was ever delivered, even between two connected players.
+--- @return boolean delivered  true when the recipient was online and reached
+local function _deliverMessage(fromCharacterId, toCharacterId, message)
+    local delivered = false
+    for _, pid in ipairs(GetPlayers()) do
+        local p = tonumber(pid)
+        if p and ATC.Sessions.GetCharacterId(p) == toCharacterId then
+            TriggerClientEvent('atc:phone:message:received', p, {
+                from      = fromCharacterId,
+                message   = message,
+                timestamp = os.time(),
+            })
+            delivered = true
+        end
+    end
+    return delivered
+end
+
 -- ─── Contacts ──────────────────────────────────────────────────────────────────
 ATC.Firewall.On('atc:phone:contacts:get', {
     clientAllowed  = true,
@@ -9,6 +45,16 @@ ATC.Firewall.On('atc:phone:contacts:get', {
 }, function(src, _payload)
     local characterId = ATC.Sessions.GetCharacterId(src)
     if not characterId then return end
+
+    if not PHONE_API_ENABLED then
+        if not _warnedContacts then
+            _warnedContacts = true
+            ATC.Log.Warn('phone', 'Contacts have no API backing — no contacts endpoint exists. Returning an empty list. See PHONE_API_ENABLED in this file.')
+        end
+        -- Same payload the old failure path produced, without the doomed request.
+        TriggerClientEvent('atc:phone:contacts:response', src, { contacts = {} })
+        return
+    end
 
     ATC.HTTP.Get('/api/v1/comms/contacts?characterId=' .. characterId, function(ok, _status, data)
         TriggerClientEvent('atc:phone:contacts:response', src, ok and data or { contacts = {} })
@@ -32,6 +78,19 @@ ATC.Firewall.On('atc:phone:message:send', {
     local characterId = ATC.Sessions.GetCharacterId(src)
     if not characterId then return end
 
+    if not PHONE_API_ENABLED then
+        if not _warnedMessages then
+            _warnedMessages = true
+            ATC.Log.Warn('phone', 'Messages are not persisted — the API has no messages endpoint. Delivering live to online recipients only; nothing is stored and an offline recipient never receives it. See PHONE_API_ENABLED in this file.')
+        end
+        -- success reports whether the recipient was actually reached. Without
+        -- storage there is no offline delivery, so claiming success for an
+        -- offline recipient would be a lie to the sender's UI.
+        local delivered = _deliverMessage(characterId, to, msg)
+        TriggerClientEvent('atc:phone:message:sent', src, { success = delivered })
+        return
+    end
+
     ATC.HTTP.Post('/api/v1/comms/messages', {
         characterId = characterId,
         to          = to,
@@ -41,17 +100,7 @@ ATC.Firewall.On('atc:phone:message:send', {
 
         if not ok then return end
 
-        -- Deliver to recipient if they are online
-        for _, pid in ipairs(GetPlayers()) do
-            local p = tonumber(pid)
-            if p and ATC.Sessions.GetCharacterId(p) == to then
-                TriggerClientEvent('atc:phone:message:received', p, {
-                    from      = characterId,
-                    message   = msg,
-                    timestamp = os.time(),
-                })
-            end
-        end
+        _deliverMessage(characterId, to, msg)
     end)
 end)
 
