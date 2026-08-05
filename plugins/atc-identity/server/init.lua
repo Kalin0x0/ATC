@@ -159,7 +159,10 @@ ATC.Firewall.On(
             return
         end
 
-        ATC.HTTP.Get('/api/v1/accounts/' .. session.accountId .. '/characters', function(ok, status, data, err)
+        -- Characters are listed under /api/v1/characters, keyed by account —
+        -- not as a sub-resource of the account. The response shape is the same
+        -- { characters = { … } } this handler already expects.
+        ATC.HTTP.Get('/api/v1/characters/account/' .. session.accountId, function(ok, status, data, err)
             if not ok then
                 ATC.Log.Error('identity', 'character:list — API error', {
                     source = src, status = status, err = err,

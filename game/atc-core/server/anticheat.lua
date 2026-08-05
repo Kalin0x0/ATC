@@ -30,7 +30,20 @@ local function _recordViolation(source, reason, severity)
     ATC.Log.Security('anticheat', 'Violation recorded', { source=source, reason=reason, severity=severity, total=count })
     if count >= BAN_THRESHOLD then
         local identifier = GetPlayerIdentifierByType(source, 'license')
-        ATC.HTTP.Post('/api/v1/accounts/ban', { identifier=identifier or 'unknown', reason='[AutoBan] '..reason, expiresAt=nil }, function() end)
+        -- The ban is NOT persisted. There is no endpoint to create one: the
+        -- API's BanRepository exposes findActiveByAccountId and hasActiveBan
+        -- only, so bans can be read but never written through it. The call that
+        -- used to be here posted to /api/v1/accounts/ban, which does not exist,
+        -- and discarded the result — so this read as a working auto-ban while
+        -- only ever kicking. The player can reconnect immediately.
+        -- Logged at Security level so the gap is visible to whoever reviews the
+        -- logs, and so the identifier needed to ban by hand is recorded.
+        ATC.Log.Security('anticheat', 'Auto-ban threshold reached — NOT persisted, no ban endpoint exists; player kicked only', {
+            source     = source,
+            identifier = identifier or 'unknown',
+            reason     = reason,
+            violations = count,
+        })
         DropPlayer(source, _tag()..' You have been banned: '..reason)
     elseif count >= KICK_THRESHOLD then
         DropPlayer(source, _tag()..' Anti-cheat violation: '..reason)
