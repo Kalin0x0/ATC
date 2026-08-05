@@ -22,37 +22,53 @@ sv_maxclients 64
 sets tags "atc,roleplay,mmo"
 
 # ── License ───────────────────────────────────────────────────────────────────
-# A VMP licence key is MANDATORY. VMP is a fork of the FiveM server, and on
-# FXServer a missing or rejected sv_licenseKey stops the server from starting;
-# VMP inherits that codebase, so expect the same. We did not test VMP's exact
-# failure behaviour, so treat the key as a hard requirement rather than
-# something with a documented bypass.
+# A VMP licence key is MANDATORY. This is verified in VMP's server source, not
+# assumed: the startup licence check calls FatalError on every failure path,
+# which stops the server (ServerAuth.cpp:30-80).
 #
-# The key must be issued by VMP. It is validated against VMP's own licensing
-# service, NOT against keymaster.fivem.net, so a FiveM key will never
-# authenticate here (and vice versa).
+# The key is validated against VMP's OWN licensing service at https://api.vmp.ir/
+# (ServerLicensingComponent.h:36) — NOT against keymaster.fivem.net. A FiveM key
+# will never authenticate here, and a VMP key will never authenticate on FiveM.
 #
-# Where to get one: keys are issued through VMP's own licensing channels. Their
-# sites are not reachable from outside Iran, so no procedure is reproduced here
-# — get the current one from VMP's website and community forum and follow what
-# they publish.
+# At startup the server POSTs {"license":"<your key>"} to
+#   https://api.vmp.ir/server/register.php?work=register        (ServerAuth.cpp:44)
+# and on success prints "Server license key authentication succeeded!" plus your
+# Session Id.
+#
+# The three failure messages, so you can tell them apart:
+#   "Please set sv_licenseKey in server.cfg!"                   -> convar empty
+#   "A connection with the VMP server could not be established!"-> api.vmp.ir unreachable
+#   (a message from VMP's API, verbatim)                        -> key rejected
+#
+# IPv4 IS REQUIRED: both the licence request (ServerAuth.cpp:43) and the list
+# heartbeat (GameServer.cpp:1001) force IPv4. A host with only IPv6 internet
+# connectivity cannot license or get listed.
+#
+# Where to get a key: that procedure is published only on VMP's website and
+# community forum, which are not reachable from outside Iran — obtain it from
+# VMP directly. What is certain is the endpoint it will be checked against.
 sv_licenseKey "YOUR_VMP_LICENSE_KEY"
 
-# Do NOT set sv_sessionId or sv_secret by hand. VMP's licensing handshake sets
-# both for you once sv_licenseKey registers successfully, and the server list
-# heartbeat does nothing until it has them. Setting them manually will not make
-# an unlicensed server appear on the list.
+# Do NOT set sv_sessionId or sv_secret by hand. The licensing handshake writes
+# both from VMP's response, and the heartbeat explicitly refuses to send while
+# either one is empty (GameServer.cpp:971-973). Setting them manually will not
+# make an unlicensed server appear on the list.
 
 # ── Server list ───────────────────────────────────────────────────────────────
-# Listing uses the same mechanism as FiveM: the standard FXServer heartbeat,
-# with sv_master1 already defaulting to VMP's own endpoint, so you do not
-# configure it. The heartbeat does nothing at all until the licensing handshake
-# has filled in sv_sessionId and sv_secret — in other words, a valid VMP key is
-# what gets a server listed.
+# Listing uses the standard FXServer heartbeat. sv_master1 already defaults to
+#   https://api.vmp.ir/server/heartbeat.php?work=heartbeat  (GameServer.cpp:54,120)
+# so you do NOT configure it. The heartbeat repeats every 3 minutes.
 #
-# Leave sv_master1 alone. Overriding it marks the server as private and it will
-# stop being listed. Do not point it at a FiveM master — that master does not
-# know about this server.
+# A valid licence is what gets you listed: the heartbeat returns immediately
+# while sv_sessionId or sv_secret is empty, and only a successful licence
+# handshake fills those in.
+#
+# Leave sv_master1 alone — and note the failure is SILENT. The heartbeat carries
+# a "private" flag that starts as true and is set to false only when one of
+# sv_master1..sv_master3 is EXACTLY the default VMP URL (GameServer.cpp:1039-1070).
+# Point sv_master1 elsewhere and the heartbeat still fires — your server just
+# stays flagged private and never appears publicly. Do not point it at a FiveM
+# master; that master does not know about this server.
 #
 # If your server is behind NAT, a proxy or a load balancer and it lists with the
 # wrong address, use the standard overrides (same names and meanings as FiveM):

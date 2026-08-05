@@ -373,18 +373,31 @@ exports and events.
 manifest needs editing, and no Lua needs changing. Everything that differs is deployment
 plumbing, and all of it lives in your `server.cfg`.
 
-#### 4.2 — Honest statement about VMP's documentation
+#### 4.2 — Where these VMP facts come from
 
-VMP's own sites — its website, community forum, artifact site and server list — return HTTP 403
-to anything that is not an ordinary browser, and are effectively not reachable from outside
-Iran. What this document states about VMP comes from reading VMP's published server source,
-not from their websites. We therefore **cannot mirror their instructions here**, and this
-document deliberately does not reproduce key formats, button labels, download paths or menu
-steps we could not read.
+VMP's own sites — website, community forum and server list — return HTTP 403 to anything that
+is not an ordinary browser and are effectively unreachable from outside Iran. Everything this
+document states about VMP therefore comes from **reading VMP's published server source**
+(`github.com/v-mp/vmp`), which is authoritative for how the server actually behaves. Each claim
+below is cited by file and line so you can check it yourself.
 
-Where a step depends on something only VMP publishes, this document tells you *where to look*
-rather than guessing. Follow whatever VMP currently publishes over any copy of it, including
-this one.
+The endpoints VMP's server is hard-coded to use:
+
+| What | Value | Source |
+|---|---|---|
+| Licensing base | `https://api.vmp.ir/` | `citizen-server-impl/include/ServerLicensingComponent.h:36` |
+| Key registration | `POST https://api.vmp.ir/server/register.php?work=register` | `citizen-server-impl/src/ServerAuth.cpp:44` |
+| Server-list heartbeat | `https://api.vmp.ir/server/heartbeat.php?work=heartbeat` — the built-in default of `sv_master1` | `citizen-server-impl/src/GameServer.cpp:54,120` |
+| Client updates | `https://cdn.vmp.ir/updates` | `client/launcher/Bootstrap.cpp:100` |
+| Game cache mirrors | `https://cdn.vmp.ir/mirrors/patches_fivem/3570/…` (game build **3570**) | `client/launcher/GameCache.cpp:1402ff` |
+
+Two things are **not** answerable from the source, because they live only on VMP's website: how
+you obtain a licence key, and where server artifacts are downloaded. Both are marked as open
+below rather than guessed at.
+
+One useful negative result: VMP's Cfx.re "nucleus" registration is **commented out** in the
+source (`citizen-server-impl/src/ServerNucleus.cpp:60-100`), so a VMP server does not register
+itself with `cfx.re`. Your VMP server does not phone home to FiveM infrastructure.
 
 #### 4.3 — Start from the VMP config
 
@@ -406,58 +419,96 @@ in exactly the same way.
 
 #### 4.4 — Licence key
 
-A VMP licence key is **mandatory**. VMP is a fork of the FiveM server, and on FXServer a
-missing or rejected `sv_licenseKey` stops the server from starting; VMP inherits that codebase,
-so expect the same. We did not test VMP's exact failure behaviour, so treat the key as a hard
-requirement rather than something with a documented bypass.
+A VMP licence key is **mandatory** — this is verified, not assumed. On startup VMP runs a
+licence check and calls `FatalError` on every failure path, which stops the server
+(`ServerAuth.cpp:30-80`).
 
-The key must be issued by VMP and is validated against VMP's own licensing service, **not**
-against keymaster.fivem.net. A FiveM key will never authenticate on VMP, and a VMP key will
-never authenticate on FiveM.
+The key is validated against **VMP's own** licensing service at `https://api.vmp.ir/`, **not**
+against keymaster.fivem.net. A FiveM key will never authenticate on VMP, and vice versa.
 
 ```cfg
 sv_licenseKey "YOUR_VMP_LICENSE_KEY"
 ```
 
-Keys are issued through VMP's own licensing channels. We could not read their sites from
-outside Iran, so we are not reproducing a procedure here: get the current one from VMP's
-website and community forum, and follow what they publish.
+**What happens at startup.** The server posts `{"license":"<your key>"}` to
+`https://api.vmp.ir/server/register.php?work=register`. On success it prints:
 
-Do **not** set `sv_sessionId` or `sv_secret` by hand. VMP's licensing handshake writes both
-for you once `sv_licenseKey` registers successfully — that is visible in the server source —
-and setting them manually will not make an unlicensed server work.
+```
+Server Auth: Checking license...
+Server Auth: Server license key authentication succeeded!
+Server Auth: Session Id : <id>
+```
+
+…and writes `sv_sessionId` and `sv_secret` from the response itself, then forces an immediate
+server-list heartbeat.
+
+**The three failure messages**, so you can tell them apart:
+
+| Console message | Meaning |
+|---|---|
+| `Please set sv_licenseKey in server.cfg!` | The convar is empty or missing |
+| `A connection with the VMP server could not be established!` | `api.vmp.ir` was unreachable — network, DNS or firewall |
+| *(a message from VMP's API, verbatim)* | The key itself was rejected — expired, revoked, or bound to a different server |
+
+**IPv4 is required.** The licence request is made with `opts.ipv4 = true`
+(`ServerAuth.cpp:43`), and so is the list heartbeat (`GameServer.cpp:1001`). A host with only
+IPv6 connectivity to the internet cannot license or list, and will fail with the connection
+error above.
+
+Do **not** set `sv_sessionId` or `sv_secret` by hand. The handshake writes both, and the
+heartbeat explicitly refuses to send while either is empty (`GameServer.cpp:971-973`) — setting
+them manually will not make an unlicensed server appear.
+
+> **Open point:** how a key is issued is published only on VMP's website and community forum,
+> which we cannot read from outside Iran. Get the current procedure from VMP directly. What is
+> certain from the source is the endpoint it will be checked against.
 
 #### 4.5 — Artifacts and the player client
 
-- **Server artifacts** come from VMP's own artifact site, not from FiveM's artifacts server.
-  They are **not published as GitHub releases** — VMP's public GitHub repository has none, and
-  its build pipeline runs on infrastructure of its own. A FiveM artifact will not accept a VMP
-  licence key. The on-disk shape is the same as FXServer's — a `server.zip` / `server.7z` on
-  Windows, an `fx.tar.xz` on Linux, the binary still named `FXServer` / `FXServer.exe`, and the
-  same `FXServer.exe +exec server.cfg` / `./run.sh +exec server.cfg` invocation. Get the current
-  build and its download layout from what VMP publishes.
-- **Players use the VMP launcher**, downloaded from VMP's website — not the FiveM client. Joining
-  is done through the launcher, from VMP's server list or its direct-connect field; use whatever
-  address format the launcher itself asks for.
+- **Server artifacts** come from VMP, not from FiveM's artifacts server, and a FiveM artifact
+  will not accept a VMP licence key — it would check against keymaster.fivem.net. They are
+  **not published as GitHub releases** (VMP's public repository has none), and the source does
+  not contain a server-artifact download URL, so we cannot name one here. The on-disk shape is
+  FXServer's, because the server *is* FXServer: `FXServer.exe +exec server.cfg` on Windows,
+  `./run.sh +exec server.cfg` on Linux.
+  **Open point — get the current build and its download location from VMP directly.**
+- **Players use the VMP launcher**, not the FiveM client. The launcher updates itself from
+  `https://cdn.vmp.ir/updates` (`client/launcher/Bootstrap.cpp:100`) and pulls its GTA V game
+  cache from `https://cdn.vmp.ir/mirrors/patches_fivem/3570/…` (`GameCache.cpp:1402ff`) — so
+  VMP currently targets **game build 3570**. Joining is done through the launcher, from VMP's
+  server list or its direct-connect field.
 
 #### 4.6 — Server list
 
-Listing uses the same mechanism as FiveM: the standard FXServer heartbeat, with `sv_master1`
-already defaulting to VMP's own endpoint, so you do not configure it. What the source shows is
-that the heartbeat does nothing at all until the licensing handshake has filled in
-`sv_sessionId` and `sv_secret` — in other words, a valid VMP key is what gets a server listed.
-There is a public web front end for the list at **list.vmp.ir**; it is a website, not something
-your server talks to.
+Listing uses the standard FXServer heartbeat. `sv_master1` already defaults to
+`https://api.vmp.ir/server/heartbeat.php?work=heartbeat`, so **you do not configure it**
+(`GameServer.cpp:54,120`). The heartbeat repeats every **3 minutes**
+(`GameServer.cpp:1074`), and each one posts your player count, server info and port to that
+endpoint.
 
-- Leave `sv_master1` alone — overriding it marks the server private. Never point it at a FiveM
-  master; that master does not know about your server.
-- Set a real `sv_hostname`.
-- Behind NAT or a proxy, the same three overrides apply, with the same names and meanings as
-  on FiveM: `sv_listingIpOverride`, `sv_listingHostOverride`, `sv_forceIndirectListing`.
+**A valid licence is what gets you listed.** The heartbeat checks `sv_sessionId` and `sv_secret`
+and returns immediately if either is empty (`GameServer.cpp:971-973`). Those are written only by
+a successful licence handshake — so an unlicensed server never appears, no matter how correct the
+rest of the config is. There is a public web front end at **list.vmp.ir**; it is a website, not
+something your server talks to.
+
+**Leave `sv_master1` alone.** The mechanism is worth understanding, because the failure is
+silent: the heartbeat carries a `private` flag that starts as `true`, and it is set to `false`
+only when one of `sv_master1`…`sv_master3` is *exactly* the default VMP URL
+(`GameServer.cpp:1039-1070`). Point `sv_master1` somewhere else and the heartbeat still fires —
+your server just stays flagged private and never shows up publicly. Never point it at a FiveM
+master; that master does not know about your server.
+
+- Set a real `sv_hostname` — its built-in default is literally `default FXServer`
+  (`GameServer.cpp:119`).
+- Behind NAT or a proxy, the same three overrides apply, with the same names and meanings as on
+  FiveM: `sv_listingIpOverride`, `sv_listingHostOverride`, `sv_forceIndirectListing`. All three
+  are read straight into the heartbeat payload (`GameServer.cpp:985-998`).
+- If the list query returns an error, the server prints it verbatim as
+  `^1Server list query returned an error: …` — read that line before guessing.
 
 If your server still does not appear with a valid key, a running heartbeat and a correct
-hostname, ask on VMP's community forum — that is where operators raise listing problems, and
-whatever additional steps VMP may require are theirs to state, not ours to guess.
+hostname, ask on VMP's community forum — that is where operators raise listing problems.
 
 #### 4.7 — Two compatibility notes
 
@@ -899,17 +950,31 @@ VMP (vmp.ir) یک **پلتفرم سازگار با CitizenFX** است — یک �
 شدن ندارد، هیچ منیفستی نیاز به ویرایش ندارد و هیچ کد Lua‌یی لازم نیست تغییر کند. هر چیزی که فرق
 می‌کند مربوط به زیرساخت استقرار است و همه‌اش در `server.cfg` شما جای می‌گیرد.
 
-#### 4.2 — یک توضیح صادقانه دربارهٔ مستندات VMP
+#### 4.2 — این اطلاعات دربارهٔ VMP از کجا می‌آید
 
-سایت‌های خود VMP — وب‌سایت، انجمن کامیونیتی، سایت آرتیفکت‌ها و لیست سرورها — به هر چیزی که یک
-مرورگر معمولی نباشد HTTP 403 برمی‌گردانند و عملاً از بیرون ایران قابل دسترسی نیستند. آنچه این سند
-دربارهٔ VMP می‌گوید از خواندن سورس منتشرشدهٔ سرور VMP می‌آید، نه از سایت‌هایشان. بنابراین
-**نمی‌توانیم دستورالعمل‌های آن‌ها را اینجا بازتاب دهیم** و این سند عمداً فرمت کلیدها، برچسب
-دکمه‌ها، مسیرهای دانلود یا مراحل منو را که نتوانستیم بخوانیم بازتولید نمی‌کند.
+سایت‌های خود VMP — وب‌سایت، انجمن کامیونیتی و لیست سرورها — به هر چیزی که یک مرورگر معمولی نباشد
+HTTP 403 برمی‌گردانند و عملاً از بیرون ایران قابل دسترسی نیستند. به همین دلیل هر چیزی که این سند
+دربارهٔ VMP می‌گوید از خواندن **سورس منتشرشدهٔ سرور VMP** (`github.com/v-mp/vmp`) می‌آید، که
+مرجع معتبر رفتار واقعی سرور است. هر ادعای زیر با نام فایل و شمارهٔ خط مستند شده تا خودتان
+بتوانید راستی‌آزمایی کنید.
 
-هر جا یک مرحله به چیزی وابسته باشد که فقط VMP منتشر می‌کند، این سند به‌جای حدس زدن به شما
-می‌گوید *کجا را نگاه کنید*. هر چیزی که VMP در حال حاضر منتشر می‌کند را بر هر رونوشتی از آن،
-از جمله همین سند، ترجیح دهید.
+اندپوینت‌هایی که در سرور VMP به‌صورت ثابت در کد نوشته شده‌اند:
+
+| چه چیزی | مقدار | منبع |
+|---|---|---|
+| پایهٔ لایسنس | `https://api.vmp.ir/` | `citizen-server-impl/include/ServerLicensingComponent.h:36` |
+| ثبت کلید | `POST https://api.vmp.ir/server/register.php?work=register` | `citizen-server-impl/src/ServerAuth.cpp:44` |
+| هارت‌بیت لیست سرورها | `https://api.vmp.ir/server/heartbeat.php?work=heartbeat` — مقدار پیش‌فرض داخلی `sv_master1` | `citizen-server-impl/src/GameServer.cpp:54,120` |
+| به‌روزرسانی کلاینت | `https://cdn.vmp.ir/updates` | `client/launcher/Bootstrap.cpp:100` |
+| میرورهای کش بازی | `https://cdn.vmp.ir/mirrors/patches_fivem/3570/…` (بیلد بازی **3570**) | `client/launcher/GameCache.cpp:1402ff` |
+
+دو چیز را **نمی‌توان** از روی سورس پاسخ داد، چون فقط روی وب‌سایت VMP وجود دارند: اینکه چطور کلید
+لایسنس بگیرید، و اینکه آرتیفکت‌های سرور از کجا دانلود می‌شوند. هر دو در ادامه به‌جای حدس زدن،
+به‌عنوان مورد باز علامت‌گذاری شده‌اند.
+
+یک یافتهٔ منفیِ مفید: ثبت‌نام «nucleus» مربوط به Cfx.re در سورس **کامنت شده است**
+(`citizen-server-impl/src/ServerNucleus.cpp:60-100`)؛ بنابراین یک سرور VMP خودش را روی `cfx.re`
+ثبت نمی‌کند و با زیرساخت FiveM ارتباط نمی‌گیرد.
 
 #### 4.3 — از کانفیگ VMP شروع کنید
 
@@ -931,58 +996,96 @@ set atc_platform "vmp"
 
 #### 4.4 — کلید لایسنس
 
-کلید لایسنس VMP **اجباری** است. VMP یک فورک از سرور FiveM است، و روی FXServer اگر `sv_licenseKey`
-نباشد یا رد شود سرور اصلاً بالا نمی‌آید؛ VMP همان کدبیس را به ارث می‌برد، پس همان رفتار را انتظار
-داشته باشید. ما رفتار دقیق شکست را روی خود VMP تست نکردیم، بنابراین کلید را یک الزام قطعی بدانید،
-نه چیزی که راه دور زدن مستندشده‌ای داشته باشد.
+کلید لایسنس VMP **اجباری** است — این یک واقعیت راستی‌آزمایی‌شده است، نه یک فرض. سرور هنگام
+راه‌اندازی یک بررسی لایسنس اجرا می‌کند و در هر مسیر شکست `FatalError` صدا می‌زند که سرور را متوقف
+می‌کند (`ServerAuth.cpp:30-80`).
 
-کلید باید توسط VMP صادر شده باشد و در برابر سرویس لایسنس خودِ VMP اعتبارسنجی می‌شود، **نه** در
-برابر keymaster.fivem.net. یک کلید FiveM هرگز روی VMP احراز نمی‌شود و یک کلید VMP هرگز روی
-FiveM احراز نمی‌شود.
+کلید در برابر سرویس لایسنس **خودِ** VMP روی `https://api.vmp.ir/` اعتبارسنجی می‌شود، **نه** در
+برابر keymaster.fivem.net. یک کلید FiveM هرگز روی VMP احراز نمی‌شود و برعکس.
 
 ```cfg
 sv_licenseKey "YOUR_VMP_LICENSE_KEY"
 ```
 
-کلیدها از طریق کانال‌های لایسنس خودِ VMP صادر می‌شوند. ما نتوانستیم سایت‌های آن‌ها را از بیرون
-ایران بخوانیم، بنابراین اینجا هیچ روالی را بازتولید نمی‌کنیم: روال جاری را از وب‌سایت و انجمن
-کامیونیتی VMP بگیرید و همان چیزی را که خودشان منتشر می‌کنند دنبال کنید.
+**هنگام راه‌اندازی چه اتفاقی می‌افتد.** سرور مقدار `{"license":"<کلید شما>"}` را با POST به
+`https://api.vmp.ir/server/register.php?work=register` می‌فرستد. در صورت موفقیت این خطوط را چاپ
+می‌کند:
 
-مقادیر `sv_sessionId` یا `sv_secret` را دستی ست **نکنید**. هند‌شیک لایسنس VMP هر دو را به‌محض
-ثبت موفق `sv_licenseKey` برای شما می‌نویسد — این چیزی است که در سورس سرور دیده می‌شود — و ست
-کردن دستی آن‌ها یک سرور بدون لایسنس را به کار نمی‌اندازد.
+```
+Server Auth: Checking license...
+Server Auth: Server license key authentication succeeded!
+Server Auth: Session Id : <id>
+```
+
+… و مقادیر `sv_sessionId` و `sv_secret` را از خودِ پاسخ می‌نویسد، سپس بلافاصله یک هارت‌بیت به
+لیست سرورها می‌فرستد.
+
+**سه پیام خطا**، تا بتوانید آن‌ها را از هم تشخیص دهید:
+
+| پیام کنسول | معنی |
+|---|---|
+| `Please set sv_licenseKey in server.cfg!` | این convar خالی است یا وجود ندارد |
+| `A connection with the VMP server could not be established!` | دسترسی به `api.vmp.ir` ممکن نبود — شبکه، DNS یا فایروال |
+| *(پیامی از API خود VMP، عیناً)* | خودِ کلید رد شد — منقضی، باطل‌شده یا متعلق به سرور دیگری |
+
+**IPv4 الزامی است.** درخواست لایسنس با `opts.ipv4 = true` انجام می‌شود (`ServerAuth.cpp:43`) و
+هارت‌بیت لیست هم همین‌طور (`GameServer.cpp:1001`). هاستی که فقط با IPv6 به اینترنت وصل است نه
+می‌تواند لایسنس بگیرد و نه لیست شود، و با همان خطای اتصال بالا شکست می‌خورد.
+
+مقادیر `sv_sessionId` یا `sv_secret` را دستی ست **نکنید**. هند‌شیک هر دو را می‌نویسد و هارت‌بیت
+تا وقتی یکی از آن‌ها خالی باشد صریحاً از ارسال خودداری می‌کند (`GameServer.cpp:971-973`) — ست
+کردن دستی آن‌ها یک سرور بدون لایسنس را در لیست ظاهر نمی‌کند.
+
+> **مورد باز:** روال صدور کلید فقط روی وب‌سایت و انجمن کامیونیتی VMP منتشر می‌شود که از بیرون
+> ایران قابل خواندن نیست. روال جاری را مستقیماً از خود VMP بگیرید. آنچه از روی سورس قطعی است،
+> همان اندپوینتی است که کلید در برابر آن بررسی خواهد شد.
 
 #### 4.5 — آرتیفکت‌ها و کلاینت بازیکن
 
-- **آرتیفکت‌های سرور** از سایت آرتیفکت خود VMP می‌آیند، نه از سرور آرتیفکت‌های FiveM. این‌ها
-  **به‌صورت GitHub release منتشر نمی‌شوند** — ریپازیتوری عمومی GitHub متعلق به VMP هیچ ریلیزی
-  ندارد و خط بیلد آن روی زیرساخت خودش اجرا می‌شود. یک آرتیفکت FiveM کلید لایسنس VMP را
-  نمی‌پذیرد. ساختار روی دیسک همان ساختار FXServer است — یک `server.zip` / `server.7z` روی
-  ویندوز، یک `fx.tar.xz` روی لینوکس، باینری همچنان با نام `FXServer` / `FXServer.exe`، و همان
-  فراخوانی `FXServer.exe +exec server.cfg` / `./run.sh +exec server.cfg`.
-  بیلد جاری و چیدمان دانلود آن را از چیزی که VMP منتشر می‌کند بگیرید.
-- **بازیکن‌ها از لانچر VMP استفاده می‌کنند** که از وب‌سایت VMP دانلود می‌شود — نه کلاینت FiveM.
-  اتصال از طریق همان لانچر انجام می‌شود، از لیست سرورهای VMP یا فیلد اتصال مستقیم آن؛ از هر
-  قالب آدرسی که خودِ لانچر می‌خواهد استفاده کنید.
+- **آرتیفکت‌های سرور** از VMP می‌آیند، نه از سرور آرتیفکت‌های FiveM؛ و یک آرتیفکت FiveM کلید
+  لایسنس VMP را نمی‌پذیرد، چون در برابر keymaster.fivem.net بررسی می‌کند. این‌ها **به‌صورت
+  GitHub release منتشر نمی‌شوند** (ریپازیتوری عمومی VMP هیچ ریلیزی ندارد) و سورس هیچ آدرس دانلودی
+  برای آرتیفکت سرور ندارد، بنابراین نمی‌توانیم اینجا آدرسی نام ببریم. ساختار روی دیسک همان ساختار
+  FXServer است، چون خود سرور *همان* FXServer است: روی ویندوز
+  `FXServer.exe +exec server.cfg` و روی لینوکس `./run.sh +exec server.cfg`.
+  **مورد باز — بیلد جاری و محل دانلود آن را مستقیماً از VMP بگیرید.**
+- **بازیکن‌ها از لانچر VMP استفاده می‌کنند**، نه کلاینت FiveM. لانچر خودش را از
+  `https://cdn.vmp.ir/updates` به‌روزرسانی می‌کند (`client/launcher/Bootstrap.cpp:100`) و کش بازی
+  GTA V را از `https://cdn.vmp.ir/mirrors/patches_fivem/3570/…` می‌گیرد (`GameCache.cpp:1402ff`) —
+  یعنی VMP در حال حاضر **بیلد ۳۵۷۰ بازی** را هدف گرفته است. اتصال از طریق همان لانچر انجام
+  می‌شود، از لیست سرورهای VMP یا فیلد اتصال مستقیم آن.
 
 #### 4.6 — لیست سرورها
 
-لیست شدن از همان مکانیزم FiveM استفاده می‌کند: هارت‌بیت استاندارد FXServer، در حالی که
-`sv_master1` از پیش روی اندپوینت خودِ VMP تنظیم شده است، پس شما آن را پیکربندی نمی‌کنید. چیزی که
-سورس نشان می‌دهد این است که هارت‌بیت تا وقتی هند‌شیک لایسنس مقادیر `sv_sessionId` و `sv_secret`
-را پر نکرده باشد اصلاً هیچ کاری نمی‌کند — به بیان دیگر، همان کلید معتبر VMP است که سرور را لیست
-می‌کند. لیست عمومی یک فرانت‌اند وب روی **list.vmp.ir** دارد؛ آن یک وب‌سایت است، نه چیزی که سرور
-شما با آن حرف بزند.
+لیست شدن از هارت‌بیت استاندارد FXServer استفاده می‌کند. مقدار `sv_master1` از پیش روی
+`https://api.vmp.ir/server/heartbeat.php?work=heartbeat` تنظیم شده است، پس شما آن را پیکربندی
+**نمی‌کنید** (`GameServer.cpp:54,120`). هارت‌بیت هر **۳ دقیقه** تکرار می‌شود
+(`GameServer.cpp:1074`) و هر بار تعداد بازیکنان، اطلاعات سرور و پورت شما را به همان اندپوینت
+می‌فرستد.
 
-- به `sv_master1` دست نزنید — بازنویسی آن سرور را خصوصی علامت می‌زند. هرگز آن را به یک مستر
-  FiveM اشاره ندهید؛ آن مستر چیزی دربارهٔ سرور شما نمی‌داند.
-- یک `sv_hostname` واقعی ست کنید.
+**آنچه شما را لیست می‌کند یک لایسنس معتبر است.** هارت‌بیت مقادیر `sv_sessionId` و `sv_secret` را
+بررسی می‌کند و اگر یکی از آن‌ها خالی باشد بلافاصله برمی‌گردد (`GameServer.cpp:971-973`). این دو
+فقط با یک هند‌شیک موفق لایسنس نوشته می‌شوند — بنابراین یک سرور بدون لایسنس هرگز ظاهر نمی‌شود، هر
+قدر هم بقیهٔ کانفیگ درست باشد. لیست یک فرانت‌اند وب عمومی روی **list.vmp.ir** دارد؛ آن یک وب‌سایت
+است، نه چیزی که سرور شما با آن حرف بزند.
+
+**به `sv_master1` دست نزنید.** ارزش دارد که مکانیزم را بفهمید، چون خطا بی‌صدا است: هارت‌بیت یک
+فلگ `private` حمل می‌کند که با `true` شروع می‌شود و فقط وقتی `false` می‌شود که یکی از
+`sv_master1` تا `sv_master3` *دقیقاً* همان آدرس پیش‌فرض VMP باشد (`GameServer.cpp:1039-1070`).
+اگر `sv_master1` را به جای دیگری اشاره دهید، هارت‌بیت باز هم فرستاده می‌شود — سرور شما فقط
+به‌عنوان خصوصی علامت می‌خورد و هرگز به‌صورت عمومی دیده نمی‌شود. هرگز آن را به یک مستر FiveM
+اشاره ندهید؛ آن مستر چیزی دربارهٔ سرور شما نمی‌داند.
+
+- یک `sv_hostname` واقعی ست کنید — مقدار پیش‌فرض داخلی آن عیناً `default FXServer` است
+  (`GameServer.cpp:119`).
 - پشت NAT یا پروکسی، همان سه بازنویسی با همان نام‌ها و همان معانی FiveM اعمال می‌شوند:
-  `sv_listingIpOverride`، `sv_listingHostOverride`، `sv_forceIndirectListing`.
+  `sv_listingIpOverride`، `sv_listingHostOverride`، `sv_forceIndirectListing`. هر سه مستقیماً در
+  محتوای هارت‌بیت خوانده می‌شوند (`GameServer.cpp:985-998`).
+- اگر کوئری لیست خطا برگرداند، سرور آن را عیناً به‌صورت
+  `^1Server list query returned an error: …` چاپ می‌کند — پیش از حدس زدن، همان خط را بخوانید.
 
 اگر با یک کلید معتبر، هارت‌بیتِ در حال اجرا و هاست‌نیم درست باز هم سرورتان ظاهر نشد، در انجمن
-کامیونیتی VMP بپرسید — همان‌جا است که اپراتورها مشکلات لیست شدن را مطرح می‌کنند، و هر مرحلهٔ
-اضافه‌ای که VMP ممکن است لازم بداند را باید خودشان اعلام کنند، نه اینکه ما حدس بزنیم.
+کامیونیتی VMP بپرسید — همان‌جا است که اپراتورها مشکلات لیست شدن را مطرح می‌کنند.
 
 #### 4.7 — دو نکتهٔ سازگاری
 
@@ -1439,18 +1542,32 @@ ve event'ler.
 edilmesi, hiçbir manifestonun düzenlenmesi ve hiçbir Lua kodunun değiştirilmesi gerekmez.
 Farklı olan her şey dağıtım tesisatıdır ve tamamı sizin `server.cfg` dosyanızda yer alır.
 
-#### 4.2 — VMP'nin belgeleri hakkında dürüst bir açıklama
+#### 4.2 — Bu VMP bilgileri nereden geliyor
 
-VMP'nin kendi siteleri — web sitesi, topluluk forumu, artifact sitesi ve sunucu listesi —
-sıradan bir tarayıcı olmayan her şeye HTTP 403 döndürür ve İran dışından fiilen erişilebilir
-değildir. Bu belgenin VMP hakkında söylediği şeyler, onların web sitelerinden değil, VMP'nin
-yayımlanmış sunucu kaynak kodunun okunmasından gelmektedir. Bu yüzden onların talimatlarını
-burada **yansıtamıyoruz** ve bu belge, okuyamadığımız anahtar biçimlerini, düğme etiketlerini,
-indirme yollarını veya menü adımlarını bilinçli olarak yeniden üretmiyor.
+VMP'nin kendi siteleri — web sitesi, topluluk forumu ve sunucu listesi — sıradan bir tarayıcı
+olmayan her şeye HTTP 403 döndürür ve İran dışından fiilen erişilebilir değildir. Bu nedenle bu
+belgenin VMP hakkında söylediği her şey, **VMP'nin yayımlanmış sunucu kaynak kodunun**
+(`github.com/v-mp/vmp`) okunmasından gelir; sunucunun gerçekte nasıl davrandığı konusunda asıl
+kaynak budur. Aşağıdaki her iddia, kendiniz doğrulayabilesiniz diye dosya ve satır olarak
+kaynağıyla verilmiştir.
 
-Bir adım yalnızca VMP'nin yayımladığı bir şeye bağlı olduğunda, bu belge tahmin yürütmek yerine
-size *nereye bakacağınızı* söyler. Bu belge dâhil herhangi bir kopyası yerine VMP'nin güncel
-olarak yayımladığı neyse onu izleyin.
+VMP sunucusunun kodunda sabit olarak bulunan uç noktalar:
+
+| Ne | Değer | Kaynak |
+|---|---|---|
+| Lisanslama tabanı | `https://api.vmp.ir/` | `citizen-server-impl/include/ServerLicensingComponent.h:36` |
+| Anahtar kaydı | `POST https://api.vmp.ir/server/register.php?work=register` | `citizen-server-impl/src/ServerAuth.cpp:44` |
+| Sunucu listesi heartbeat'i | `https://api.vmp.ir/server/heartbeat.php?work=heartbeat` — `sv_master1` değişkeninin yerleşik varsayılanı | `citizen-server-impl/src/GameServer.cpp:54,120` |
+| İstemci güncellemeleri | `https://cdn.vmp.ir/updates` | `client/launcher/Bootstrap.cpp:100` |
+| Oyun önbelleği aynaları | `https://cdn.vmp.ir/mirrors/patches_fivem/3570/…` (oyun derlemesi **3570**) | `client/launcher/GameCache.cpp:1402ff` |
+
+Kaynak koddan **yanıtlanamayan** iki şey vardır, çünkü bunlar yalnızca VMP'nin web sitesinde
+bulunur: lisans anahtarını nasıl edineceğiniz ve sunucu artifact'lerinin nereden indirileceği.
+Her ikisi de aşağıda tahmin edilmek yerine açık uç olarak işaretlenmiştir.
+
+Yararlı bir olumsuz bulgu: Cfx.re "nucleus" kaydı kaynak kodda **yorum satırına alınmıştır**
+(`citizen-server-impl/src/ServerNucleus.cpp:60-100`); dolayısıyla bir VMP sunucusu `cfx.re`
+adresine kaydolmaz ve FiveM altyapısıyla iletişim kurmaz.
 
 #### 4.3 — VMP yapılandırmasından başlayın
 
@@ -1472,62 +1589,100 @@ tamamen aynı şekilde ayarlanır.
 
 #### 4.4 — Lisans anahtarı
 
-Bir VMP lisans anahtarı **zorunludur**. VMP, FiveM sunucusunun bir çatallamasıdır ve FXServer'da
-eksik veya reddedilen bir `sv_licenseKey` sunucunun başlamasını engeller; VMP de aynı kod
-tabanını devraldığına göre aynısını bekleyin. VMP'nin tam olarak nasıl hata verdiğini test
-etmedik; bu yüzden anahtarı, belgelenmiş bir atlatma yolu olan bir şey gibi değil, katı bir
-gereklilik olarak görün.
+Bir VMP lisans anahtarı **zorunludur** — bu varsayım değil, doğrulanmış bir bilgidir. Başlangıçta
+VMP bir lisans denetimi çalıştırır ve her hata yolunda `FatalError` çağırır; bu da sunucuyu
+durdurur (`ServerAuth.cpp:30-80`).
 
-Anahtar VMP tarafından verilmiş olmalı ve keymaster.fivem.net'e **değil**, VMP'nin kendi
+Anahtar, keymaster.fivem.net'e **değil**, VMP'nin `https://api.vmp.ir/` adresindeki **kendi**
 lisanslama servisine karşı doğrulanır. Bir FiveM anahtarı VMP'de asla kimlik doğrulamasından
-geçmez, bir VMP anahtarı da FiveM'de asla geçmez.
+geçmez; tersi de geçerlidir.
 
 ```cfg
 sv_licenseKey "YOUR_VMP_LICENSE_KEY"
 ```
 
-Anahtarlar VMP'nin kendi lisanslama kanalları üzerinden verilir. Sitelerini İran dışından
-okuyamadığımız için burada bir prosedür yeniden üretmiyoruz: güncel prosedürü VMP'nin web
-sitesinden ve topluluk forumundan edinin ve onların yayımladığını izleyin.
+**Başlangıçta ne olur.** Sunucu, `https://api.vmp.ir/server/register.php?work=register` adresine
+POST ile `{"license":"<anahtarınız>"}` gönderir. Başarılı olursa şunu yazdırır:
 
-`sv_sessionId` veya `sv_secret` değerlerini elle **ayarlamayın**. `sv_licenseKey` başarıyla
-kaydolduğunda VMP'nin lisanslama el sıkışması ikisini de sizin için ayarlar — bu, sunucu kaynak
-kodunda görülebilir — ve bunları elle ayarlamak lisanssız bir sunucuyu çalışır hâle getirmez.
+```
+Server Auth: Checking license...
+Server Auth: Server license key authentication succeeded!
+Server Auth: Session Id : <id>
+```
+
+… ve `sv_sessionId` ile `sv_secret` değerlerini doğrudan yanıttan yazar, ardından hemen bir sunucu
+listesi heartbeat'i tetikler.
+
+**Üç hata mesajı**, birbirinden ayırt edebilmeniz için:
+
+| Konsol mesajı | Anlamı |
+|---|---|
+| `Please set sv_licenseKey in server.cfg!` | Convar boş veya eksik |
+| `A connection with the VMP server could not be established!` | `api.vmp.ir` erişilemezdi — ağ, DNS veya güvenlik duvarı |
+| *(VMP'nin API'sinden gelen mesaj, birebir)* | Anahtarın kendisi reddedildi — süresi dolmuş, iptal edilmiş veya başka bir sunucuya bağlı |
+
+**IPv4 gereklidir.** Lisans isteği `opts.ipv4 = true` ile yapılır (`ServerAuth.cpp:43`); liste
+heartbeat'i de öyle (`GameServer.cpp:1001`). İnternete yalnızca IPv6 ile bağlı bir ana bilgisayar
+ne lisans alabilir ne de listelenebilir; yukarıdaki bağlantı hatasıyla başarısız olur.
+
+`sv_sessionId` veya `sv_secret` değerlerini elle **ayarlamayın**. El sıkışma ikisini de yazar ve
+heartbeat, bunlardan herhangi biri boşken göndermeyi açıkça reddeder (`GameServer.cpp:971-973`) —
+bunları elle ayarlamak lisanssız bir sunucuyu listede görünür yapmaz.
+
+> **Açık uç:** Bir anahtarın nasıl verildiği yalnızca VMP'nin web sitesinde ve topluluk forumunda
+> yayımlanır; bunları İran dışından okuyamıyoruz. Güncel prosedürü doğrudan VMP'den edinin. Kaynak
+> koddan kesin olan şey, anahtarın hangi uç noktaya karşı denetleneceğidir.
 
 #### 4.5 — Artifact'ler ve oyuncu istemcisi
 
-- **Sunucu artifact'leri** VMP'nin kendi artifact sitesinden gelir; FiveM'in artifact sunucusundan
-  değil. Bunlar **GitHub sürümü (release) olarak yayımlanmaz** — VMP'nin herkese açık GitHub
-  deposunda hiç sürüm yoktur ve derleme hattı kendine ait bir altyapıda çalışır. Bir FiveM
-  artifact'i VMP lisans anahtarını kabul etmez. Diskteki yapı FXServer'ınkiyle aynıdır —
-  Windows'ta bir `server.zip` / `server.7z`, Linux'ta bir `fx.tar.xz`, ikili dosyanın adı yine
-  `FXServer` / `FXServer.exe` ve aynı `FXServer.exe +exec server.cfg` /
-  `./run.sh +exec server.cfg` çağrısı. Güncel derlemeyi ve indirme düzenini VMP'nin
-  yayımladıklarından öğrenin.
-- **Oyuncular VMP başlatıcısını kullanır**, VMP'nin web sitesinden indirilir — FiveM istemcisini
-  değil. Katılma işlemi başlatıcı üzerinden, VMP'nin sunucu listesinden veya başlatıcının
-  doğrudan bağlantı alanından yapılır; başlatıcının kendisinin istediği adres biçimi neyse onu
-  kullanın.
+- **Sunucu artifact'leri** VMP'den gelir, FiveM'in artifact sunucusundan değil; ayrıca bir FiveM
+  artifact'i VMP lisans anahtarını kabul etmez — o, keymaster.fivem.net'e karşı denetleme yapardı.
+  Bunlar **GitHub sürümü (release) olarak yayımlanmaz** (VMP'nin herkese açık deposunda hiç sürüm
+  yoktur) ve kaynak kod bir sunucu artifact'i indirme URL'si içermez; bu yüzden burada bir adres
+  veremeyiz. Diskteki yapı FXServer'ınkiyle aynıdır, çünkü sunucu zaten FXServer'ın *kendisidir*:
+  Windows'ta `FXServer.exe +exec server.cfg`, Linux'ta `./run.sh +exec server.cfg`.
+  **Açık uç — güncel derlemeyi ve indirme konumunu doğrudan VMP'den edinin.**
+- **Oyuncular VMP başlatıcısını kullanır**, FiveM istemcisini değil. Başlatıcı kendini
+  `https://cdn.vmp.ir/updates` üzerinden günceller (`client/launcher/Bootstrap.cpp:100`) ve GTA V
+  oyun önbelleğini `https://cdn.vmp.ir/mirrors/patches_fivem/3570/…` adresinden çeker
+  (`GameCache.cpp:1402ff`) — yani VMP şu anda **3570 oyun derlemesini** hedefliyor. Katılma işlemi
+  başlatıcı üzerinden, VMP'nin sunucu listesinden veya başlatıcının doğrudan bağlantı alanından
+  yapılır.
 
 #### 4.6 — Sunucu listesi
 
-Listeleme FiveM'dekiyle aynı mekanizmayı kullanır: standart FXServer heartbeat'i; `sv_master1`
-zaten varsayılan olarak VMP'nin kendi uç noktasına işaret eder, dolayısıyla onu
-yapılandırmazsınız. Kaynak kodun gösterdiği şey, lisanslama el sıkışması `sv_sessionId` ve
-`sv_secret` değerlerini doldurana kadar heartbeat'in hiçbir şey yapmadığıdır — başka bir deyişle,
-bir sunucuyu listeye sokan şey geçerli bir VMP anahtarıdır. Listenin **list.vmp.ir** adresinde
-herkese açık bir web ön yüzü vardır; bu bir web sitesidir, sunucunuzun konuştuğu bir şey değil.
+Listeleme standart FXServer heartbeat'ini kullanır. `sv_master1` zaten varsayılan olarak
+`https://api.vmp.ir/server/heartbeat.php?work=heartbeat` adresine işaret eder, dolayısıyla onu
+**yapılandırmazsınız** (`GameServer.cpp:54,120`). Heartbeat her **3 dakikada** bir tekrarlanır
+(`GameServer.cpp:1074`) ve her seferinde oyuncu sayınızı, sunucu bilgilerinizi ve portunuzu bu uç
+noktaya gönderir.
 
-- `sv_master1` ayarına dokunmayın — onu geçersiz kılmak sunucuyu özel olarak işaretler. Onu asla
-  bir FiveM master'ına yönlendirmeyin; o master sizin sunucunuzdan haberdar değildir.
-- Gerçek bir `sv_hostname` ayarlayın.
+**Sizi listeye sokan şey geçerli bir lisanstır.** Heartbeat, `sv_sessionId` ve `sv_secret`
+değerlerini denetler ve bunlardan herhangi biri boşsa hemen geri döner (`GameServer.cpp:971-973`).
+Bu değerleri yalnızca başarılı bir lisans el sıkışması yazar — yani lisanssız bir sunucu,
+yapılandırmanın geri kalanı ne kadar doğru olursa olsun asla görünmez. Listenin **list.vmp.ir**
+adresinde herkese açık bir web ön yüzü vardır; bu bir web sitesidir, sunucunuzun konuştuğu bir şey
+değil.
+
+**`sv_master1` ayarına dokunmayın.** Mekanizmayı anlamakta fayda var, çünkü hata sessizdir:
+heartbeat, `true` olarak başlayan bir `private` bayrağı taşır ve bu bayrak yalnızca
+`sv_master1`…`sv_master3` değerlerinden biri *tam olarak* VMP'nin varsayılan URL'si olduğunda
+`false` yapılır (`GameServer.cpp:1039-1070`). `sv_master1` değerini başka bir yere yönlendirirseniz
+heartbeat yine gönderilir — sunucunuz sadece özel olarak işaretli kalır ve herkese açık olarak hiç
+görünmez. Onu asla bir FiveM master'ına yönlendirmeyin; o master sizin sunucunuzdan haberdar
+değildir.
+
+- Gerçek bir `sv_hostname` ayarlayın — yerleşik varsayılanı harfi harfine `default FXServer`'dır
+  (`GameServer.cpp:119`).
 - NAT veya vekil sunucu arkasında, aynı üç geçersiz kılma, FiveM'dekiyle aynı adlar ve anlamlarla
-  geçerlidir: `sv_listingIpOverride`, `sv_listingHostOverride`, `sv_forceIndirectListing`.
+  geçerlidir: `sv_listingIpOverride`, `sv_listingHostOverride`, `sv_forceIndirectListing`. Üçü de
+  doğrudan heartbeat yüküne okunur (`GameServer.cpp:985-998`).
+- Liste sorgusu bir hata döndürürse sunucu bunu birebir `^1Server list query returned an error: …`
+  olarak yazdırır — tahmin yürütmeden önce o satırı okuyun.
 
 Geçerli bir anahtar, çalışan bir heartbeat ve doğru bir ana bilgisayar adına rağmen sunucunuz
 hâlâ görünmüyorsa VMP'nin topluluk forumunda sorun — operatörler listeleme sorunlarını orada dile
-getirir ve VMP'nin gerektirebileceği ek adımlar ne olursa olsun, bunları belirtmek onlara düşer,
-tahmin etmek bize değil.
+getirir.
 
 #### 4.7 — İki uyumluluk notu
 
@@ -1985,18 +2140,32 @@ eventos.
 necesita portarse, ningún manifiesto necesita editarse y ningún Lua necesita cambiarse. Todo lo que
 difiere es plomería de despliegue, y todo ello vive en tu `server.cfg`.
 
-#### 4.2 — Declaración honesta sobre la documentación de VMP
+#### 4.2 — De dónde salen estos datos sobre VMP
 
-Los sitios propios de VMP —su sitio web, el foro de la comunidad, el sitio de artifacts y la lista
-de servidores— devuelven HTTP 403 a cualquier cosa que no sea un navegador común, y en la práctica
-no son alcanzables desde fuera de Irán. Lo que este documento afirma sobre VMP proviene de leer el
-código fuente publicado del servidor de VMP, no de sus sitios web. Por eso **no podemos replicar sus
-instrucciones aquí**, y este documento deliberadamente no reproduce formatos de clave, etiquetas de
-botones, rutas de descarga ni pasos de menú que no pudimos leer.
+Los sitios propios de VMP —su sitio web, el foro de la comunidad y la lista de servidores— devuelven
+HTTP 403 a cualquier cosa que no sea un navegador común, y en la práctica no son alcanzables desde
+fuera de Irán. Por eso todo lo que este documento afirma sobre VMP proviene de leer el **código
+fuente publicado del servidor de VMP** (`github.com/v-mp/vmp`), que es la fuente autorizada sobre
+cómo se comporta realmente el servidor. Cada afirmación de abajo está citada por archivo y línea
+para que puedas comprobarla tú mismo.
 
-Cuando un paso depende de algo que solo VMP publica, este documento te dice *dónde buscar* en lugar
-de adivinar. Sigue lo que VMP publique actualmente por encima de cualquier copia de ello, incluida
-esta.
+Los endpoints que el servidor de VMP tiene fijados en el código:
+
+| Qué | Valor | Fuente |
+|---|---|---|
+| Base de licenciamiento | `https://api.vmp.ir/` | `citizen-server-impl/include/ServerLicensingComponent.h:36` |
+| Registro de clave | `POST https://api.vmp.ir/server/register.php?work=register` | `citizen-server-impl/src/ServerAuth.cpp:44` |
+| Heartbeat de la lista | `https://api.vmp.ir/server/heartbeat.php?work=heartbeat` — el valor por defecto integrado de `sv_master1` | `citizen-server-impl/src/GameServer.cpp:54,120` |
+| Actualizaciones del cliente | `https://cdn.vmp.ir/updates` | `client/launcher/Bootstrap.cpp:100` |
+| Mirrors de caché del juego | `https://cdn.vmp.ir/mirrors/patches_fivem/3570/…` (build del juego **3570**) | `client/launcher/GameCache.cpp:1402ff` |
+
+Hay dos cosas que el código fuente **no** puede responder, porque solo viven en el sitio web de VMP:
+cómo obtienes una clave de licencia y de dónde se descargan los artifacts del servidor. Ambas quedan
+marcadas abajo como pendientes en lugar de adivinadas.
+
+Un resultado negativo útil: el registro «nucleus» de Cfx.re está **comentado** en el código fuente
+(`citizen-server-impl/src/ServerNucleus.cpp:60-100`), así que un servidor de VMP no se registra en
+`cfx.re` ni se comunica con la infraestructura de FiveM.
 
 #### 4.3 — Parte de la configuración de VMP
 
@@ -2019,61 +2188,99 @@ configuradas exactamente de la misma manera.
 
 #### 4.4 — Clave de licencia
 
-Una clave de licencia de VMP es **obligatoria**. VMP es un fork del servidor de FiveM, y en FXServer
-una `sv_licenseKey` ausente o rechazada impide que el servidor arranque; VMP hereda ese código base,
-así que espera lo mismo. No probamos el comportamiento exacto de falla de VMP, así que trata la clave
-como un requisito estricto y no como algo con un bypass documentado.
+Una clave de licencia de VMP es **obligatoria**: esto está verificado, no supuesto. Al arrancar, VMP
+ejecuta una comprobación de licencia y llama a `FatalError` en cada ruta de fallo, lo que detiene el
+servidor (`ServerAuth.cpp:30-80`).
 
-La clave debe ser emitida por VMP y se valida contra el servicio de licencias propio de VMP, **no**
-contra keymaster.fivem.net. Una clave de FiveM nunca se autenticará en VMP, y una clave de VMP nunca
-se autenticará en FiveM.
+La clave se valida contra el servicio de licencias **propio** de VMP en `https://api.vmp.ir/`, **no**
+contra keymaster.fivem.net. Una clave de FiveM nunca se autenticará en VMP, y viceversa.
 
 ```cfg
 sv_licenseKey "YOUR_VMP_LICENSE_KEY"
 ```
 
-Las claves se emiten a través de los canales de licenciamiento propios de VMP. No pudimos leer sus
-sitios desde fuera de Irán, así que no reproducimos aquí ningún procedimiento: obtén el vigente del
-sitio web de VMP y del foro de la comunidad, y sigue lo que ellos publiquen.
+**Qué ocurre al arrancar.** El servidor envía por POST `{"license":"<tu clave>"}` a
+`https://api.vmp.ir/server/register.php?work=register`. Si tiene éxito imprime:
 
-**No** configures `sv_sessionId` ni `sv_secret` a mano. El handshake de licencias de VMP configura
-ambos por ti una vez que `sv_licenseKey` se registra correctamente —eso es visible en el código
-fuente del servidor— y configurarlos manualmente no hará que funcione un servidor sin licencia.
+```
+Server Auth: Checking license...
+Server Auth: Server license key authentication succeeded!
+Server Auth: Session Id : <id>
+```
+
+…y escribe `sv_sessionId` y `sv_secret` a partir de la propia respuesta, para luego forzar de
+inmediato un heartbeat a la lista de servidores.
+
+**Los tres mensajes de error**, para que puedas distinguirlos:
+
+| Mensaje en consola | Significado |
+|---|---|
+| `Please set sv_licenseKey in server.cfg!` | La convar está vacía o falta |
+| `A connection with the VMP server could not be established!` | `api.vmp.ir` no era alcanzable: red, DNS o firewall |
+| *(un mensaje de la API de VMP, literal)* | La clave fue rechazada: expirada, revocada o vinculada a otro servidor |
+
+**Se requiere IPv4.** La solicitud de licencia se hace con `opts.ipv4 = true`
+(`ServerAuth.cpp:43`), y el heartbeat de la lista también (`GameServer.cpp:1001`). Un host con
+conectividad a internet solo por IPv6 no puede licenciarse ni aparecer listado, y fallará con el
+error de conexión de arriba.
+
+**No** configures `sv_sessionId` ni `sv_secret` a mano. El handshake escribe ambos, y el heartbeat se
+niega explícitamente a enviar mientras cualquiera de los dos esté vacío (`GameServer.cpp:971-973`):
+configurarlos manualmente no hará que un servidor sin licencia aparezca.
+
+> **Punto pendiente:** cómo se emite una clave se publica únicamente en el sitio web y el foro de la
+> comunidad de VMP, que no podemos leer desde fuera de Irán. Consigue el procedimiento vigente
+> directamente de VMP. Lo que sí es seguro, por el código fuente, es el endpoint contra el que se
+> comprobará.
 
 #### 4.5 — Artifacts y el cliente del jugador
 
-- Los **artifacts del servidor** vienen del sitio de artifacts propio de VMP, no del servidor de
-  artifacts de FiveM. **No se publican como releases de GitHub**: el repositorio público de GitHub de
-  VMP no tiene ninguno, y su cadena de compilación corre en infraestructura propia. Un artifact de
-  FiveM no aceptará una clave de licencia de VMP. La forma en disco es la misma que la de FXServer: un
-  `server.zip` / `server.7z` en Windows, un `fx.tar.xz` en Linux, el binario que sigue llamándose
-  `FXServer` / `FXServer.exe`, y la misma invocación `FXServer.exe +exec server.cfg` /
-  `./run.sh +exec server.cfg`. Consigue la compilación actual y su estructura de descarga a partir
-  de lo que VMP publique.
-- **Los jugadores usan el launcher de VMP**, descargado desde el sitio web de VMP, no el cliente de
-  FiveM. Unirse se hace a través del launcher, desde la lista de servidores de VMP o desde su campo de
-  conexión directa; usa el formato de dirección que el propio launcher te pida.
+- Los **artifacts del servidor** vienen de VMP, no del servidor de artifacts de FiveM, y un artifact
+  de FiveM no aceptará una clave de licencia de VMP: comprobaría contra keymaster.fivem.net. **No se
+  publican como releases de GitHub** (el repositorio público de VMP no tiene ninguno), y el código
+  fuente no contiene ninguna URL de descarga de artifacts del servidor, así que no podemos nombrar
+  una aquí. La forma en disco es la de FXServer, porque el servidor *es* FXServer:
+  `FXServer.exe +exec server.cfg` en Windows, `./run.sh +exec server.cfg` en Linux.
+  **Punto pendiente: consigue la compilación actual y su ubicación de descarga directamente de VMP.**
+- **Los jugadores usan el launcher de VMP**, no el cliente de FiveM. El launcher se actualiza solo
+  desde `https://cdn.vmp.ir/updates` (`client/launcher/Bootstrap.cpp:100`) y obtiene su caché del
+  juego GTA V desde `https://cdn.vmp.ir/mirrors/patches_fivem/3570/…` (`GameCache.cpp:1402ff`), así
+  que VMP apunta actualmente al **build 3570 del juego**. Unirse se hace a través del launcher, desde
+  la lista de servidores de VMP o desde su campo de conexión directa.
 
 #### 4.6 — Lista de servidores
 
-El listado usa el mismo mecanismo que en FiveM: el heartbeat estándar de FXServer, con `sv_master1`
-ya apuntando por defecto al endpoint propio de VMP, así que no lo configuras. Lo que muestra el código
-fuente es que el heartbeat no hace absolutamente nada hasta que el handshake de licenciamiento haya
-llenado `sv_sessionId` y `sv_secret`; en otras palabras, una clave válida de VMP es lo que consigue
-que un servidor aparezca en la lista. Hay un front end web público para la lista en **list.vmp.ir**;
-es un sitio web, no algo con lo que tu servidor se comunique.
+El listado usa el heartbeat estándar de FXServer. `sv_master1` ya apunta por defecto a
+`https://api.vmp.ir/server/heartbeat.php?work=heartbeat`, así que **no lo configuras**
+(`GameServer.cpp:54,120`). El heartbeat se repite cada **3 minutos** (`GameServer.cpp:1074`), y cada
+uno envía a ese endpoint tu número de jugadores, la información del servidor y el puerto.
 
-- Deja `sv_master1` en paz: sobrescribirlo marca el servidor como privado. Nunca lo apuntes a un
-  master de FiveM; ese master no sabe nada de tu servidor.
-- Configura un `sv_hostname` real.
+**Una licencia válida es lo que consigue que aparezcas listado.** El heartbeat comprueba
+`sv_sessionId` y `sv_secret` y retorna de inmediato si cualquiera de los dos está vacío
+(`GameServer.cpp:971-973`). Esos solo los escribe un handshake de licencia exitoso, de modo que un
+servidor sin licencia nunca aparece, por muy correcta que sea el resto de la configuración. Hay un
+front end web público en **list.vmp.ir**; es un sitio web, no algo con lo que tu servidor se
+comunique.
+
+**Deja `sv_master1` en paz.** Vale la pena entender el mecanismo, porque el fallo es silencioso: el
+heartbeat lleva un flag `private` que empieza en `true` y solo se pone en `false` cuando uno de
+`sv_master1`…`sv_master3` es *exactamente* la URL por defecto de VMP (`GameServer.cpp:1039-1070`).
+Apunta `sv_master1` a otro sitio y el heartbeat se sigue enviando: tu servidor simplemente queda
+marcado como privado y nunca aparece públicamente. Nunca lo apuntes a un master de FiveM; ese master
+no sabe nada de tu servidor.
+
+- Configura un `sv_hostname` real: su valor por defecto integrado es literalmente
+  `default FXServer` (`GameServer.cpp:119`).
 - Detrás de NAT o un proxy, aplican las mismas tres sobrescrituras, con los mismos nombres y
   significados que en FiveM: `sv_listingIpOverride`, `sv_listingHostOverride`,
-  `sv_forceIndirectListing`.
+  `sv_forceIndirectListing`. Las tres se leen directamente en la carga útil del heartbeat
+  (`GameServer.cpp:985-998`).
+- Si la consulta a la lista devuelve un error, el servidor lo imprime literalmente como
+  `^1Server list query returned an error: …`: lee esa línea antes de adivinar.
 
 Si tu servidor sigue sin aparecer con una clave válida, un heartbeat en ejecución y un hostname
 correcto, pregunta en el foro de la comunidad de VMP: ahí es donde los operadores plantean los
-problemas de listado, y cualquier paso adicional que VMP pueda exigir les corresponde a ellos
-declararlo, no a nosotros adivinarlo.
+problemas de listado.
 
 #### 4.7 — Dos notas de compatibilidad
 
@@ -2540,19 +2747,32 @@ Natives, Exports und Events.
 werden, kein Manifest muss bearbeitet werden, und kein Lua muss geändert werden. Alles, was sich
 unterscheidet, ist Deployment-Infrastruktur, und all das steht in Ihrer `server.cfg`.
 
-#### 4.2 — Ehrliche Aussage zur Dokumentation von VMP
+#### 4.2 — Woher diese VMP-Angaben stammen
 
-Die eigenen Seiten von VMP — Website, Community-Forum, Artifact-Seite und Serverliste — liefern
-allem, was kein gewöhnlicher Browser ist, HTTP 403 zurück und sind von außerhalb des Iran
-praktisch nicht erreichbar. Was dieses Dokument über VMP aussagt, stammt aus der Lektüre des
-veröffentlichten Server-Quellcodes von VMP, nicht von deren Websites. Wir **können ihre
-Anleitungen hier daher nicht spiegeln**, und dieses Dokument gibt bewusst keine
-Schlüsselformate, Schaltflächenbeschriftungen, Download-Pfade oder Menüschritte wieder, die wir
-nicht lesen konnten.
+Die eigenen Seiten von VMP — Website, Community-Forum und Serverliste — liefern allem, was kein
+gewöhnlicher Browser ist, HTTP 403 zurück und sind von außerhalb des Iran praktisch nicht
+erreichbar. Alles, was dieses Dokument über VMP aussagt, stammt daher aus der Lektüre des
+**veröffentlichten Server-Quellcodes von VMP** (`github.com/v-mp/vmp`), der maßgeblich dafür
+ist, wie sich der Server tatsächlich verhält. Jede Angabe unten ist mit Datei und Zeile belegt,
+sodass Sie sie selbst nachprüfen können.
 
-Wo ein Schritt von etwas abhängt, das nur VMP veröffentlicht, sagt Ihnen dieses Dokument, *wo
-Sie nachsehen sollen*, statt zu raten. Folgen Sie stets dem, was VMP aktuell veröffentlicht,
-statt irgendeiner Kopie davon — einschließlich dieser hier.
+Die Endpunkte, die im VMP-Server fest hinterlegt sind:
+
+| Was | Wert | Quelle |
+|---|---|---|
+| Lizenz-Basis | `https://api.vmp.ir/` | `citizen-server-impl/include/ServerLicensingComponent.h:36` |
+| Schlüssel-Registrierung | `POST https://api.vmp.ir/server/register.php?work=register` | `citizen-server-impl/src/ServerAuth.cpp:44` |
+| Serverlisten-Heartbeat | `https://api.vmp.ir/server/heartbeat.php?work=heartbeat` — der eingebaute Standardwert von `sv_master1` | `citizen-server-impl/src/GameServer.cpp:54,120` |
+| Client-Updates | `https://cdn.vmp.ir/updates` | `client/launcher/Bootstrap.cpp:100` |
+| Game-Cache-Mirror | `https://cdn.vmp.ir/mirrors/patches_fivem/3570/…` (Game-Build **3570**) | `client/launcher/GameCache.cpp:1402ff` |
+
+Zwei Dinge lassen sich aus dem Quellcode **nicht** beantworten, weil sie ausschließlich auf der
+Website von VMP stehen: wie Sie einen Lizenzschlüssel erhalten und wo Server-Artifacts
+heruntergeladen werden. Beide sind unten als offen gekennzeichnet statt geraten.
+
+Ein nützliches Negativergebnis: Die Cfx.re-„Nucleus"-Registrierung ist im Quellcode
+**auskommentiert** (`citizen-server-impl/src/ServerNucleus.cpp:60-100`). Ein VMP-Server
+registriert sich also nicht bei `cfx.re` und funkt nicht an die FiveM-Infrastruktur.
 
 #### 4.3 — Mit der VMP-Konfiguration beginnen
 
@@ -2575,65 +2795,104 @@ dieselbe Weise gesetzt.
 
 #### 4.4 — Lizenzschlüssel
 
-Ein VMP-Lizenzschlüssel ist **zwingend erforderlich**. VMP ist ein Fork des FiveM-Servers, und
-auf FXServer verhindert ein fehlender oder abgelehnter `sv_licenseKey` den Start des Servers;
-VMP erbt diese Codebasis, es ist also dasselbe Verhalten zu erwarten. Wir haben das genaue
-Fehlverhalten von VMP nicht getestet — behandeln Sie den Schlüssel daher als harte
-Voraussetzung und nicht als etwas mit einer dokumentierten Umgehung.
+Ein VMP-Lizenzschlüssel ist **zwingend erforderlich** — das ist belegt, nicht vermutet. Beim
+Start führt VMP eine Lizenzprüfung durch und ruft auf jedem Fehlerpfad `FatalError` auf, was den
+Server stoppt (`ServerAuth.cpp:30-80`).
 
-Der Schlüssel muss von VMP ausgestellt sein und wird gegen den eigenen Lizenzdienst von VMP
-geprüft, **nicht** gegen keymaster.fivem.net. Ein FiveM-Schlüssel wird sich auf VMP niemals
-authentifizieren, und ein VMP-Schlüssel wird sich auf FiveM niemals authentifizieren.
+Der Schlüssel wird gegen den **eigenen** Lizenzdienst von VMP unter `https://api.vmp.ir/`
+geprüft, **nicht** gegen keymaster.fivem.net. Ein FiveM-Schlüssel authentifiziert sich auf VMP
+niemals — und umgekehrt.
 
 ```cfg
 sv_licenseKey "YOUR_VMP_LICENSE_KEY"
 ```
 
-Schlüssel werden über die eigenen Lizenzkanäle von VMP ausgestellt. Wir konnten deren Seiten von
-außerhalb des Iran nicht lesen und geben hier daher kein Verfahren wieder: Beziehen Sie das
-aktuelle Verfahren von der Website und aus dem Community-Forum von VMP und folgen Sie dem, was
-dort veröffentlicht wird.
+**Was beim Start passiert.** Der Server sendet `{"license":"<Ihr Schlüssel>"}` per POST an
+`https://api.vmp.ir/server/register.php?work=register`. Bei Erfolg gibt er aus:
 
-Setzen Sie `sv_sessionId` oder `sv_secret` **nicht** von Hand. Der Lizenz-Handshake von VMP
-setzt beides für Sie, sobald sich `sv_licenseKey` erfolgreich registriert hat — das ist im
-Server-Quellcode sichtbar —, und ein manuelles Setzen bringt einen unlizenzierten Server nicht
-zum Laufen.
+```
+Server Auth: Checking license...
+Server Auth: Server license key authentication succeeded!
+Server Auth: Session Id : <id>
+```
+
+… und schreibt `sv_sessionId` und `sv_secret` aus der Antwort selbst, dann erzwingt er sofort
+einen Serverlisten-Heartbeat.
+
+**Die drei Fehlermeldungen**, damit Sie sie unterscheiden können:
+
+| Konsolenmeldung | Bedeutung |
+|---|---|
+| `Please set sv_licenseKey in server.cfg!` | Die Convar ist leer oder fehlt |
+| `A connection with the VMP server could not be established!` | `api.vmp.ir` war nicht erreichbar — Netzwerk, DNS oder Firewall |
+| *(eine Meldung von VMPs API, wörtlich)* | Der Schlüssel selbst wurde abgelehnt — abgelaufen, widerrufen oder an einen anderen Server gebunden |
+
+**IPv4 ist erforderlich.** Die Lizenzanfrage erfolgt mit `opts.ipv4 = true`
+(`ServerAuth.cpp:43`), ebenso der Listen-Heartbeat (`GameServer.cpp:1001`). Ein Host mit
+ausschließlich IPv6-Anbindung ans Internet kann sich weder lizenzieren noch listen lassen und
+scheitert mit dem obigen Verbindungsfehler.
+
+Setzen Sie `sv_sessionId` oder `sv_secret` **nicht** von Hand. Der Handshake schreibt beides,
+und der Heartbeat verweigert das Senden ausdrücklich, solange eines davon leer ist
+(`GameServer.cpp:971-973`) — manuelles Setzen bringt einen unlizenzierten Server nicht in die
+Liste.
+
+> **Offener Punkt:** Wie ein Schlüssel ausgestellt wird, steht nur auf der Website und im
+> Community-Forum von VMP, die wir von außerhalb des Iran nicht lesen können. Holen Sie sich das
+> aktuelle Verfahren direkt bei VMP. Sicher ist aus dem Quellcode der Endpunkt, gegen den geprüft
+> wird.
 
 #### 4.5 — Artifacts und der Spieler-Client
 
-- **Server-Artifacts** stammen von der eigenen Artifact-Seite von VMP, nicht vom
-  Artifacts-Server von FiveM. Sie werden **nicht als GitHub-Releases veröffentlicht** — das
-  öffentliche GitHub-Repository von VMP hat keine, und die Build-Pipeline läuft auf einer
-  eigenen Infrastruktur. Ein FiveM-Artifact akzeptiert keinen VMP-Lizenzschlüssel. Die Struktur
-  auf der Festplatte ist dieselbe wie bei FXServer — eine `server.zip` / `server.7z` unter
-  Windows, eine `fx.tar.xz` unter Linux, die Binärdatei weiterhin `FXServer` / `FXServer.exe`
-  benannt, und derselbe Aufruf `FXServer.exe +exec server.cfg` / `./run.sh +exec server.cfg`.
-  Den aktuellen Build und dessen Download-Aufbau entnehmen Sie dem, was VMP veröffentlicht.
-- **Spieler verwenden den VMP-Launcher**, herunterladbar von der Website von VMP — nicht den
-  FiveM-Client. Der Beitritt erfolgt über den Launcher, aus der Serverliste von VMP oder über
-  dessen Direct-Connect-Feld; verwenden Sie das Adressformat, das der Launcher selbst verlangt.
+- **Server-Artifacts** stammen von VMP, nicht vom Artifacts-Server von FiveM, und ein
+  FiveM-Artifact akzeptiert keinen VMP-Lizenzschlüssel — es würde gegen keymaster.fivem.net
+  prüfen. Sie werden **nicht als GitHub-Releases veröffentlicht** (das öffentliche Repository
+  von VMP hat keine), und der Quellcode enthält keine Download-URL für Server-Artifacts, daher
+  können wir hier keine nennen. Die Struktur auf der Festplatte ist die von FXServer, denn der
+  Server *ist* FXServer: `FXServer.exe +exec server.cfg` unter Windows,
+  `./run.sh +exec server.cfg` unter Linux.
+  **Offener Punkt — beziehen Sie den aktuellen Build und dessen Download-Ort direkt von VMP.**
+- **Spieler verwenden den VMP-Launcher**, nicht den FiveM-Client. Der Launcher aktualisiert sich
+  selbst über `https://cdn.vmp.ir/updates` (`client/launcher/Bootstrap.cpp:100`) und bezieht
+  seinen GTA-V-Game-Cache von `https://cdn.vmp.ir/mirrors/patches_fivem/3570/…`
+  (`GameCache.cpp:1402ff`) — VMP zielt derzeit also auf **Game-Build 3570**. Der Beitritt
+  erfolgt über den Launcher, aus der Serverliste von VMP oder über dessen Direct-Connect-Feld.
 
 #### 4.6 — Serverliste
 
-Die Listung nutzt denselben Mechanismus wie FiveM: den standardmäßigen FXServer-Heartbeat, wobei
-`sv_master1` bereits auf den eigenen Endpunkt von VMP voreingestellt ist, Sie ihn also nicht
-konfigurieren. Der Quellcode zeigt, dass der Heartbeat überhaupt nichts tut, solange der
-Lizenz-Handshake nicht `sv_sessionId` und `sv_secret` gefüllt hat — mit anderen Worten: Ein
-gültiger VMP-Schlüssel ist das, was einen Server in die Liste bringt. Es gibt ein öffentliches
-Web-Frontend für die Liste unter **list.vmp.ir**; das ist eine Website und nichts, womit Ihr
-Server spricht.
+Die Listung nutzt den standardmäßigen FXServer-Heartbeat. `sv_master1` ist bereits auf
+`https://api.vmp.ir/server/heartbeat.php?work=heartbeat` voreingestellt, Sie konfigurieren ihn
+also **nicht** (`GameServer.cpp:54,120`). Der Heartbeat wiederholt sich alle **3 Minuten**
+(`GameServer.cpp:1074`) und überträgt dabei jeweils Spielerzahl, Serverinfos und Port an diesen
+Endpunkt.
 
-- Lassen Sie `sv_master1` unangetastet — ein Überschreiben markiert den Server als privat.
-  Richten Sie ihn niemals auf einen FiveM-Master; dieser Master kennt Ihren Server nicht.
-- Setzen Sie einen echten `sv_hostname`.
+**Eine gültige Lizenz ist das, was Sie in die Liste bringt.** Der Heartbeat prüft
+`sv_sessionId` und `sv_secret` und kehrt sofort zurück, wenn eines davon leer ist
+(`GameServer.cpp:971-973`). Beide werden ausschließlich durch einen erfolgreichen
+Lizenz-Handshake geschrieben — ein unlizenzierter Server erscheint also nie, ganz gleich wie
+korrekt der Rest der Konfiguration ist. Es gibt ein öffentliches Web-Frontend unter
+**list.vmp.ir**; das ist eine Website und nichts, womit Ihr Server spricht.
+
+**Lassen Sie `sv_master1` unangetastet.** Der Mechanismus ist es wert, verstanden zu werden,
+denn der Fehler ist lautlos: Der Heartbeat trägt ein `private`-Flag, das mit `true` startet und
+nur dann auf `false` gesetzt wird, wenn einer von `sv_master1`…`sv_master3` *exakt* die
+Standard-URL von VMP ist (`GameServer.cpp:1039-1070`). Richten Sie `sv_master1` woandershin, wird
+der Heartbeat weiterhin gesendet — Ihr Server bleibt lediglich als privat markiert und taucht nie
+öffentlich auf. Richten Sie ihn niemals auf einen FiveM-Master; dieser Master kennt Ihren Server
+nicht.
+
+- Setzen Sie einen echten `sv_hostname` — sein eingebauter Standardwert lautet wörtlich
+  `default FXServer` (`GameServer.cpp:119`).
 - Hinter NAT oder einem Proxy gelten dieselben drei Overrides, mit denselben Namen und
   Bedeutungen wie auf FiveM: `sv_listingIpOverride`, `sv_listingHostOverride`,
-  `sv_forceIndirectListing`.
+  `sv_forceIndirectListing`. Alle drei fließen direkt in die Heartbeat-Nutzlast ein
+  (`GameServer.cpp:985-998`).
+- Gibt die Listenabfrage einen Fehler zurück, gibt der Server ihn wörtlich als
+  `^1Server list query returned an error: …` aus — lesen Sie diese Zeile, bevor Sie raten.
 
 Erscheint Ihr Server trotz gültigem Schlüssel, laufendem Heartbeat und korrektem Hostnamen
 weiterhin nicht, fragen Sie im Community-Forum von VMP nach — dort bringen Betreiber
-Listungsprobleme zur Sprache, und welche zusätzlichen Schritte VMP gegebenenfalls verlangt, ist
-von VMP zu benennen und nicht von uns zu erraten.
+Listungsprobleme zur Sprache.
 
 #### 4.7 — Zwei Kompatibilitätshinweise
 
