@@ -7,6 +7,10 @@ ATC.JobsPlugin = ATC.JobsPlugin or {}
 
 -- ── Internal helpers ──────────────────────────────────────────────────────────
 
+-- Set once the disabled-feature warning has been emitted, so a player mashing
+-- the duty key does not flood the log with the same line.
+local _warnedDuty = false
+
 --- Safely resolve characterId from session.
 --- Returns nil (and logs) if no session or no character is selected.
 --- @param source number FiveM player source
@@ -37,6 +41,17 @@ ATC.Firewall.On('atc:jobs:duty:toggle', {
     local characterId = _getCharacterId(src)
     if not characterId then return end
 
+    if not ATC.JobsPlugin.Config.DutyApiEnabled then
+        -- No duty endpoint exists, so there is nothing to call. Warn once per
+        -- boot instead of per toggle: repeating it for every button press would
+        -- bury the one message that matters.
+        if not _warnedDuty then
+            _warnedDuty = true
+            ATC.Log.Warn('jobs', 'Duty toggling is disabled: the API serves no duty endpoint. See DutyApiEnabled in the plugin config.')
+        end
+        return
+    end
+
     ATC.HTTP.Post('/api/v1/jobs/duty/toggle', {
         characterId = characterId,
     }, function(ok, status, data, err)
@@ -61,24 +76,48 @@ ATC.Firewall.On('atc:jobs:state:request', {
     local characterId = _getCharacterId(src)
     if not characterId then return end
 
-    ATC.HTTP.Get('/api/v1/jobs/character/' .. characterId, function(ok, status, data, err)
+    -- Employment lives under /api/v1/employment, not /api/v1/jobs — the latter
+    -- is the job catalogue (definitions and grades), not who works where.
+    -- The response is a page of contracts, so the active one is picked out here
+    -- rather than handing the raw page to the client.
+    ATC.HTTP.Get('/api/v1/employment/character/' .. characterId .. '?status=active&limit=1',
+    function(ok, status, data, err)
         if not ok then
             ATC.Log.Error('jobs', 'state:request API error', {
                 source = src, characterId = characterId, status = status, err = err,
             })
             return
         end
-        TriggerClientEvent('atc:jobs:state:response', src, data)
+
+        local items    = (type(data) == 'table' and (data.items or data.data or data.rows)) or nil
+        local contract = (type(items) == 'table' and items[1]) or nil
+
+        -- onDuty has no server-side source: no duty endpoint, and no duty
+        -- column on atc_employment_contracts. It is reported as false so the
+        -- client keeps a defined state, not because the player is known to be
+        -- off duty. Revisit together with DutyApiEnabled.
+        TriggerClientEvent('atc:jobs:state:response', src, {
+            onDuty   = false,
+            jobLabel = contract and (contract.jobLabel or contract.jobId) or nil,
+            contract = contract,
+        })
     end)
 end)
 
 -- ── Payroll Thread ────────────────────────────────────────────────────────────
 
---- Fires a payroll tick for every player that has an active character session.
---- The API handles duty-state filtering — only on-duty characters receive pay.
---- Runs every PayrollIntervalMs (default 30 min). Using CreateThread + Wait
---- instead of a cron to keep payroll server-local and avoid event-bus overhead.
+--- Fires a payroll tick for every player that has an active character session,
+--- every PayrollIntervalMs (default 30 min).
+--- Dormant unless PayrollApiEnabled is set: the endpoint it posts to does not
+--- exist, and the note that once stood here — that the API filters by duty
+--- state so only on-duty characters are paid — was not true of any endpoint the
+--- API serves. Payroll there runs per organisation and period.
 CreateThread(function()
+    if not ATC.JobsPlugin.Config.PayrollApiEnabled then
+        ATC.Log.Warn('jobs', 'Payroll ticks are disabled: the API models payroll per organisation and period (POST /api/v1/payroll/preview, then /commit), not per character. See PayrollApiEnabled in the plugin config.')
+        return
+    end
+
     while true do
         Wait(ATC.JobsPlugin.Config.PayrollIntervalMs)
 
