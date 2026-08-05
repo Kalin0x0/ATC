@@ -22,6 +22,15 @@ local function _brandName()
     return name
 end
 
+-- Base URL of the ATC API, resolved once so the two names below cannot drift.
+-- A trailing slash is stripped: callers append '/api/v1/...', and 'host//api'
+-- would otherwise be produced for anyone who sets the convar with one.
+local _apiUrl = GetConvar('atc_api_url', 'http://localhost:3000')
+if type(_apiUrl) ~= 'string' or _apiUrl == '' then
+    _apiUrl = 'http://localhost:3000'
+end
+_apiUrl = _apiUrl:gsub('/+$', '')
+
 ATC.Config = {
     -- Server branding, not framework identity. See shared/branding.lua.
     Name       = _brandName(),
@@ -29,7 +38,13 @@ ATC.Config = {
     ApiVersion = '1',
 
     -- API connection (server-side only; read on server, ignored on client)
-    ApiUrl      = GetConvar('atc_api_url', 'http://localhost:3000'),
+    ApiUrl      = _apiUrl,
+    -- ApiBase is the same value under the name the runtime bridges use. The
+    -- server files under game/atc-core/server concatenate it directly
+    -- (ATC.Config.ApiBase .. '/api/v1/...') in 126 places, so leaving it
+    -- undefined made every one of those handlers fail on a nil concatenation.
+    -- Both names must always resolve to the same URL — hence the shared local.
+    ApiBase     = _apiUrl,
     ApiToken    = GetConvar('atc_api_token', ''),
     ServerToken = GetConvar('atc_server_token', ''),
     ServerId    = GetConvar('atc_server_id', 'atc-main-01'),
@@ -38,6 +53,11 @@ ATC.Config = {
     -- Default false = block on API failure (safer)
     FailOpen       = GetConvar('atc_fail_open', 'false') == 'true',
     ApiTimeoutMs   = tonumber(GetConvar('atc_api_timeout_ms', '5000')) or 5000,
+
+    -- Item definition cache lifetime, in seconds. server/inventory.lua reads
+    -- this and already falls back to 60 when it is absent, so 60 keeps the
+    -- current behaviour exactly; the convar just makes it tunable.
+    ItemCacheTTL   = tonumber(GetConvar('atc_item_cache_ttl', '60')) or 60,
 
     -- Localization
     DefaultLocale    = GetConvar('atc_locale', 'en'),

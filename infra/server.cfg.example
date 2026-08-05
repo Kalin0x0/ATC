@@ -118,6 +118,10 @@ set atc_fail_open "false"
 # API request timeout in milliseconds
 set atc_api_timeout_ms "5000"
 
+# Item definition cache lifetime in seconds (optional).
+# 60 is the built-in default; raise it to cut API chatter on large item sets.
+set atc_item_cache_ttl "60"
+
 # Debug logging (verbose — disable in production)
 set atc_debug "false"
 
