@@ -4,7 +4,8 @@ game 'gta5'
 name 'atc-economy'
 description 'ATC Economy — Money handling, ATM, shops integration'
 version '0.1.0'
-author 'Atlantic Community'
+author 'Naiemi Group'
+url 'https://github.com/Kalin0x0/ATC'
 
 lua54 'yes'
 

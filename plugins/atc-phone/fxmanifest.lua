@@ -2,8 +2,11 @@ fx_version 'cerulean'
 game 'gta5'
 lua54 'yes'
 
-name    'atc-phone'
-version '0.1.0'
+name        'atc-phone'
+description 'ATC Phone Plugin — in-game smartphone: contacts, messages, bank, GPS, 911'
+version     '0.1.0'
+author      'Naiemi Group'
+url         'https://github.com/Kalin0x0/ATC'
 
 dependency 'atc-core'
 

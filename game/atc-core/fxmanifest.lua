@@ -4,12 +4,14 @@ game 'gta5'
 name 'atc-core'
 description 'ATC Core Resource — Atlantic Core Framework v0.1.0'
 version '0.1.0'
-author 'Atlantic Community'
-url 'https://github.com/atlantic-community/atc'
+author 'Naiemi Group'
+url 'https://github.com/Kalin0x0/ATC'
 
 lua54 'yes'
 
 shared_scripts {
+    'shared/platform.lua',
+    'shared/branding.lua',
     'shared/config.lua',
     'shared/events.lua',
     'shared/locales.lua',

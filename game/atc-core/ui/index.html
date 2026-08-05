@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ATC — Atlantic Core NUI</title>
+  <title>ATC Core NUI</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
@@ -189,9 +189,11 @@
   <div id="character-select" class="screen hidden">
     <div class="modal character-select-modal">
       <div class="modal-header">
+        <!-- Wordmark. Text below is the built-in default; it is replaced at
+             runtime by the ATC_BRANDING NUI message when the server sets one. -->
         <div class="atc-logo">
-          <span class="logo-atlantic">ATLANTIC</span>
-          <span class="logo-core">CORE</span>
+          <span class="logo-atlantic" id="brand-logo-primary">ATLANTIC</span>
+          <span class="logo-core" id="brand-logo-secondary">CORE</span>
         </div>
         <p class="modal-subtitle" data-i18n="charselect.subtitle">Select your character to enter the world</p>
       </div>

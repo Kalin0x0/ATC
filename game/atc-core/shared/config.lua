@@ -3,8 +3,28 @@
 
 ATC = ATC or {}
 
+-- Server branding (the name players see) lives in shared/branding.lua, which is
+-- listed ahead of this file in shared_scripts. The lookup is still guarded: a
+-- load-order change must never be able to hard-fail the framework config table.
+-- Falls back to the branding convar, then to the shipped literal, so a
+-- deployment that sets nothing resolves to exactly 'Atlantic Core' as before.
+local function _brandName()
+    if ATC.Branding and type(ATC.Branding.Title) == 'function' then
+        local ok, name = pcall(ATC.Branding.Title)
+        if ok and type(name) == 'string' and name ~= '' then
+            return name
+        end
+    end
+    local name = GetConvar('atc_brand_name', 'Atlantic Core')
+    if type(name) ~= 'string' or name == '' then
+        return 'Atlantic Core'
+    end
+    return name
+end
+
 ATC.Config = {
-    Name       = 'Atlantic Core',
+    -- Server branding, not framework identity. See shared/branding.lua.
+    Name       = _brandName(),
     Version    = '0.1.0',
     ApiVersion = '1',
 

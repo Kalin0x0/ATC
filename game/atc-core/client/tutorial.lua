@@ -8,8 +8,35 @@ ATC.Tutorial = ATC.Tutorial or {}
 
 local _shown = false
 
+-- Server branding, resolved once at load. shared/branding.lua is a shared_script
+-- so it is always loaded before this client script, but guard anyway: a missing
+-- brand must degrade to the shipped default, never break first-spawn onboarding.
+local function _brand()
+    if ATC.Branding and type(ATC.Branding.Title) == 'function' then
+        local ok, name = pcall(ATC.Branding.Title)
+        if ok and type(name) == 'string' and name ~= '' then
+            return name
+        end
+    end
+    if ATC.Config and type(ATC.Config.Name) == 'string' and ATC.Config.Name ~= '' then
+        return ATC.Config.Name
+    end
+    return 'Atlantic Core'
+end
+
+local function _brandShort()
+    if ATC.Branding and type(ATC.Branding.Short) == 'string' and ATC.Branding.Short ~= '' then
+        return ATC.Branding.Short
+    end
+    return 'ATC'
+end
+
+local BRAND = _brand()
+
+-- Step 1 is branded and deliberately platform-neutral: ATC runs on FiveM and on
+-- its forks, so the welcome copy must not name one.
 local TUTORIAL_STEPS = {
-    { title = 'Welcome to Atlantic Core', text = 'Atlantic Core (ATC) is an MMO-grade FiveM platform. Use the controls below to get started.', duration = 6000 },
+    { title = 'Welcome to ' .. BRAND,     text = BRAND .. ' is an MMO-grade persistent world. Use the controls below to get started.', duration = 6000 },
     { title = 'Character & Identity',     text = 'Select or create your character. Your identity persists across sessions.', duration = 5000 },
     { title = 'Phone & Communication',    text = 'Press NUMPAD0 to open your phone. Use it for contacts, banking, and 911 calls.', duration = 5000 },
     { title = 'Inventory',               text = 'Press TAB to open your inventory. Use items, manage slots, and drag/drop to reorganise.', duration = 5000 },
@@ -35,7 +62,7 @@ local function _runTutorial()
     ATC.Minimap.AddBlip('tutorial_shop',     vector3(24.47,   -1346.64, 29.50), '24/7',     52,  5)
     ATC.Minimap.AddBlip('tutorial_police',   vector3(441.68,  -982.44,  30.69), 'Police',   60, 29)
     ATC.Minimap.AddBlip('tutorial_hospital', vector3(295.84,  -1447.53, 29.99), 'Hospital', 61,  1)
-    SendNUIMessage({ type='ATC_NOTIFICATION', payload={ message='Tutorial complete! Enjoy ATC.', level='success', duration=5000 } })
+    SendNUIMessage({ type='ATC_NOTIFICATION', payload={ message='Tutorial complete! Enjoy '.._brandShort()..'.', level='success', duration=5000 } })
 end
 
 -- Show tutorial on first spawn only

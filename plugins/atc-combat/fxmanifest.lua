@@ -4,7 +4,8 @@ game 'gta5'
 name 'atc-combat'
 description 'ATC Combat Plugin — death, revive, respawn, EMS dispatch bridge'
 version '1.0.0'
-author 'Atlantic Community'
+author 'Naiemi Group'
+url 'https://github.com/Kalin0x0/ATC'
 
 lua54 'yes'
 

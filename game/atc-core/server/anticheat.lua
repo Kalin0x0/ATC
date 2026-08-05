@@ -6,6 +6,21 @@ local _violations    = {}  -- source → { count, lastViolation }
 local KICK_THRESHOLD = 5
 local BAN_THRESHOLD  = 10
 
+--- Player-facing prefix, derived from the atc_brand_short convar via
+--- ATC.Branding.Tag(). Fully guarded: this sits on the anti-cheat kick and ban
+--- paths, so a missing or erroring ATC.Branding must fall back to the shipped
+--- literal rather than stop the DropPlayer from running.
+--- @return string  '[ATC]' when unbranded
+local function _tag()
+    if ATC.Branding and type(ATC.Branding.Tag) == 'function' then
+        local ok, tag = pcall(ATC.Branding.Tag)
+        if ok and type(tag) == 'string' and tag ~= '' then
+            return tag
+        end
+    end
+    return '[ATC]'
+end
+
 local function _recordViolation(source, reason, severity)
     severity = severity or 1
     if not _violations[source] then _violations[source] = { count=0, firstSeen=os.time() } end
@@ -16,9 +31,9 @@ local function _recordViolation(source, reason, severity)
     if count >= BAN_THRESHOLD then
         local identifier = GetPlayerIdentifierByType(source, 'license')
         ATC.HTTP.Post('/api/v1/accounts/ban', { identifier=identifier or 'unknown', reason='[AutoBan] '..reason, expiresAt=nil }, function() end)
-        DropPlayer(source, '[ATC] You have been banned: '..reason)
+        DropPlayer(source, _tag()..' You have been banned: '..reason)
     elseif count >= KICK_THRESHOLD then
-        DropPlayer(source, '[ATC] Anti-cheat violation: '..reason)
+        DropPlayer(source, _tag()..' Anti-cheat violation: '..reason)
     else
         -- Warn only
         TriggerClientEvent('atc:anticheat:warning', source, { reason=reason, count=count })

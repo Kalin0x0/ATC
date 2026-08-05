@@ -3,6 +3,11 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/auth'
 import { StatusDot } from '@atc/ui'
 
+// Configurable server brand; see the VITE_BRAND_NAME note in src/main.tsx.
+// Unset resolves to 'Atlantic Core'. The 'ATC' logo mark below is framework
+// attribution and stays fixed.
+const BRAND_NAME = import.meta.env.VITE_BRAND_NAME || 'Atlantic Core'
+
 interface NavItem {
   to: string
   label: string
@@ -121,7 +126,7 @@ export function Layout() {
             </div>
             <div>
               <p className="text-[#d4af37] font-bold text-sm leading-tight tracking-wide">
-                Atlantic Core
+                {BRAND_NAME}
               </p>
               <p className="text-[#8888aa] text-[10px] leading-tight">Admin Panel</p>
             </div>

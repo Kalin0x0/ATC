@@ -6,6 +6,21 @@ ATC.Security = ATC.Security or {}
 
 local _riskStore = {}  -- identifier → { score, events }
 
+--- Player-facing security prefix, derived from the atc_brand_short convar via
+--- ATC.Branding.Tag('Security'). Fully guarded: this sits on the auto-kick and
+--- auto-ban paths, so a missing or erroring ATC.Branding must fall back to the
+--- shipped literal rather than stop the DropPlayer from running.
+--- @return string  '[ATC Security]' when unbranded
+local function _secTag()
+    if ATC.Branding and type(ATC.Branding.Tag) == 'function' then
+        local ok, tag = pcall(ATC.Branding.Tag, 'Security')
+        if ok and type(tag) == 'string' and tag ~= '' then
+            return tag
+        end
+    end
+    return '[ATC Security]'
+end
+
 local VIOLATION_POINTS = {
     EVENT_NOT_WHITELISTED      = 10,
     CLIENT_NOT_ALLOWED         = 10,
@@ -107,7 +122,7 @@ end
 --- Auto-kick a player due to security threshold.
 function ATC.Security.AutoKick(source, reason)
     ATC.Log.Security('security', 'Auto-kick triggered', { source = source, reason = reason })
-    DropPlayer(source, '[ATC Security] ' .. reason)
+    DropPlayer(source, _secTag() .. ' ' .. reason)
 end
 
 --- Auto-ban a player due to extreme risk score.
@@ -118,7 +133,7 @@ function ATC.Security.AutoBan(source, reason)
         reason = reason,
     })
     -- TODO Phase 2: POST /api/v1/admin/bans with evidence bundle
-    DropPlayer(source, '[ATC Security] Banned: ' .. reason)
+    DropPlayer(source, _secTag() .. ' Banned: ' .. reason)
 end
 
 -- ─── IAM Bridge — READ ONLY ───────────────────────────────────────────────────

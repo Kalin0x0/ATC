@@ -3,6 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/auth'
 import { Button, Input, Alert } from '@atc/ui'
 
+// Configurable server brand; see the VITE_BRAND_NAME note in src/main.tsx.
+// Unset resolves to 'Atlantic Core'. The 'ATC' logo mark below is framework
+// attribution and stays fixed.
+const BRAND_NAME = import.meta.env.VITE_BRAND_NAME || 'Atlantic Core'
+
 export function LoginPage() {
   const navigate = useNavigate()
   const setCredentials = useAuthStore((s) => s.setCredentials)
@@ -55,7 +60,7 @@ export function LoginPage() {
           <div className="w-14 h-14 rounded-xl bg-[#d4af37] flex items-center justify-center mb-4 shadow-lg shadow-[#d4af3730]">
             <span className="text-[#0d0d1a] font-black text-lg tracking-tight">ATC</span>
           </div>
-          <h1 className="text-2xl font-bold text-[#d4af37] tracking-wide">Atlantic Core</h1>
+          <h1 className="text-2xl font-bold text-[#d4af37] tracking-wide">{BRAND_NAME}</h1>
           <p className="text-[#8888aa] text-sm mt-1">Admin Panel</p>
         </div>
 
@@ -97,7 +102,7 @@ export function LoginPage() {
         </div>
 
         <p className="text-center text-[#8888aa40] text-xs mt-6">
-          Atlantic Core &copy; {new Date().getFullYear()}
+          {BRAND_NAME} &copy; {new Date().getFullYear()}
         </p>
       </div>
     </div>

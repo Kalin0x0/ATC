@@ -80,7 +80,8 @@
     inVehicle:     false,
     vehicle:       null,
     characterId:   null,
-    hudVisible:    true
+    hudVisible:    true,
+    branding:      null
   };
 
   /* ─── Message Handlers ───────────────────────────────────────── */
@@ -117,6 +118,55 @@
     }
     emit('ATC_LOCALE_UPDATE', payload);
   };
+
+  /* ── Server branding ─────────────────────────────────────────
+     Lets a self-hosted server show its own name/wordmark/accent
+     instead of the built-in defaults. Every field is optional: an
+     absent field leaves the default that is already in the DOM/CSS.
+     All text is written with textContent — never innerHTML — because
+     these strings come straight from server convars.               */
+  var _BRAND_COLOR_RE =
+    /^(#[0-9a-fA-F]{3,8}|[a-zA-Z]{3,20}|rgba?\([\d\s.,%]+\)|hsla?\([\d\s.,%]+\))$/;
+
+  function _setBrandText(id, value) {
+    // Only a string counts as "configured". '' is meaningful — it clears the
+    // node (single-word wordmarks) — while undefined/nil keeps the default.
+    if (typeof value !== 'string') return;
+    var el = document.getElementById(id);
+    if (el) el.textContent = value;
+  }
+
+  function applyBranding(payload) {
+    var brand     = payload || {};
+    var primary   = brand.logoPrimary;
+    var secondary = brand.logoSecondary;
+
+    // Only a name given? Derive the two-part wordmark from it, so a server
+    // that sets just its name still gets a correct logo.
+    if (typeof primary !== 'string' && typeof secondary !== 'string' &&
+        typeof brand.name === 'string' && brand.name.trim()) {
+      var words = brand.name.trim().split(/\s+/);
+      primary   = words.shift();
+      secondary = words.join(' ');
+    }
+
+    _setBrandText('brand-logo-primary',   primary);
+    _setBrandText('brand-logo-secondary', secondary);
+
+    if (typeof brand.name === 'string' && brand.name.trim()) {
+      document.title = brand.name;
+    }
+
+    if (typeof brand.color === 'string' && _BRAND_COLOR_RE.test(brand.color)) {
+      document.documentElement.style.setProperty('--brand', brand.color);
+    }
+
+    state.branding = brand;
+    emit('ATC_BRANDING', brand);
+  }
+
+  handlers['ATC_BRANDING'] = applyBranding;
+  handlers['branding']     = applyBranding;   // lowercase alias
 
   handlers['ATC_VITALS_UPDATE'] = function (payload) {
     Object.assign(state.vitals, payload);

@@ -4,7 +4,8 @@ game 'gta5'
 name 'atc-admin'
 description 'ATC Admin Plugin — in-game admin commands: kick, ban, bring, goto, freeze, spectate'
 version '1.0.0'
-author 'Atlantic Community'
+author 'Naiemi Group'
+url 'https://github.com/Kalin0x0/ATC'
 
 lua54 'yes'
 

@@ -4,7 +4,10 @@ game 'gta5'
 name        'atc-mdt'
 description 'ATC Mobile Data Terminal'
 version     '0.1.0'
-author      'Atlantic Core'
+author      'Naiemi Group'
+url         'https://github.com/Kalin0x0/ATC'
+
+lua54 'yes'
 
 dependency 'atc-core'
 

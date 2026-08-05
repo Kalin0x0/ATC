@@ -4,7 +4,8 @@ game 'gta5'
 name 'atc-sdk'
 description 'ATC SDK — public API for external plugins'
 version '0.1.0'
-author 'Atlantic Community'
+author 'Naiemi Group'
+url 'https://github.com/Kalin0x0/ATC'
 
 lua54 'yes'
 

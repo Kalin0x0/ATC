@@ -4,7 +4,7 @@
 
 # Atlantic Core
 
-**A modern, modular world platform for FiveM — by Naiemi Group.**
+**A modern, modular world platform for FiveM and VMP — by Naiemi Group.**
 
 Atlantic Core (ATC) is what you reach for when a normal roleplay framework
 stops being enough. It runs your server like a live game: persistent players,
@@ -206,7 +206,7 @@ architecture decision records — lives in
 
 | Layer | Technology |
 |---|---|
-| Game runtime | FiveM, Lua 5.4 |
+| Game runtime | FiveM · VMP — any CitizenFX server, Lua 5.4 |
 | API server | Node.js 22, TypeScript 5, Fastify |
 | Admin panel | React 19, Tailwind 4, Vite, Zustand |
 | Database | MariaDB 11 |
@@ -308,6 +308,7 @@ once — rebind one per pair in your deployment.
 - **[docs/runbooks/](docs/runbooks/)** — phase-by-phase implementation runbooks
 - **[docs/sdk/PLUGIN_GUIDE.md](docs/sdk/PLUGIN_GUIDE.md)** — build your own plugin
 - **[docs/sdk/API_REFERENCE.md](docs/sdk/API_REFERENCE.md)** — SDK & API reference
+- **[docs/hosting/PUBLISHING.md](docs/hosting/PUBLISHING.md)** — publish your server on FiveM or VMP, under your own name *(EN · فارسی · Türkçe · Español · Deutsch)*
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** — how to contribute
 - **[THIRD_PARTY.md](THIRD_PARTY.md)** — third-party software & attribution
 - **[docs/funding.md](docs/funding.md)** — support & sponsorship guide

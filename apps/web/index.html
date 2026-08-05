@@ -3,6 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      Static pre-hydration fallback. index.html cannot read import.meta.env, so
+      src/main.tsx overwrites document.title with the configured VITE_BRAND_NAME
+      (default 'Atlantic Core') as soon as the bundle runs.
+    -->
     <title>ATC — Atlantic Core Admin</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

@@ -44,6 +44,20 @@ AddEventHandler(ATC.Events.CORE.SERVER_READY, function(data)
     -- Apply server-assigned locale
     ATC.Locale.Set(data.language or 'en')
 
+    -- Push server branding before ATC_CORE_READY so the character-select screen
+    -- is drawn with the operator's wordmark and accent instead of the shipped
+    -- defaults. Guarded: if branding is unavailable the NUI simply keeps the
+    -- defaults already in the DOM/CSS.
+    if ATC.Branding and type(ATC.Branding.Get) == 'function' then
+        local ok, brand = pcall(ATC.Branding.Get)
+        if ok and type(brand) == 'table' then
+            SendNUIMessage({
+                type    = 'ATC_BRANDING',
+                payload = brand,
+            })
+        end
+    end
+
     -- Send locale + direction to NUI (browser)
     SendNUIMessage({
         type = 'ATC_CORE_READY',

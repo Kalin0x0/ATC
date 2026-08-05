@@ -1,12 +1,64 @@
 -- ATC Core — Server Entry Point
 -- Initializes framework, registers built-in event handlers, and starts lifecycle.
 
+-- Framework identity below stays as-is — it is attribution, not server branding.
+-- The extra banner line reports what the operator configured (server brand) and
+-- what the runtime detected (FiveM / VMP / RedM). Both lookups are guarded so a
+-- load-order problem degrades the banner instead of failing startup.
+local function _brand()
+    if ATC.Branding and type(ATC.Branding.Title) == 'function' then
+        local ok, name = pcall(ATC.Branding.Title)
+        if ok and type(name) == 'string' and name ~= '' then
+            return name
+        end
+    end
+    if ATC.Config and type(ATC.Config.Name) == 'string' and ATC.Config.Name ~= '' then
+        return ATC.Config.Name
+    end
+    return 'Atlantic Core'
+end
+
+local function _platform()
+    if ATC.Platform and type(ATC.Platform.Describe) == 'function' then
+        local ok, text = pcall(ATC.Platform.Describe)
+        if ok and type(text) == 'string' and text ~= '' then
+            return text, ATC.Platform.Id
+        end
+    end
+    if ATC.Platform and type(ATC.Platform.Name) == 'string' and ATC.Platform.Name ~= '' then
+        return ATC.Platform.Name, ATC.Platform.Id
+    end
+    return 'unknown (platform detection unavailable)', nil
+end
+
+-- Player-facing message prefix, derived from the atc_brand_short convar so a
+-- self-hosted server rebrands its connect/kick text. Guarded the same way as
+-- _brand() above: these strings sit on the deferral and DropPlayer paths, so a
+-- missing or erroring ATC.Branding must degrade to the shipped literal rather
+-- than break a connect or swallow a kick.
+local function _tag()
+    if ATC.Branding and type(ATC.Branding.Tag) == 'function' then
+        local ok, tag = pcall(ATC.Branding.Tag)
+        if ok and type(tag) == 'string' and tag ~= '' then
+            return tag
+        end
+    end
+    return '[ATC]'
+end
+
+local _brandName = _brand()
+local _platformText, _platformId = _platform()
+
 ATC.Log.Info('core', '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
 ATC.Log.Info('core', ' Atlantic Core (ATC) starting...', {
     version    = ATC.Config.Version,
     apiVersion = ATC.Config.ApiVersion,
     serverId   = ATC.Config.ServerId,
     debug      = ATC.Config.Debug,
+})
+ATC.Log.Info('core', ' Server: ' .. _brandName .. '  |  Platform: ' .. _platformText, {
+    brand    = _brandName,
+    platform = _platformId,
 })
 ATC.Log.Info('core', '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
 
@@ -15,7 +67,7 @@ ATC.Log.Info('core', '━━━━━━━━━━━━━━━━━━━�
 AddEventHandler('playerConnecting', function(name, setKickReason, deferrals)
     local src = source
     deferrals.defer()
-    deferrals.update('[ATC] Verifying account...')
+    deferrals.update(_tag() .. ' Verifying account...')
 
     -- Guard: API token must be set or we cannot verify anything
     if ATC.Config.ApiToken == '' then
@@ -23,7 +75,7 @@ AddEventHandler('playerConnecting', function(name, setKickReason, deferrals)
         if ATC.Config.FailOpen then
             deferrals.done()
         else
-            deferrals.done('[ATC] Server configuration error. Please try again later.')
+            deferrals.done(_tag() .. ' Server configuration error. Please try again later.')
         end
         return
     end
@@ -35,7 +87,7 @@ AddEventHandler('playerConnecting', function(name, setKickReason, deferrals)
             ATC.Log.Warn('sessions', 'Player connecting without license identifier', {
                 source = src, name = name,
             })
-            deferrals.done('[ATC] A valid Rockstar license is required to connect.')
+            deferrals.done(_tag() .. ' A valid Rockstar license is required to connect.')
             return
         end
 
@@ -57,7 +109,7 @@ AddEventHandler('playerConnecting', function(name, setKickReason, deferrals)
         local language = ATC.Config.DefaultLocale
 
         -- Upsert account and check ban
-        deferrals.update('[ATC] Checking account...')
+        deferrals.update(_tag() .. ' Checking account...')
         ATC.HTTP.Post('/api/v1/accounts', {
             primaryIdentifier = identifier,
             identifiers       = identifiers,
@@ -71,7 +123,7 @@ AddEventHandler('playerConnecting', function(name, setKickReason, deferrals)
                     ATC.Log.Warn('sessions', 'Fail-open: allowing player despite API error', { source = src })
                     deferrals.done()
                 else
-                    deferrals.done('[ATC] Could not verify your account. Please try again later.')
+                    deferrals.done(_tag() .. ' Could not verify your account. Please try again later.')
                 end
                 return
             end
@@ -84,7 +136,7 @@ AddEventHandler('playerConnecting', function(name, setKickReason, deferrals)
                     source    = src,
                     accountId = accountId,
                 })
-                deferrals.done('[ATC] You are banned from this server.')
+                deferrals.done(_tag() .. ' You are banned from this server.')
                 return
             end
 
@@ -128,7 +180,7 @@ ATC.Firewall.On(
 
         if not identifier then
             ATC.Log.Error('sessions', 'Client ready but no license identifier', { source = src })
-            DropPlayer(src, '[ATC] No valid license identifier.')
+            DropPlayer(src, _tag() .. ' No valid license identifier.')
             return
         end
 

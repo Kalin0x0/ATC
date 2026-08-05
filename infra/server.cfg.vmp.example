@@ -1,38 +1,84 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# ATC — Atlantic Core  |  FiveM server.cfg example
-# Copy to your FiveM server root as server.cfg and fill in the values.
+# ATC — Atlantic Core  |  VMP server.cfg example
+# Copy to your VMP server root as server.cfg and fill in the values.
 #
-# ATC runs on FiveM (FXServer) and on CitizenFX-compatible forks. This file is
-# the FiveM variant. For VMP, start from infra/server.cfg.vmp.example instead —
-# the ATC convars are identical, only the licence/platform lines differ.
+# VMP (vmp.ir) is a CitizenFX-compatible platform — it is a fork of the FiveM
+# server, so the resource contract is the same one FiveM uses: fxmanifest.lua,
+# fx_version 'cerulean', game 'gta5', resources identified by folder name,
+# the same start/ensure commands, the same sv_* convars and the same natives.
+#
+# ATC therefore runs on VMP UNMODIFIED. No resource in this repo needs porting.
+# Only the deployment plumbing differs, and everything that differs is in this
+# file. The FiveM variant is infra/server.cfg.example; the ATC convar block
+# below is identical in both.
 # ─────────────────────────────────────────────────────────────────────────────
 
 # ── Server identity ───────────────────────────────────────────────────────────
-# This is the name shown in the FiveM server browser. Replace it with your own.
+# Shown on the VMP server list. Replace it with your own.
 # It is NOT the name ATC shows in-game — see "Server branding" below and set
-# atc_brand_name to match, otherwise your browser listing and your in-game UI
-# will disagree.
+# atc_brand_name to match, otherwise your listing and your in-game UI disagree.
 sv_hostname "Your Server Name — [TAG]"
 sv_maxclients 64
 sets tags "atc,roleplay,mmo"
 
 # ── License ───────────────────────────────────────────────────────────────────
-# A FiveM server licence key is required. Get yours at https://keymaster.fivem.net
-# A key issued by one platform is not valid on another — a keymaster.fivem.net
-# key works on FiveM only.
-sv_licenseKey "YOUR_FIVEM_LICENSE_KEY"
+# A VMP licence key is MANDATORY. VMP is a fork of the FiveM server, and on
+# FXServer a missing or rejected sv_licenseKey stops the server from starting;
+# VMP inherits that codebase, so expect the same. We did not test VMP's exact
+# failure behaviour, so treat the key as a hard requirement rather than
+# something with a documented bypass.
+#
+# The key must be issued by VMP. It is validated against VMP's own licensing
+# service, NOT against keymaster.fivem.net, so a FiveM key will never
+# authenticate here (and vice versa).
+#
+# Where to get one: keys are issued through VMP's own licensing channels. Their
+# sites are not reachable from outside Iran, so no procedure is reproduced here
+# — get the current one from VMP's website and community forum and follow what
+# they publish.
+sv_licenseKey "YOUR_VMP_LICENSE_KEY"
+
+# Do NOT set sv_sessionId or sv_secret by hand. VMP's licensing handshake sets
+# both for you once sv_licenseKey registers successfully, and the server list
+# heartbeat does nothing until it has them. Setting them manually will not make
+# an unlicensed server appear on the list.
+
+# ── Server list ───────────────────────────────────────────────────────────────
+# Listing uses the same mechanism as FiveM: the standard FXServer heartbeat,
+# with sv_master1 already defaulting to VMP's own endpoint, so you do not
+# configure it. The heartbeat does nothing at all until the licensing handshake
+# has filled in sv_sessionId and sv_secret — in other words, a valid VMP key is
+# what gets a server listed.
+#
+# Leave sv_master1 alone. Overriding it marks the server as private and it will
+# stop being listed. Do not point it at a FiveM master — that master does not
+# know about this server.
+#
+# If your server is behind NAT, a proxy or a load balancer and it lists with the
+# wrong address, use the standard overrides (same names and meanings as FiveM):
+# set sv_listingIpOverride "your.public.ip"
+# set sv_listingHostOverride "play.yourserver.example"
+# set sv_forceIndirectListing "true"
+#
+# If your server still does not appear with a valid key, a running heartbeat and
+# a correct hostname, ask on the VMP community forum — that is where operators
+# raise listing problems, and whatever additional steps VMP may require are
+# theirs to state, not ours to guess.
+#
+# Players join with the VMP launcher, downloaded from VMP's website, not with
+# the FiveM client. Joining is done through the launcher, from VMP's server list
+# or its direct-connect field; use whatever address format the launcher itself
+# asks for.
 
 # ── Platform ──────────────────────────────────────────────────────────────────
 # Which CitizenFX platform this server runs on: auto | fivem | vmp | redm
-# "auto" detects it at runtime and is correct for almost everyone. Pin a value
-# only if the platform ATC logs on startup is wrong for your host, or if you
-# want it fixed regardless of what the build reports.
-# ATC never branches gameplay on this. It decides only what the logs, telemetry
-# and ops records name as the platform, so a wrong value is a reporting bug, not
-# a gameplay one.
+# Pinned to "vmp" here so ATC's logs, telemetry and ops records name the right
+# platform even if runtime detection cannot tell this fork apart from upstream.
+# Set it back to "auto" if you move this config to a FiveM host.
+# ATC never branches gameplay on this — it affects reporting only.
 # Do not set atc_platform_resolved — the server writes that one itself from the
 # detection result and replicates it to clients.
-set atc_platform "auto"
+set atc_platform "vmp"
 
 # ── Server branding (self-hosting) ────────────────────────────────────────────
 # Everything a player sees with your community's name on it is set here, in one
@@ -122,9 +168,11 @@ set atc_api_timeout_ms "5000"
 set atc_debug "false"
 
 # ── ATC Admin ACE (required for /atckick, /atcban, /atcbring, etc.) ───────────
-# ATC keys every player record on the "license" identifier, so granting admin by
-# license is the path that always works. Replace the placeholder with your own
-# license identifier (find it in the server console when you connect).
+# VMP exposes the same identity providers as FiveM — license, steam and
+# endpoint/ip — and ATC keys every player record on the "license" identifier,
+# so granting admin by license is the path that always works. Replace the
+# placeholder with your own license identifier (find it in the server console
+# when you connect).
 add_ace identifier.license:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX atc.admin allow
 
 # Alternative: grant by Steam hex identifier instead. Only works for players who
@@ -132,10 +180,10 @@ add_ace identifier.license:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX atc.admin al
 # add_ace identifier.steam:XXXXXXXXXXXXXXXX atc.admin allow
 
 # ── Resources ─────────────────────────────────────────────────────────────────
-# Resources are started by FOLDER name. The `name` field inside fxmanifest.lua
-# is metadata only — it does not rename the resource. Keep the ATC folder names
-# exactly as they ship: the NUI pages address themselves as https://<folder>/
-# and renaming a folder breaks its UI.
+# Resources are started by FOLDER name, exactly as on FiveM. The `name` field
+# inside fxmanifest.lua is metadata only — it does not rename the resource. Keep
+# the ATC folder names exactly as they ship: the NUI pages address themselves as
+# https://<folder>/ and renaming a folder breaks its UI.
 
 # Core (must be first)
 start atc-core
@@ -195,3 +243,28 @@ start atc-marketplace
 # If you did copy the folders without renaming, use these instead:
 # start esx
 # start qb-core
+
+# ── VMP deployment notes ──────────────────────────────────────────────────────
+# Server artifacts: VMP publishes its own server builds. They are NOT published
+#   as GitHub releases — VMP's public GitHub repository has none, and its build
+#   pipeline runs on infrastructure of its own. A FiveM artifact will not accept
+#   a VMP licence key. The on-disk shape is the same as FXServer's: a
+#   server.zip / server.7z on Windows, an fx.tar.xz on Linux, the binary still
+#   named FXServer / FXServer.exe, started with `FXServer.exe +exec server.cfg`
+#   or `./run.sh +exec server.cfg`. Get the current build and its download
+#   layout from what VMP publishes.
+#
+# Player client: players use the VMP launcher, downloaded from VMP's website —
+#   not the FiveM client.
+#
+# Third-party assets: encrypted Cfx.re "escrow" assets are decrypted against
+#   Cfx.re's own service, so it would be unwise to count on them working on a
+#   non-Cfx.re platform — but we did not verify what VMP actually does with
+#   them. Plan for open-source or unencrypted resources alongside ATC, and test
+#   before you rely on anything escrowed. ATC itself ships no escrowed assets,
+#   so this never affects ATC's own resources.
+#
+# Compatibility: every ATC resource uses only stock CitizenFX natives, exports
+#   and events, which VMP provides unchanged. If a THIRD-PARTY resource
+#   misbehaves on VMP, that is between you and that resource — ask on the VMP
+#   community forum, where operators discuss which scripts need adjusting.

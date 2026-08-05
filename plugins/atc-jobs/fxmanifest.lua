@@ -4,7 +4,8 @@ game 'gta5'
 name 'atc-jobs'
 description 'ATC Jobs Plugin — Duty toggling, job state sync and payroll tick'
 version '1.0.0'
-author 'Atlantic Community'
+author 'Naiemi Group'
+url 'https://github.com/Kalin0x0/ATC'
 
 lua54 'yes'
 

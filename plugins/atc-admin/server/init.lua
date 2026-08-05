@@ -3,6 +3,31 @@
 -- All actions are logged via ATC.Log.Security / ATC.Log.Info.
 -- Ban persistence goes through the API; kick/bring/goto/freeze are local FiveM ops.
 
+-- ── Branding ──────────────────────────────────────────────────────────────────
+
+--- Player-facing message prefix, derived from the atc_brand_short convar via
+--- ATC.Branding.Tag() so a self-hosted server rebrands its kick/ban text.
+---
+--- ATC.Branding is populated by atc-core's shared scripts — the same injected
+--- `ATC` global surface this file already uses for ATC.Log / ATC.Accounts /
+--- ATC.HTTP / ATC.Firewall (see docs/sdk/PLUGIN_GUIDE.md §2), so this adds no
+--- dependency the plugin did not already carry. The extra `ATC and` test is
+--- because this is a separate resource from atc-core: if the global is ever
+--- absent, indexing it would raise inside a kick/ban handler. Every failure
+--- mode falls back to the literal prefix this file shipped with, so a branding
+--- problem can never swallow a kick or a ban.
+--- @param suffix string|nil  'Admin' for the admin-action tag, nil for plain
+--- @return string  '[ATC Admin]' / '[ATC]' when unbranded
+local function _tag(suffix)
+    if ATC and ATC.Branding and type(ATC.Branding.Tag) == 'function' then
+        local ok, tag = pcall(ATC.Branding.Tag, suffix)
+        if ok and type(tag) == 'string' and tag ~= '' then
+            return tag
+        end
+    end
+    return (suffix == 'Admin') and '[ATC Admin]' or '[ATC]'
+end
+
 -- ── Permission Guard ──────────────────────────────────────────────────────────
 
 --- Returns true when the source player holds the 'atc.admin' ace.
@@ -28,7 +53,7 @@ RegisterCommand('atckick', function(source, args)
     local reason = table.concat(args, ' ', 2)
     reason = (reason ~= '') and reason or 'Kicked by admin'
 
-    DropPlayer(tostring(targetId), '[ATC Admin] ' .. reason)
+    DropPlayer(tostring(targetId), _tag('Admin') .. ' ' .. reason)
 
     ATC.Log.Security('admin', 'Player kicked', {
         admin  = source,
@@ -74,7 +99,7 @@ RegisterCommand('atcban', function(source, args)
         expiresAt  = expiresAt,
     }, function(ok, status, data)
         if ok then
-            DropPlayer(tostring(targetId), '[ATC] You have been banned: ' .. reason)
+            DropPlayer(tostring(targetId), _tag() .. ' You have been banned: ' .. reason)
             ATC.Log.Security('admin', 'Player banned', {
                 admin      = source,
                 target     = targetId,
@@ -247,7 +272,7 @@ ATC.Firewall.On('atc:admin:kick', {
     local targetId = tonumber(d and d.id)
     local reason   = type(d) == 'table' and tostring(d.reason or 'Admin kick'):sub(1, 128) or 'Admin kick'
     if not targetId then return end
-    DropPlayer(tostring(targetId), '[ATC Admin] ' .. reason)
+    DropPlayer(tostring(targetId), _tag('Admin') .. ' ' .. reason)
     ATC.Log.Security('admin', 'NUI kick', { admin = src, target = targetId, reason = reason })
 end)
 
@@ -263,7 +288,7 @@ ATC.Firewall.On('atc:admin:ban', {
     local identifier = GetPlayerIdentifierByType(tostring(targetId), 'license')
     if identifier then
         ATC.HTTP.Post('/api/v1/accounts/ban', { identifier = identifier, reason = reason }, function() end)
-        DropPlayer(tostring(targetId), '[ATC] Banned: ' .. reason)
+        DropPlayer(tostring(targetId), _tag() .. ' Banned: ' .. reason)
         ATC.Log.Security('admin', 'NUI ban', { admin = src, target = targetId, reason = reason })
     end
 end)
