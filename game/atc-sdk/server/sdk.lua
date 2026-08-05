@@ -5,6 +5,19 @@
 
 ATC_SDK.Server = {}
 
+-- Session and account state lives in atc-core's Lua state, which this resource
+-- cannot see. ATC.Config, ATC.Events, ATC.Log and ATC.HTTP are included via
+-- '@atc-core/...' in fxmanifest.lua because they are stateless; anything
+-- holding runtime state is read through atc-core's exports instead.
+-- Wrapped so a call made before atc-core is up returns nil rather than raising.
+local function _core(method, ...)
+    local ok, result = pcall(function(...)
+        return exports['atc-core'][method](exports['atc-core'], ...)
+    end, ...)
+    if not ok then return nil end
+    return result
+end
+
 -- The wallet and inventory endpoints require an idempotencyKey so a retried
 -- request cannot double-credit or double-grant. One per call.
 local _seq = 0
@@ -20,21 +33,21 @@ end
 --- @param source number  FiveM player server ID
 --- @return table|nil     Session table or nil if not found
 function ATC_SDK.Server.GetPlayer(source)
-    return ATC.Sessions.Get(source)
+    return _core('GetSession', source)
 end
 
 --- Return the character UUID for a connected player's active character.
 --- @param source number
 --- @return string|nil
 function ATC_SDK.Server.GetCharacterId(source)
-    return ATC.Sessions.GetCharacterId(source)
+    return _core('GetCharacterId', source)
 end
 
 --- Return the account principal UUID tied to a connected player.
 --- @param source number
 --- @return string|nil
 function ATC_SDK.Server.GetPrincipalId(source)
-    return ATC.Accounts.GetPrincipalId(source)
+    return _core('GetPrincipalId', source)
 end
 
 -- ─── Economy ──────────────────────────────────────────────────────────────────
@@ -47,7 +60,7 @@ end
 --- @param cb      function|nil  cb(success: boolean, data: table|nil)
 function ATC_SDK.Server.AddMoney(source, amount, reason, cb)
     -- Wallets are keyed by characterId, not principalId.
-    local characterId = ATC.Sessions.GetCharacterId(source)
+    local characterId = ATC_SDK.Server.GetCharacterId(source)
     if not characterId then
         ATC.Log.Warn('atc-sdk', 'AddMoney — no characterId for source', { source = source })
         if cb then cb(false, nil) end
@@ -84,7 +97,7 @@ end
 --- @param reason  string
 --- @param cb      function|nil  cb(success: boolean, data: table|nil)
 function ATC_SDK.Server.RemoveMoney(source, amount, reason, cb)
-    local characterId = ATC.Sessions.GetCharacterId(source)
+    local characterId = ATC_SDK.Server.GetCharacterId(source)
     if not characterId then
         ATC.Log.Warn('atc-sdk', 'RemoveMoney — no characterId for source', { source = source })
         if cb then cb(false, nil) end
@@ -122,7 +135,7 @@ end
 --- @param metadata  table|nil  Free-form item metadata
 --- @param cb        function|nil  cb(success: boolean, data: table|nil)
 function ATC_SDK.Server.AddItem(source, itemName, quantity, metadata, cb)
-    local characterId = ATC.Sessions.GetCharacterId(source)
+    local characterId = ATC_SDK.Server.GetCharacterId(source)
     if not characterId then
         ATC.Log.Warn('atc-sdk', 'AddItem — no characterId for source', { source = source })
         if cb then cb(false, nil) end
@@ -149,7 +162,7 @@ end
 --- @param quantity  number
 --- @param cb        function|nil  cb(success: boolean, data: table|nil)
 function ATC_SDK.Server.RemoveItem(source, itemName, quantity, cb)
-    local characterId = ATC.Sessions.GetCharacterId(source)
+    local characterId = ATC_SDK.Server.GetCharacterId(source)
     if not characterId then
         ATC.Log.Warn('atc-sdk', 'RemoveItem — no characterId for source', { source = source })
         if cb then cb(false, nil) end

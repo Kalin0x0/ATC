@@ -106,6 +106,8 @@ server_scripts {
     'server/safezones.lua',
     'server/network_optim.lua',
     'server/main.lua',
+    -- Cross-resource surface. Last: every table it reads must exist first.
+    'server/exports.lua',
 }
 
 client_scripts {
@@ -140,6 +142,8 @@ client_scripts {
     'client/spectate.lua',
     'client/anticheat.lua',
     'client/main.lua',
+    -- Cross-resource surface. Last, for the same reason as the server side.
+    'client/exports.lua',
 }
 
 ui_page 'ui/index.html'
