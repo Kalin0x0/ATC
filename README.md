@@ -13,7 +13,9 @@ clean phone/HUD — all backed by a proper API, database, and admin panel
 instead of a pile of loosely glued scripts.
 
 <p align="center">
-  <img src="https://img.shields.io/badge/FiveM-platform-F40552?style=flat-square" alt="FiveM" />
+  <img src="https://img.shields.io/badge/FiveM-supported-F40552?style=flat-square" alt="FiveM" />
+  <img src="https://img.shields.io/badge/VMP-supported-2EA043?style=flat-square" alt="VMP" />
+  <img src="https://img.shields.io/badge/self--host-own%20branding-d4af37?style=flat-square" alt="Self-host with your own branding" />
   <img src="https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript 5" />
   <img src="https://img.shields.io/badge/Node.js-22-339933?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node.js 22" />
   <img src="https://img.shields.io/badge/Fastify-API-000000?style=flat-square&logo=fastify&logoColor=white" alt="Fastify" />
@@ -29,7 +31,7 @@ Open project · source-available · built to be extended.
 
 <br/>
 
-**[📸 Screenshots](#-screenshots)** · **[🚀 Quick start](#-quick-start)** · **[📁 Layout](#-repository-layout)** · **[🎮 Plugins](#-plugins-and-keybinds)** · **[📚 Docs](#-documentation)** · **[💜 Support](#-support-this-project)**
+**[📸 Screenshots](#-screenshots)** · **[🚀 Quick start](#-quick-start)** · **[🌍 Platforms & branding](#-platforms--your-own-branding)** · **[📁 Layout](#-repository-layout)** · **[🎮 Plugins](#-plugins-and-keybinds)** · **[📚 Docs](#-documentation)** · **[💜 Support](#-support-this-project)**
 
 <br/>
 
@@ -138,7 +140,7 @@ Captured at 1920×1080 from the live NUI. Dark anthracite (`#1a1a2e`) + gold
 
 ## ✨ Why Atlantic Core
 
-Most FiveM servers are built from dozens of community resources that each keep
+Most roleplay servers are built from dozens of community resources that each keep
 their own state, talk to the database their own way, and break in their own
 way. ATC takes the opposite approach. It treats your server as one platform:
 
@@ -154,9 +156,11 @@ way. ATC takes the opposite approach. It treats your server as one platform:
   server operations from a web dashboard, not from chat commands.
 - **Made to build on.** Clear SDK, documented events, a plugin guide, and an
   example plugin so you can add your own gameplay without forking the core.
+- **Runs on FiveM and VMP, under your name.** One codebase, both platforms, and
+  every player-facing name and colour is a convar — see below.
 
-If you run a server, ATC gives you a solid foundation. If you build for FiveM,
-it gives you a clean platform to build on.
+If you run a server, ATC gives you a solid foundation. If you build for FiveM or
+VMP, it gives you a clean platform to build on.
 
 ---
 
@@ -168,9 +172,9 @@ vitals/armor/job HUD, an emote wheel, an interaction system, garages, an ATM,
 a marketplace, a police MDT, an EMS panel, and more. Every interface is dark,
 modern, and responsive from 720p up to 4K.
 
-**For server owners:** Docker setup for the API + MariaDB + Redis + nginx, an
-example `server.cfg`, a web admin panel, optional Prometheus/Grafana monitoring,
-backup scripts, and an anti-cheat layer.
+**For server owners:** Docker setup for the API + MariaDB + Redis + nginx, a
+ready `server.cfg` for **both FiveM and VMP**, a web admin panel, optional
+Prometheus/Grafana monitoring, backup scripts, and an anti-cheat layer.
 
 **For developers:** a typed monorepo (TurboRepo + pnpm) with **84 packages**, an
 SDK for Lua and TypeScript, a documented event bus, domain runtime services,
@@ -180,10 +184,58 @@ database migrations, a test suite, and compatibility bridges for QBCore and ESX.
 
 ---
 
+## 🌍 Platforms & your own branding
+
+**ATC runs on FiveM and on [VMP](https://vmp.ir) from one codebase.** VMP is a
+CitizenFX fork, so it uses the same `fxmanifest.lua`, the same natives and the
+same `server.cfg` — **no resource in this repository needs porting**. Only the
+deployment plumbing differs, and both variants ship ready to copy:
+
+```bash
+cp infra/server.cfg.example      server.cfg   # FiveM
+cp infra/server.cfg.vmp.example  server.cfg   # VMP
+```
+
+The platform is detected at runtime and can be pinned when you want it fixed:
+
+```cfg
+set atc_platform "auto"   # auto | fivem | vmp
+```
+
+### Run it under your own name
+
+Nothing player-facing is hard-coded. Set a few convars and the character screen,
+HUD, tutorial, startup banner and every kick/ban message carry **your** server's
+identity — no code edits, no fork:
+
+```cfg
+setr atc_brand_name          "Nova Roleplay"
+setr atc_brand_short         "NOVA"
+setr atc_brand_logo_primary  "NOVA"        # the accent-coloured word
+setr atc_brand_logo_secondary "ROLEPLAY"   # the light word
+setr atc_brand_color         "#4aa3ff"     # accent colour
+setr atc_brand_community     "Nova Community"
+setr atc_brand_website       "https://example.com"
+setr atc_brand_discord       "https://discord.gg/yourinvite"
+```
+
+> Use `setr` (replicated), not `set` — the NUI runs on the client and only sees
+> replicated convars. Every value defaults to today's Atlantic Core branding, so
+> an existing server that sets none of these is completely unaffected.
+
+Atlantic Core remains the framework, by Naiemi Group, under the
+[LICENSE](LICENSE) — what becomes yours is the server your players see.
+
+📖 **Full walkthrough — publishing on FiveM or VMP, in five languages:**
+**[docs/hosting/PUBLISHING.md](docs/hosting/PUBLISHING.md)**
+
+---
+
 ## 🧱 How it fits together
 
 ```
-   FiveM Client (Lua)            UI, input, rendering (NUI)
+   Game Client (Lua)             UI, input, rendering (NUI)
+   FiveM or VMP
         │
    ATC SDK (client)              read-only client state
         │
@@ -218,7 +270,9 @@ architecture decision records — lives in
 
 ## 🚀 Quick start
 
-You'll need Node.js 22+, pnpm 9+, Docker, and a FiveM (FXServer) install.
+You'll need Node.js 22+, pnpm 9+, Docker, and a game server install — **either
+FiveM (FXServer) or VMP**. The steps below are identical for both; only step 3
+differs, and only in which config you copy.
 
 **1 — Bring up the backend (database, cache, API):**
 
@@ -241,12 +295,19 @@ schema file **[`database/atc.sql`](database/)** into a fresh `atc` database.
 Step-by-step import instructions for Windows in **English, فارسی, Türkçe,
 Español, and Deutsch** are in **[database/README.md](database/README.md)**.
 
-**3 — Set up the game server:**
+**3 — Set up the game server** — pick the config for your platform:
 
 ```bash
-cp infra/server.cfg.example server.cfg   # fill in your tokens and convars
+cp infra/server.cfg.example     server.cfg   # FiveM
+cp infra/server.cfg.vmp.example server.cfg   # VMP
+# Then fill in your tokens and convars.
 # Start order in server.cfg: atc-core, atc-sdk, then the plugins you want.
 ```
+
+Both files carry an identical ATC convar block — including the
+[branding convars](#-platforms--your-own-branding) that put your server's name
+in the UI. Publishing the server publicly is covered end to end, in five
+languages, in **[docs/hosting/PUBLISHING.md](docs/hosting/PUBLISHING.md)**.
 
 The API runs from `apps/api`, and the admin panel from `apps/web`
 (`pnpm --filter @atc/web dev`). New to building plugins? Start with
@@ -262,10 +323,10 @@ The API runs from `apps/api`, and the admin panel from `apps/web`
 | `packages/` | **84 packages** — shared libs (`db`, `events`, `schemas`, `sdk`, `ui`, `shared-types`, `iam`, `ledger`, `audit`, `locales`, `telemetry`) plus the domain runtimes (economy, jobs, law, medical, vehicles, housing, criminal, world, transport, dispatch, …) |
 | `plugins/` | **17 first-party gameplay plugins** (see below) |
 | `bridges/` | Compatibility adapters — `esx`, `qb-core` |
-| `game/` | FiveM Lua resources — `atc-core` (`client` · `server` · `shared` · NUI `ui`) and `atc-sdk` (`client` · `server` · `shared`) |
-| `infra/` | Docker, `nginx`, `monitoring` (Prometheus/Grafana), `scripts` (backup/ops) |
+| `game/` | CitizenFX Lua resources (FiveM · VMP) — `atc-core` (`client` · `server` · `shared` · NUI `ui`) and `atc-sdk` (`client` · `server` · `shared`). Platform detection and branding live in `atc-core/shared/platform.lua` and `shared/branding.lua` |
+| `infra/` | Docker, `nginx`, `monitoring` (Prometheus/Grafana), `scripts` (backup/ops), plus `server.cfg.example` (FiveM) and `server.cfg.vmp.example` (VMP) |
 | `database/` | One-file schema (`atc.sql`) + multi-language import guide |
-| `docs/` | `architecture/` (18 specs + ADRs), `runbooks/`, `sdk/`, `screenshots/`, `branding/`, `funding.md` |
+| `docs/` | `architecture/` (18 specs + ADRs), `runbooks/`, `sdk/`, `hosting/` (publishing guide, 5 languages), `screenshots/`, `branding/`, `funding.md` |
 | `tools/` | Shared config — `eslint-config`, `tsconfig` |
 
 ---
@@ -273,8 +334,8 @@ The API runs from `apps/api`, and the admin panel from `apps/web`
 ## 🎮 Plugins and keybinds
 
 Plugins live in `plugins/` and depend on `atc-core`. The default keys below are
-registered with `RegisterKeyMapping`, so players can rebind them in the FiveM
-settings menu.
+registered with `RegisterKeyMapping`, so players can rebind them in their
+client's key-binding settings (FiveM or VMP).
 
 | Plugin | What it does | Default key |
 |---|---|---|
