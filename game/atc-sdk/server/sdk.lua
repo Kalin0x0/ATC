@@ -5,6 +5,15 @@
 
 ATC_SDK.Server = {}
 
+-- The wallet and inventory endpoints require an idempotencyKey so a retried
+-- request cannot double-credit or double-grant. One per call.
+local _seq = 0
+local function _idempotencyKey(prefix)
+    _seq = _seq + 1
+    if _seq > 0xFFFFFF then _seq = 1 end
+    return ('%s-%x-%x-%04x'):format(prefix or 'sdk', os.time(), _seq, math.random(0, 0xFFFF))
+end
+
 -- ─── Player / Session ─────────────────────────────────────────────────────────
 
 --- Return the raw ATC session object for a connected player.
@@ -37,21 +46,34 @@ end
 --- @param reason  string   Audit label (e.g. 'shop_purchase')
 --- @param cb      function|nil  cb(success: boolean, data: table|nil)
 function ATC_SDK.Server.AddMoney(source, amount, reason, cb)
-    local pid = ATC.Accounts.GetPrincipalId(source)
-    if not pid then
-        ATC.Log.Warn('atc-sdk', 'AddMoney — no principalId for source', { source = source })
+    -- Wallets are keyed by characterId, not principalId.
+    local characterId = ATC.Sessions.GetCharacterId(source)
+    if not characterId then
+        ATC.Log.Warn('atc-sdk', 'AddMoney — no characterId for source', { source = source })
         if cb then cb(false, nil) end
         return
     end
 
-    ATC.HTTP.Post('/api/v1/economy/wallets/' .. pid .. '/credit', {
-        amount = tonumber(amount) or 0,
-        reason = reason or 'plugin',
-    }, function(status, data)
-        if status == 200 then
+    -- walletCreditSchema takes a positive integer in minor units.
+    local amt = math.floor(tonumber(amount) or 0)
+    if amt <= 0 then
+        ATC.Log.Warn('atc-sdk', 'AddMoney — amount must be a positive integer', { source = source, amount = amount })
+        if cb then cb(false, nil) end
+        return
+    end
+
+    ATC.HTTP.Post('/api/v1/wallets/character/' .. characterId .. '/credit', {
+        account        = 'cash',
+        amount         = amt,
+        currency       = 'ATC',
+        reason         = reason or 'plugin',
+        source         = 'gameplay',
+        idempotencyKey = _idempotencyKey('credit'),
+    }, function(ok, _status, data)
+        if ok then
             TriggerClientEvent(ATC.Events.ECONOMY.BALANCE_UPDATE, source, data)
         end
-        if cb then cb(status == 200, data) end
+        if cb then cb(ok, data) end
     end)
 end
 
@@ -62,21 +84,32 @@ end
 --- @param reason  string
 --- @param cb      function|nil  cb(success: boolean, data: table|nil)
 function ATC_SDK.Server.RemoveMoney(source, amount, reason, cb)
-    local pid = ATC.Accounts.GetPrincipalId(source)
-    if not pid then
-        ATC.Log.Warn('atc-sdk', 'RemoveMoney — no principalId for source', { source = source })
+    local characterId = ATC.Sessions.GetCharacterId(source)
+    if not characterId then
+        ATC.Log.Warn('atc-sdk', 'RemoveMoney — no characterId for source', { source = source })
         if cb then cb(false, nil) end
         return
     end
 
-    ATC.HTTP.Post('/api/v1/economy/wallets/' .. pid .. '/debit', {
-        amount = tonumber(amount) or 0,
-        reason = reason or 'plugin',
-    }, function(status, data)
-        if status == 200 then
+    local amt = math.floor(tonumber(amount) or 0)
+    if amt <= 0 then
+        ATC.Log.Warn('atc-sdk', 'RemoveMoney — amount must be a positive integer', { source = source, amount = amount })
+        if cb then cb(false, nil) end
+        return
+    end
+
+    ATC.HTTP.Post('/api/v1/wallets/character/' .. characterId .. '/debit', {
+        account        = 'cash',
+        amount         = amt,
+        currency       = 'ATC',
+        reason         = reason or 'plugin',
+        source         = 'gameplay',
+        idempotencyKey = _idempotencyKey('debit'),
+    }, function(ok, _status, data)
+        if ok then
             TriggerClientEvent(ATC.Events.ECONOMY.BALANCE_UPDATE, source, data)
         end
-        if cb then cb(status == 200, data) end
+        if cb then cb(ok, data) end
     end)
 end
 
@@ -96,13 +129,17 @@ function ATC_SDK.Server.AddItem(source, itemName, quantity, metadata, cb)
         return
     end
 
-    ATC.HTTP.Post('/api/v1/inventory/add', {
-        characterId = characterId,
-        itemName    = itemName,
-        quantity    = tonumber(quantity) or 1,
-        metadata    = metadata or {},
-    }, function(status, data)
-        if cb then cb(status == 200, data) end
+    -- characterId goes in the path; the body uses itemId, and reason/source/
+    -- idempotencyKey are required by inventoryAddSchema.
+    ATC.HTTP.Post('/api/v1/inventory/character/' .. characterId .. '/add', {
+        itemId         = itemName,
+        quantity       = math.max(1, math.floor(tonumber(quantity) or 1)),
+        reason         = 'plugin',
+        source         = 'gameplay',
+        idempotencyKey = _idempotencyKey('add'),
+        metadata       = metadata,
+    }, function(ok, _status, data)
+        if cb then cb(ok, data) end
     end)
 end
 
@@ -119,12 +156,14 @@ function ATC_SDK.Server.RemoveItem(source, itemName, quantity, cb)
         return
     end
 
-    ATC.HTTP.Post('/api/v1/inventory/remove', {
-        characterId = characterId,
-        itemName    = itemName,
-        quantity    = tonumber(quantity) or 1,
-    }, function(status, data)
-        if cb then cb(status == 200, data) end
+    ATC.HTTP.Post('/api/v1/inventory/character/' .. characterId .. '/remove', {
+        itemId         = itemName,
+        quantity       = math.max(1, math.floor(tonumber(quantity) or 1)),
+        reason         = 'plugin',
+        source         = 'gameplay',
+        idempotencyKey = _idempotencyKey('remove'),
+    }, function(ok, _status, data)
+        if cb then cb(ok, data) end
     end)
 end
 

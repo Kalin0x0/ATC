@@ -451,11 +451,12 @@ ATC.Firewall.On('atc:gathering:collect', {
     if not characterId then return end
 
     local qty = math.random(1, 3)
-    ATC.HTTP.Post('/api/v1/inventory/add', {
-        characterId = characterId,
-        itemName    = resource,
-        quantity    = qty,
-        metadata    = {},
+    ATC.HTTP.Post('/api/v1/inventory/character/' .. characterId .. '/add', {
+        itemId         = resource,
+        quantity       = qty,
+        reason         = 'gathering',
+        source         = 'gameplay',
+        idempotencyKey = ATC.SDK.Id.Generate('gather'),
     }, function(ok)
         TriggerClientEvent('atc:gathering:result', src, {
             success  = ok,

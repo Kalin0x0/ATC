@@ -174,7 +174,7 @@ ATC.Firewall.On('atc:crafting:craft', {clientAllowed=true,requireSession=true,ra
     ATC.HTTP.Post('/api/v1/crafting/craft', { characterId=characterId, recipeId=recipeId }, function(ok, _, data)
         TriggerClientEvent('atc:crafting:result', src, { success=ok, resultItem=ok and data and data.itemName, data=data })
         if ok then
-            ATC.HTTP.Get('/api/v1/characters/'..characterId..'/inventory', function(iok,_,idata)
+            ATC.HTTP.Get('/api/v1/inventory/character/'..characterId, function(iok,_,idata)
                 if iok then TriggerClientEvent(ATC.Events.INVENTORY.UPDATE, src, idata) end
             end)
         end

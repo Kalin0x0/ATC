@@ -61,10 +61,11 @@ ATC.Firewall.On('atc:phone:bank:get', {
     requireSession = true,
     rateLimit      = { window = 5000, max = 5 },
 }, function(src, _payload)
-    local principalId = ATC.Accounts.GetPrincipalId(src)
-    if not principalId then return end
+    -- Wallets are keyed by characterId, not principalId.
+    local characterId = ATC.Sessions.GetCharacterId(src)
+    if not characterId then return end
 
-    ATC.HTTP.Get('/api/v1/economy/wallets/' .. principalId, function(ok, _status, data)
+    ATC.HTTP.Get('/api/v1/wallets/character/' .. characterId, function(ok, _status, data)
         TriggerClientEvent('atc:phone:bank:response', src, ok and data or nil)
     end)
 end)

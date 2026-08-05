@@ -35,7 +35,13 @@ ATC.Firewall.On('atc:example_shop:buy', {clientAllowed=true,requireSession=true,
         -- Add item to inventory
         local characterId = ATC.Sessions.GetCharacterId(src)
         if characterId then
-            ATC.HTTP.Post('/api/v1/inventory/add', { characterId=characterId, itemName=itemId, quantity=1, metadata={} }, function() end)
+            ATC.HTTP.Post('/api/v1/inventory/character/' .. characterId .. '/add', {
+                itemId         = itemId,
+                quantity       = 1,
+                reason         = 'shop_purchase',
+                source         = 'gameplay',
+                idempotencyKey = ATC.SDK.Id.Generate('shop'),
+            }, function() end)
         end
         TriggerClientEvent('atc:example_shop:buy:result', src, { success=true, item=item, wallet=walletData })
     end)
