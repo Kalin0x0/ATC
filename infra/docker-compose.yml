@@ -6,14 +6,17 @@ services:
     restart: unless-stopped
     environment:
       MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-      MARIADB_DATABASE: atc
-      MARIADB_USER: atc
+      # Kept in sync with the api service below — both default to "atc", so an
+      # existing deployment is unaffected. Change them only before the first
+      # start: db_data is created once and is not renamed afterwards.
+      MARIADB_DATABASE: ${DB_NAME:-atc}
+      MARIADB_USER: ${DB_USER:-atc}
       MARIADB_PASSWORD: ${DB_PASSWORD}
     volumes:
       - db_data:/var/lib/mysql
       - ./init.d:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "atc", "-p${DB_PASSWORD}"]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u \"${DB_USER:-atc}\" -p\"${DB_PASSWORD}\""]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -52,8 +55,20 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV: production
-      DATABASE_URL: mysql://atc:${DB_PASSWORD}@db:3306/atc
-      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      # Database. The API reads these individually — see apps/api/src/config.ts.
+      # DB_NAME, DB_USER and DB_PASSWORD are required: the API throws
+      # "Missing required environment variable" and exits without them.
+      # The host is the service name on the atc network, not localhost.
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-atc}
+      DB_USER: ${DB_USER:-atc}
+      DB_PASSWORD: ${DB_PASSWORD}
+      # Redis. Same rule: service name, and the password must be passed or the
+      # API cannot authenticate against a redis-server started with --requirepass.
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
       ATC_API_TOKEN: ${ATC_API_TOKEN}
       ATC_SERVER_TOKEN: ${ATC_SERVER_TOKEN}
       ATC_SERVER_ID: ${ATC_SERVER_ID:-atc-main-01}
