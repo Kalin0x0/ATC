@@ -26,6 +26,9 @@ server_scripts {
     'server/accounts.lua',
     'server/plugins.lua',
     'server/http.lua',
+    -- Server-side ATC.SDK facade. Must load after logger/sessions/http, whose
+    -- tables it delegates to, and before every runtime bridge that calls it.
+    'server/sdk.lua',
     'server/tasks.lua',
     'server/ops.lua',
     'server/telemetry.lua',
