@@ -18,15 +18,57 @@ payload matches the schema. Those need a running API with a database.
 
 ## Result
 
-| | Count |
-|---|---|
-| Lua call sites checked | **404** |
-| Route resolves | **358** (88%) |
-| Path exists, wrong method | **11** |
-| Path does not exist (404) | **35** |
+| | At audit time | Now |
+|---|---|---|
+| Lua call sites checked | **404** | 404 |
+| Route resolves | **358** (88%) | **369** (91%) |
+| Path exists, wrong method | **11** | 11 |
+| Path does not exist (404) | **35** | **24** |
+
+Eleven of the 404s have since been fixed — see *Fixed since this audit* below.
+The entries in the list further down are kept as they were found; the ones now
+resolved are marked.
 
 Both failure classes reach the API and come back as an error rather than doing
 anything: a wrong method or an unknown path is a 404 in Fastify.
+
+---
+
+## Fixed since this audit
+
+| Was | Now | Commit |
+|---|---|---|
+| `POST /api/v1/combat/sessions/start` | `/api/v1/combat-simulation/sessions/start` | `94eec42` |
+| `POST /api/v1/combat/sessions/{id}/end` — resolved, but to the *other* subsystem | `/api/v1/combat-simulation/sessions/{id}/end` | `94eec42` |
+| `POST /api/v1/combat/ballistics/record` | `/api/v1/combat-simulation/ballistics/record` | `94eec42` |
+| `POST /api/v1/combat/suppression/apply` | `/api/v1/combat-simulation/suppression/apply` | `94eec42` |
+| `DELETE /api/v1/combat/suppression/{id}` | `/api/v1/combat-simulation/suppression/{id}` | `94eec42` |
+| `POST /api/v1/combat/cleanup` | `/api/v1/combat-simulation/cleanup` | `94eec42` |
+| `POST /api/v1/inventory/add` (3 call sites) | `/api/v1/inventory/character/{id}/add` | `f0b9b14` |
+| `POST /api/v1/inventory/remove` | `/api/v1/inventory/character/{id}/remove` | `f0b9b14` |
+| `GET /api/v1/economy/wallets/{principalId}` | `/api/v1/wallets/character/{characterId}` | `f0b9b14` |
+| `POST /api/v1/economy/wallets/{id}/credit\|debit` | `/api/v1/wallets/character/{id}/credit\|debit` | `f0b9b14` |
+| `GET /api/v1/characters/{id}/inventory` | `/api/v1/inventory/character/{id}` | `f0b9b14` |
+
+Each of those also had payload problems that would have turned the 404 into a
+400 — missing required fields, and in the wallet case the wrong identifier
+entirely. Both were fixed alongside the paths.
+
+## Not fixable in Lua
+
+Two calls have no counterpart at all, so no path change can help them. They need
+an API route or a change to the gameplay flow:
+
+- `POST /api/v1/inventory/loot/{id}/pickup` — the API registers no loot routes.
+- `POST /api/v1/crafting/craft` — crafting is job-based (`POST /api/v1/crafting/jobs`),
+  not an instant craft.
+
+## Replication: no findings
+
+For the avoidance of doubt, `game/atc-core/server/replication.lua` is clean —
+all 17 of its calls resolve. An earlier draft of this audit listed several as
+missing; that was a preprocessing bug that dropped the trailing path parameter
+(`/ownership/` .. entityId` became `/ownership`), not a defect in the Lua.
 
 ---
 
