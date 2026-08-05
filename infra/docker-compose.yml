@@ -70,8 +70,11 @@ services:
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       ATC_API_TOKEN: ${ATC_API_TOKEN}
-      ATC_SERVER_TOKEN: ${ATC_SERVER_TOKEN}
-      ATC_SERVER_ID: ${ATC_SERVER_ID:-atc-main-01}
+      # ATC_SERVER_TOKEN / ATC_SERVER_ID are deliberately NOT passed here.
+      # The API does not read them (see apps/api/src/config.ts) — they belong to
+      # the game server and are set in server.cfg as atc_server_token and
+      # atc_server_id. infra/.env keeps the values so you have one place to copy
+      # them from.
       PORT: 3000
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
