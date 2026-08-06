@@ -137,6 +137,28 @@ export async function marketRoutes(
 
   // ── Get listing ───────────────────────────────────────────────────────────────
 
+  // Listings could be fetched by id but never browsed. Registered before the
+  // :listingId route so the literal path is not swallowed by the parameter.
+  // sellerPrincipalId narrows to one seller (listBySeller); without it the
+  // active listings are returned, paginated.
+  fastify.get('/api/v1/market/listings', {
+    preHandler: requireCapability(ctx, 'market:listing:read'),
+    handler: async (req, reply) => {
+      if (!ctx.marketListingRepo) return reply.status(503).send(NOT_CONFIGURED)
+      const q = req.query as { sellerPrincipalId?: string; limit?: string; offset?: string }
+
+      if (q.sellerPrincipalId) {
+        const listings = await ctx.marketListingRepo.listBySeller(q.sellerPrincipalId)
+        return reply.send({ listings })
+      }
+
+      const limit = Math.min(100, Math.max(1, Number.parseInt(q.limit ?? '50', 10) || 50))
+      const offset = Math.max(0, Number.parseInt(q.offset ?? '0', 10) || 0)
+      const listings = await ctx.marketListingRepo.listActive(limit, offset)
+      return reply.send({ listings, limit, offset })
+    },
+  })
+
   fastify.get('/api/v1/market/listings/:listingId', {
     preHandler: requireCapability(ctx, 'market:listing:read'),
     handler: async (req, reply) => {

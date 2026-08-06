@@ -91,6 +91,30 @@ export async function propertyRoutes(
 
   // ── Get property ──────────────────────────────────────────────────────────────
 
+  // Properties could be created and fetched by id, but not listed by owner —
+  // which is what a player opening their property menu needs. Registered before
+  // the :propertyId route so the literal path is not matched as a parameter.
+  fastify.get('/api/v1/properties', {
+    preHandler: requireCapability(ctx, 'property:read'),
+    handler: async (req, reply) => {
+      if (!ctx.propertyRuntimeService) return reply.status(503).send(NOT_CONFIGURED)
+      const { ownerId, organizationId } = req.query as { ownerId?: string; organizationId?: string }
+
+      if (organizationId) {
+        const properties = await ctx.propertyRuntimeService.listByOrganization(organizationId)
+        return reply.send({ properties })
+      }
+      if (!ownerId) {
+        return reply.status(400).send({
+          error: 'MissingFilter',
+          message: 'Provide ownerId or organizationId',
+        })
+      }
+      const properties = await ctx.propertyRuntimeService.listByOwner(ownerId)
+      return reply.send({ properties })
+    },
+  })
+
   fastify.get('/api/v1/properties/:propertyId', {
     preHandler: requireCapability(ctx, 'property:read'),
     handler: async (req, reply) => {

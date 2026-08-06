@@ -254,6 +254,24 @@ export async function economyRoutes(
     return reply.code(200).send(org)
   })
 
+  // Members could be added and removed but never listed, so the game layer had
+  // no way to read an organisation's roster. Read-only, so it takes the same
+  // economy.read capability as the other GETs here rather than organization.manage.
+  fastify.get('/api/v1/economy/organizations/:id/members', {
+    preHandler: requireCapability(ctx, 'economy.read'),
+  }, async (req, reply) => {
+    if (!ctx.members || !ctx.organizations) {
+      return reply.code(503).send({ error: 'Economy not configured' })
+    }
+    const { id } = req.params as { id: string }
+    // 404 on an unknown organisation rather than an empty list, so a typo in the
+    // id is distinguishable from an organisation that genuinely has no members.
+    const org = await ctx.organizations.findById(id)
+    if (!org) return reply.code(404).send({ error: 'Organization not found' })
+    const members = await ctx.members.listByOrganization(id)
+    return reply.code(200).send({ members })
+  })
+
   fastify.post('/api/v1/economy/organizations/:id/members', {
     preHandler: requireCapability(ctx, 'organization.manage'),
   }, async (req, reply) => {

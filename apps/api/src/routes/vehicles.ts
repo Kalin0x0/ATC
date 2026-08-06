@@ -75,6 +75,30 @@ export async function vehicleRoutes(
 
   // ── Get vehicle ───────────────────────────────────────────────────────────────
 
+  // Vehicles could be fetched by id or by garage, but not by owner — which is
+  // what a player opening their garage needs. Registered before the :vehicleId
+  // route so the literal path is not matched as a parameter.
+  fastify.get('/api/v1/vehicles', {
+    preHandler: requireCapability(ctx, 'vehicle:read'),
+    handler: async (req, reply) => {
+      if (!ctx.vehicleRuntimeService) return reply.status(503).send(NOT_CONFIGURED)
+      const { ownerId, organizationId } = req.query as { ownerId?: string; organizationId?: string }
+
+      if (organizationId) {
+        const vehicles = await ctx.vehicleRuntimeService.listByOrganization(organizationId)
+        return reply.send({ vehicles })
+      }
+      if (!ownerId) {
+        return reply.status(400).send({
+          error: 'MissingFilter',
+          message: 'Provide ownerId or organizationId',
+        })
+      }
+      const vehicles = await ctx.vehicleRuntimeService.listByOwner(ownerId)
+      return reply.send({ vehicles })
+    },
+  })
+
   fastify.get('/api/v1/vehicles/:vehicleId', {
     preHandler: requireCapability(ctx, 'vehicle:read'),
     handler: async (req, reply) => {
