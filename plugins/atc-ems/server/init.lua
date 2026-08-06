@@ -4,6 +4,26 @@
 -- ============================================================
 
 -- ── Treat downed player ───────────────────────────────────────────────────────
+
+-- NUI treatment labels → API treatment types. The API validates `type` against
+-- a fixed enum (applyTreatmentSchema in packages/operations/src/schemas.ts), so
+-- the client-supplied string is mapped to the closest allowed value and is never
+-- forwarded verbatim. Anything unrecognised is recorded as 'other'.
+local TREATMENT_TYPES = {
+    basic        = 'bandage',
+    advanced     = 'stabilize',
+    defibrillate = 'defibrillator',
+}
+
+--- Revive the patient and notify both parties.
+--- Pure server → client fan-out: it needs nothing back from the API, so it must
+--- never be gated on the treatment record being written.
+local function ApplyTreatment(medicSource, targetSource)
+    TriggerClientEvent('atc:combat:revive', targetSource)
+    TriggerClientEvent('atc:ems:treated', medicSource, { success = true })
+    TriggerClientEvent('atc:ems:treated', targetSource, { revived = true })
+end
+
 ATC.Firewall.On('atc:ems:treat', {
     clientAllowed  = true,
     requireSession = true,
@@ -20,17 +40,32 @@ ATC.Firewall.On('atc:ems:treat', {
 
     local treatType = type(payload) == 'table' and tostring(payload.treatType or 'basic') or 'basic'
 
+    -- The revive is a local effect — apply it first so the patient is never left
+    -- downed just because the treatment record could not be persisted.
+    ApplyTreatment(src, targetSource)
+
+    -- Persistence only. POST /api/v1/medical/treatments requires
+    -- characterId + appliedByPrincipalId + type; with no principal id there is no
+    -- valid body to send, so skip the record rather than fire a doomed request.
+    local principalId = ATC.Accounts.GetPrincipalId(src)
+    if not principalId then
+        ATC.Log.Warn('ems', 'Treatment not recorded — no principal id for medic', {
+            medic  = src,
+            target = targetSource,
+        })
+        return
+    end
+
     ATC.HTTP.Post('/api/v1/medical/treatments', {
-        characterId         = targetId,
-        treatmentType       = treatType,
-        treatedByPrincipalId = ATC.Accounts.GetPrincipalId(src)
-    }, function(ok, _, data)
-        if ok then
-            TriggerClientEvent('atc:combat:revive', targetSource)
-            TriggerClientEvent('atc:ems:treated', src, { success = true })
-            TriggerClientEvent('atc:ems:treated', targetSource, { revived = true })
-        else
-            TriggerClientEvent('atc:ems:treated', src, { success = false })
+        characterId          = targetId,
+        appliedByPrincipalId = principalId,
+        type                 = TREATMENT_TYPES[treatType] or 'other',
+    }, function(ok, status)
+        if not ok then
+            ATC.Log.Warn('ems', 'Failed to record treatment', {
+                characterId = targetId,
+                httpStatus  = status,
+            })
         end
     end)
 end)
@@ -47,7 +82,9 @@ ATC.Firewall.On('atc:ems:patient:info', {
     local targetId = ATC.Sessions.GetCharacterId(targetSource)
     if not targetId then return end
 
-    ATC.HTTP.Get('/api/v1/characters/' .. targetId .. '/vitals', function(ok, _, data)
+    -- Vitals are their own resource keyed by character, not a sub-resource of
+    -- the character — the same path game/atc-core/server/vitals.lua uses.
+    ATC.HTTP.Get('/api/v1/vitals/character/' .. targetId, function(ok, _, data)
         TriggerClientEvent('atc:ems:patient:response', src, ok and data or nil)
     end)
 end)

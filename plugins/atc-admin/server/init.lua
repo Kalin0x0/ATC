@@ -1,7 +1,8 @@
 -- atc-admin — Server Init
 -- In-game admin commands gated by the 'atc.admin' ace permission.
 -- All actions are logged via ATC.Log.Security / ATC.Log.Info.
--- Ban persistence goes through the API; kick/bring/goto/freeze are local FiveM ops.
+-- Bans are NOT persisted — the API has no ban-creation endpoint (see /atcban);
+-- kick/ban/bring/goto/freeze are all local FiveM ops.
 
 -- ── Branding ──────────────────────────────────────────────────────────────────
 
@@ -10,7 +11,7 @@
 ---
 --- ATC.Branding is populated by atc-core's shared scripts — the same injected
 --- `ATC` global surface this file already uses for ATC.Log / ATC.Accounts /
---- ATC.HTTP / ATC.Firewall (see docs/sdk/PLUGIN_GUIDE.md §2), so this adds no
+--- ATC.Firewall (see docs/sdk/PLUGIN_GUIDE.md §2), so this adds no
 --- dependency the plugin did not already carry. The extra `ATC and` test is
 --- because this is a separate resource from atc-core: if the global is ever
 --- absent, indexing it would raise inside a kick/ban handler. Every failure
@@ -93,28 +94,26 @@ RegisterCommand('atcban', function(source, args)
         expiresAt = os.date('!%Y-%m-%dT%H:%M:%SZ', os.time() + duration * 86400)
     end
 
-    ATC.HTTP.Post('/api/v1/accounts/ban', {
+    -- The ban is NOT persisted. There is no endpoint that creates one: the API's
+    -- BanRepository exposes findActiveByAccountId and hasActiveBan only, so a ban
+    -- can be read at connect time but never written through the API. The call that
+    -- used to be here posted to /api/v1/accounts/ban, which does not exist — and
+    -- the DropPlayer sat inside that call's success branch, so the request 404'd
+    -- and the target was never even removed from the server. Kicking is a local
+    -- FiveM op that needs no response, so it now runs unconditionally.
+    -- Logged at Security level with the license identifier and the expiry the
+    -- admin asked for, so the ban can be applied by hand (server.cfg / txAdmin)
+    -- until a write endpoint exists.
+    DropPlayer(tostring(targetId), _tag() .. ' You have been banned: ' .. reason)
+
+    ATC.Log.Security('admin', 'Player banned — NOT persisted, no ban endpoint exists; player kicked only', {
+        admin      = source,
+        target     = targetId,
         identifier = identifier,
+        duration   = duration,
         reason     = reason,
         expiresAt  = expiresAt,
-    }, function(ok, status, data)
-        if ok then
-            DropPlayer(tostring(targetId), _tag() .. ' You have been banned: ' .. reason)
-            ATC.Log.Security('admin', 'Player banned', {
-                admin      = source,
-                target     = targetId,
-                identifier = identifier,
-                duration   = duration,
-                reason     = reason,
-                expiresAt  = expiresAt,
-            })
-        else
-            ATC.Log.Warn('admin', 'Ban API call failed', {
-                target     = targetId,
-                httpStatus = status,
-            })
-        end
-    end)
+    })
 end, true)
 
 -- ── /atcbring ─────────────────────────────────────────────────────────────────
@@ -287,9 +286,17 @@ ATC.Firewall.On('atc:admin:ban', {
     if not targetId then return end
     local identifier = GetPlayerIdentifierByType(tostring(targetId), 'license')
     if identifier then
-        ATC.HTTP.Post('/api/v1/accounts/ban', { identifier = identifier, reason = reason }, function() end)
+        -- Same as /atcban above: no ban-creation endpoint exists, so the ban is
+        -- not persisted. The POST to /api/v1/accounts/ban that used to sit here
+        -- discarded its result and could only ever 404, so it has been removed —
+        -- the kick below was, and remains, the whole of the effect.
         DropPlayer(tostring(targetId), _tag() .. ' Banned: ' .. reason)
-        ATC.Log.Security('admin', 'NUI ban', { admin = src, target = targetId, reason = reason })
+        ATC.Log.Security('admin', 'NUI ban — NOT persisted, no ban endpoint exists; player kicked only', {
+            admin      = src,
+            target     = targetId,
+            identifier = identifier,
+            reason     = reason,
+        })
     end
 end)
 

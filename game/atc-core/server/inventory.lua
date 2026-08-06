@@ -467,18 +467,83 @@ ATC.Firewall.On('atc:gathering:collect', {
 end)
 
 -- ── Ground loot pickup ───────────────────────────────────────────────────────
-ATC.Firewall.On('atc:loot:pickup', {clientAllowed=true,requireSession=true,rateLimit={window=2000,max=5}}, function(src, payload)
-    local lootId = type(payload)=='table' and tostring(payload.lootId or ''):sub(1,64) or ''
+-- There is no loot service. The API exposes no loot routes at all; the only
+-- inventory mutations it offers are POST /api/v1/inventory/character/:characterId
+-- /{add,remove,move,use}, all of which require the caller to already know which
+-- items to grant.
+--
+-- Ground loot piles are spawned and tracked entirely client-side
+-- (game/atc-core/client/ground_loot.lua) and the server keeps no registry of them,
+-- so it has no trustworthy record of what a pile contains. Granting the contents
+-- would mean taking the item list from the client, which this handler deliberately
+-- refuses to do — it accepts a lootId and nothing else. Pickup therefore cannot be
+-- persisted, and the pile is NOT despawned while it cannot be: destroying it
+-- without granting anything would delete the items outright. The picker is told
+-- the truth instead of being shown a success message for nothing.
+--
+-- Flip this to true once a pickup route exists that resolves the pile server-side
+-- and returns the resulting inventory.
+local LOOT_API_ENABLED = false
+local _lootApiWarned   = false
+
+--- Despawn a ground-loot pile on every client. Pure event fan-out — it needs no
+--- API response, so it lives outside the HTTP callback and both paths share it.
+--- @param lootId string Loot pile identifier
+local function _despawnLootForAll(lootId)
+    -- -1 reaches every client, including the picker.
+    TriggerClientEvent('atc:loot:remove', -1, { id = lootId })
+end
+
+ATC.Firewall.On('atc:loot:pickup', {
+    clientAllowed  = true,
+    requireSession = true,
+    rateLimit      = { window = 2000, max = 5 },
+}, function(src, payload)
+    local lootId = type(payload) == 'table' and tostring(payload.lootId or ''):sub(1, 64) or ''
     if lootId == '' then return end
     local characterId = ATC.Sessions.GetCharacterId(src)
     if not characterId then return end
-    ATC.HTTP.Post('/api/v1/inventory/loot/'..lootId..'/pickup', { characterId=characterId }, function(ok, _, data)
-        if ok then
-            TriggerClientEvent('atc:loot:remove', src, { id=lootId })
-            TriggerClientEvent('atc:loot:remove', -1, { id=lootId })  -- remove for all
-            TriggerClientEvent(ATC.Events.INVENTORY.UPDATE, src, data)
-            SendNUIMessage({ type='ATC_NOTIFICATION', payload={ message='Items picked up', level='success', duration=2000 } })
+
+    if not LOOT_API_ENABLED then
+        if not _lootApiWarned then
+            _lootApiWarned = true
+            ATC.Log.Warn('inventory', 'Ground loot pickup disabled: the API exposes no loot routes and the server holds no record of pile contents', {
+                path = '/api/v1/inventory/loot/:lootId/pickup',
+            })
         end
+        -- Nothing was granted, so nothing is claimed and the pile stays where it is.
+        TriggerClientEvent(ATC.Events.NOTIFY.SHOW, src, {
+            message  = 'Loot pickup is unavailable right now',
+            level    = 'warning',
+            duration = 3000,
+        })
+        return
+    end
+
+    ATC.HTTP.Post('/api/v1/inventory/loot/' .. lootId .. '/pickup', { characterId = characterId }, function(ok, status, data, err)
+        if not ok then
+            ATC.Log.Error('inventory', 'Loot pickup API error', {
+                source = src, lootId = lootId, status = status, err = err,
+            })
+            TriggerClientEvent(ATC.Events.NOTIFY.SHOW, src, {
+                message  = 'Could not pick up those items',
+                level    = 'error',
+                duration = 3000,
+            })
+            return
+        end
+
+        -- The pile is only destroyed once the grant actually succeeded.
+        _despawnLootForAll(lootId)
+        -- Only this genuinely needs the response body.
+        TriggerClientEvent(ATC.Events.INVENTORY.UPDATE, src, data)
+        -- SendNUIMessage is a client native and is a no-op on the server; the
+        -- notification has to be pushed to the picker as an event.
+        TriggerClientEvent(ATC.Events.NOTIFY.SHOW, src, {
+            message  = 'Items picked up',
+            level    = 'success',
+            duration = 2000,
+        })
     end)
 end)
 

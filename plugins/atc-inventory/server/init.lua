@@ -160,6 +160,29 @@ ATC.Firewall.On(
 )
 
 -- ── Crafting server handlers ─────────────────────────────────────────────────
+-- There is no one-call craft endpoint. POST /api/v1/crafting/craft does not
+-- exist, so every craft attempt 404'd and nothing was ever made.
+--
+-- The API models crafting as industrial production jobs rather than as a
+-- character action: POST /api/v1/crafting/jobs wants a queueId (a registered
+-- manufacturing station), an initiatedByPrincipalId, a quantityOrdered and a
+-- jobNonce, and the job is then settled by a separate /complete, /fail or
+-- /cancel call. That runtime never touches character inventory — it neither
+-- consumes ingredients nor grants the output — and atc_crafting_recipes has no
+-- ingredient columns at all (recipe_id, recipe_name, output_item_id,
+-- output_quantity, recipe_type, required_station, crafting_time_seconds), so
+-- the server has no record of what a recipe costs. Repointing this handler at
+-- the job model would mean inventing stations, queues, timed completion and an
+-- ingredient list: a gameplay redesign, not a path fix, so it is not attempted
+-- here. Hand-rolling the craft from inventory add/remove is out for the same
+-- reason — the ingredients would have to come from the client.
+--
+-- The recipe list endpoint is real and is called normally below.
+--
+-- A switch, not a TODO: set it to true once a craft route exists that resolves
+-- the recipe server-side and mutates the character's inventory.
+local CRAFTING_API_ENABLED = false
+local _warnedCraft         = false
 
 ATC.Firewall.On('atc:crafting:recipes:get', {clientAllowed=true,requireSession=true,rateLimit={window=5000,max=5}}, function(src)
     ATC.HTTP.Get('/api/v1/crafting/recipes', function(ok, _, data)
@@ -171,6 +194,26 @@ ATC.Firewall.On('atc:crafting:craft', {clientAllowed=true,requireSession=true,ra
     local recipeId    = type(payload)=='table' and tostring(payload.recipeId or ''):sub(1,64) or ''
     local characterId = ATC.Sessions.GetCharacterId(src)
     if recipeId=='' or not characterId then return end
+
+    if not CRAFTING_API_ENABLED then
+        if not _warnedCraft then
+            _warnedCraft = true
+            ATC.Log.Warn('inventory', 'Crafting is disabled: no craft endpoint exists and the crafting runtime never touches character inventory. See CRAFTING_API_ENABLED in this file.', {
+                path = '/api/v1/crafting/craft',
+            })
+        end
+        -- Nothing was crafted, so nothing is claimed. The crafting NUI prints
+        -- every failed result as 'Not enough materials', which is not the
+        -- reason, so the player is told the truth over the notify channel
+        -- rather than handed a wrong explanation.
+        TriggerClientEvent(ATC.Events.NOTIFY.SHOW, src, {
+            message  = 'Crafting is unavailable right now',
+            level    = 'warning',
+            duration = 3000,
+        })
+        return
+    end
+
     ATC.HTTP.Post('/api/v1/crafting/craft', { characterId=characterId, recipeId=recipeId }, function(ok, _, data)
         TriggerClientEvent('atc:crafting:result', src, { success=ok, resultItem=ok and data and data.itemName, data=data })
         if ok then
