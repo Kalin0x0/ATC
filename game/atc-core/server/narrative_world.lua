@@ -12,6 +12,25 @@ ATC.NarrativeWorld = ATC.NarrativeWorld or {}
 -- ---------------------------------------------------------------------------
 local _activeArcs = {}
 
+-- Set once the advance warning has been emitted, so a long-running arc does not
+-- repeat the same line on every phase change.
+local _warnedAdvance = false
+
+-- ---------------------------------------------------------------------------
+-- Notify every online member of a faction about an arc.
+-- Pure server-side fan-out; kept out of any request callback so that whether
+-- players are told does not depend on a call to the API succeeding.
+-- ---------------------------------------------------------------------------
+local function _notifyFaction(factionId, arc)
+    for _, pid in ipairs(GetPlayers()) do
+        local src     = tonumber(pid)
+        local session = ATC.Sessions and ATC.Sessions.Get(src)
+        if session and session.factionId == factionId then
+            TriggerClientEvent('atc:narrative:arc:start', src, arc or {})
+        end
+    end
+end
+
 -- ---------------------------------------------------------------------------
 -- ATC.NarrativeWorld.TriggerArc
 -- Begins a new story arc for a faction.
@@ -31,28 +50,35 @@ function ATC.NarrativeWorld.TriggerArc(arcId, factionId, params)
         phase     = 1,
     }
 
-    ATC.HTTP.Post('/api/v1/narrative/arcs', {
+    ATC.Log.Info('narrative_world', 'Arc triggered', {
         arcId     = arcId,
         factionId = factionId,
-        params    = params or {},
-    }, function(ok, _, data)
-        if not ok then
-            ATC.Log.Warn('narrative_world', 'API arc registration failed', { arcId = arcId })
-            return
-        end
+    })
 
-        ATC.Log.Info('narrative_world', 'Arc triggered', {
-            arcId     = arcId,
+    -- Notify faction members from the local registry, not from the API reply.
+    -- This used to sit inside the request callback, so a failed call meant no
+    -- member was ever told an arc had started — even though the arc is already
+    -- live in _activeArcs by this point and the fan-out needs no API.
+    _notifyFaction(factionId, _activeArcs[arcId])
+
+    -- The API has no arcs endpoint; an arc is persisted as a faction campaign,
+    -- which is what the campaignType enum's 'faction' value is for. factionId
+    -- has no dedicated field, so it travels in campaignData alongside the
+    -- caller's params.
+    ATC.HTTP.Post('/api/v1/narrative/campaigns/start', {
+        campaignId    = arcId,
+        campaignType  = 'faction',
+        ownerServerId = (ATC.SDK and ATC.SDK.Server and ATC.SDK.Server.GetId()) or ATC.Config.ServerId,
+        campaignNonce = (ATC.SDK and ATC.SDK.Id and ATC.SDK.Id.Generate('arc')) or arcId,
+        campaignData  = {
             factionId = factionId,
-        })
-
-        -- Notify all online members of the relevant faction
-        for _, pid in ipairs(GetPlayers()) do
-            local src     = tonumber(pid)
-            local session = ATC.Sessions and ATC.Sessions.Get(src)
-            if session and session.factionId == factionId then
-                TriggerClientEvent('atc:narrative:arc:start', src, data or {})
-            end
+            params    = params or {},
+        },
+    }, function(ok, status, _data, err)
+        if not ok then
+            ATC.Log.Warn('narrative_world', 'Arc not persisted as campaign', {
+                arcId = arcId, status = status, err = err,
+            })
         end
     end)
 end
@@ -69,14 +95,19 @@ function ATC.NarrativeWorld.AdvanceArc(arcId)
     end
 
     arc.phase = arc.phase + 1
+    ATC.Log.Info('narrative_world', 'Arc advanced', { arcId = arcId, phase = arc.phase })
 
-    ATC.HTTP.Post('/api/v1/narrative/arcs/' .. arcId .. '/advance', {
-        phase = arc.phase,
-    }, function(ok, _, _data)
-        if ok then
-            ATC.Log.Info('narrative_world', 'Arc advanced', { arcId = arcId, phase = arc.phase })
-        end
-    end)
+    -- The phase change is local only. Nothing the API serves can record it:
+    -- campaigns support complete and fail but not advance, and
+    -- POST /api/v1/narrative/progression/advance needs the id of a progression
+    -- record, which no route can create — storyProgressionService.startProgression
+    -- exists but is not exposed. The request that used to be here posted to
+    -- /api/v1/narrative/arcs/{id}/advance, which does not exist.
+    -- Warned once per boot; the arc itself keeps advancing in memory.
+    if not _warnedAdvance then
+        _warnedAdvance = true
+        ATC.Log.Warn('narrative_world', 'Arc phases are not persisted: the API has no campaign-advance route, and story progressions cannot be created through it. Phase changes are kept in memory and lost on restart.')
+    end
 end
 
 -- ---------------------------------------------------------------------------
