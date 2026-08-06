@@ -69,17 +69,44 @@ ATC.Firewall.On(ATC.Events.COMBAT.REVIVE_ATTEMPT, {
     TriggerClientEvent(ATC.Events.COMBAT.REVIVE, targetSource)
     TriggerClientEvent(ATC.Events.COMBAT.REVIVE, src)
 
-    -- Resolve all active injuries for the revived player
+    -- Resolve all active injuries for the revived player.
+    -- There is no bulk endpoint: the API lists a principal's active injuries and
+    -- resolves them one at a time by injury id, so the list is fetched first and
+    -- each entry resolved individually.
     local targetPrincipalId = ATC.Accounts.GetPrincipalId(targetSource)
     if targetPrincipalId then
-        ATC.HTTP.Post('/api/v1/combat/injuries/resolve-active', {
-            principalId = targetPrincipalId,
-        }, function(ok, status)
+        ATC.HTTP.Get('/api/v1/combat/injuries/' .. targetPrincipalId, function(ok, status, data, err)
             if not ok then
-                ATC.Log.Warn('combat', 'Failed to resolve injuries after revive', {
+                ATC.Log.Warn('combat', 'Failed to list injuries after revive', {
                     principalId = targetPrincipalId,
                     httpStatus  = status,
+                    err         = err,
                 })
+                return
+            end
+
+            -- The handler sends the array straight through; tolerate a wrapper
+            -- object in case that changes.
+            local injuries = data
+            if type(injuries) == 'table' and injuries[1] == nil then
+                injuries = injuries.injuries or injuries.items or injuries.data
+            end
+            if type(injuries) ~= 'table' then return end
+
+            for _, injury in ipairs(injuries) do
+                local injuryId = injury and (injury.injuryId or injury.id)
+                if type(injuryId) == 'string' and injuryId ~= '' then
+                    ATC.HTTP.Post('/api/v1/combat/injuries/' .. injuryId .. '/resolve', {},
+                    function(rok, rstatus)
+                        if not rok then
+                            ATC.Log.Warn('combat', 'Failed to resolve injury after revive', {
+                                principalId = targetPrincipalId,
+                                injuryId    = injuryId,
+                                httpStatus  = rstatus,
+                            })
+                        end
+                    end)
+                end
             end
         end)
     end

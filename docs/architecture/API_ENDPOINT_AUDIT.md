@@ -321,6 +321,35 @@ line and the routes that do exist in that area.
 
 ## Path exists, wrong method
 
+Mostly a misnomer, and worth stating plainly: only two of these were a verb on
+the right endpoint. The rest matched a parameterised route by accident — a
+literal segment like `spawn` matches `:vehicleId`, so the tool reported the verb
+registered on *that* route rather than admitting the path does not exist for the
+verb being used. They are missing endpoints, not wrong methods.
+
+**Fixed:**
+
+| Was | Now |
+|---|---|
+| `GET /api/v1/characters?search=` (MDT) | `GET /api/v1/mdt/search/characters?q=` — the MDT has its own search; `/characters` offers only create and fetch-by-id |
+| `POST /api/v1/combat/injuries/resolve-active` | `GET /api/v1/combat/injuries/{principalId}` then `POST /api/v1/combat/injuries/{injuryId}/resolve` per entry — there is no bulk resolve |
+
+**Not a verb problem — the endpoint does not exist:**
+
+| Call | What the API has instead |
+|---|---|
+| `POST /api/v1/combat/weapons/attachment` | equip, unequip, ammo, seize — attachments are not modelled |
+| `GET /api/v1/economy/organizations/{id}/members` | POST to add and DELETE to remove; no listing |
+| `GET /api/v1/market/listings` | `GET /api/v1/market/listings/{listingId}` only |
+| `GET /api/v1/properties?ownerId=` | `GET /api/v1/properties/{propertyId}` only |
+| `GET /api/v1/vehicles?ownerId=` | `GET /api/v1/garages/{garageId}/vehicles`, keyed by garage; `GET /api/v1/garages` lists all garages, not one owner's |
+| `POST /api/v1/vehicles/spawn` | no spawn route |
+| `POST /api/v1/vehicles/store` | no store route |
+
+The shape recurs: the API offers create and fetch-by-id but no owner-scoped
+listing, which is what the game layer keeps asking for.
+
+
 | Lua calls | API registers | Source |
 |---|---|---|
 | `GET /api/v1/characters` | `POST` | `plugins/atc-mdt/server/init.lua:32` |

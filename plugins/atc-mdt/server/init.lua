@@ -29,7 +29,10 @@ ATC.Firewall.On('atc:mdt:search:person', {
     local name = type(payload) == 'table' and tostring(payload.name or ''):sub(1, 64) or ''
     if name == '' then return end
 
-    ATC.HTTP.Get('/api/v1/characters?search=' .. name, function(ok, _, data)
+    -- The MDT has its own search endpoint; /api/v1/characters offers only
+    -- create and fetch-by-id, no listing. The query parameter is 'q'
+    -- (mdtSearchQuerySchema), not 'search'.
+    ATC.HTTP.Get('/api/v1/mdt/search/characters?q=' .. name, function(ok, _, data)
         TriggerClientEvent('atc:mdt:search:result', src, ok and data or {})
     end)
 end)
