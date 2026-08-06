@@ -5,19 +5,29 @@
 ATC             = ATC             or {}
 ATC.VehiclesPlugin = ATC.VehiclesPlugin or {}
 
+-- Set once the unsupported-store warning has been emitted, so a player parking
+-- repeatedly does not flood the log.
+local _warnedStore = false
+
 -- ── Public API ────────────────────────────────────────────────────────────────
 
 --- Request the API to prepare a vehicle spawn record for a player.
 --- The actual FiveM entity is spawned client-side after the API confirms.
---- @param source   number    FiveM player source
---- @param model    string    Vehicle model name (validated server-side by API)
---- @param coords   table     { x, y, z, h } — server-derived spawn coordinates
---- @param callback function  function(vehicleData|nil)
-function ATC.VehiclesPlugin.SpawnVehicle(source, model, coords, callback)
-    if type(model) ~= 'string' or #model == 0
-        or #model > ATC.VehiclesPlugin.Config.ModelMaxLength then
-        ATC.Log.Warn('vehicles', 'SpawnVehicle — invalid model', {
-            source = source, model = tostring(model),
+---
+--- Takes a vehicleId, not a model name. The API spawns a vehicle that is
+--- already registered and stored — POST /api/v1/vehicles/{vehicleId}/spawn —
+--- and rejects anything whose status is not 'stored'. There is no spawn-by-model
+--- endpoint, and the previous signature could never have worked: it posted a
+--- model to /api/v1/vehicles/spawn, which does not exist.
+--- Use GET /api/v1/vehicles?ownerId= to obtain the player's vehicleIds.
+--- @param source    number    FiveM player source
+--- @param vehicleId string    Registered vehicle id, status 'stored'
+--- @param coords    table     { x, y, z, h } — server-derived spawn coordinates
+--- @param callback  function  function(vehicleData|nil)
+function ATC.VehiclesPlugin.SpawnVehicle(source, vehicleId, coords, callback)
+    if type(vehicleId) ~= 'string' or #vehicleId == 0 or #vehicleId > 128 then
+        ATC.Log.Warn('vehicles', 'SpawnVehicle — invalid vehicleId', {
+            source = source, vehicleId = tostring(vehicleId),
         })
         if callback then callback(nil) end
         return
@@ -29,17 +39,17 @@ function ATC.VehiclesPlugin.SpawnVehicle(source, model, coords, callback)
         return
     end
 
-    ATC.HTTP.Post('/api/v1/vehicles/spawn', {
-        ownerId = principalId,
-        model   = model,
-        x       = coords and coords.x or 0,
-        y       = coords and coords.y or 0,
-        z       = coords and coords.z or 0,
-        h       = coords and coords.h or 0,
+    -- spawnVehicleSchema: spawnedByPrincipalId, x, y, z, heading optional.
+    ATC.HTTP.Post('/api/v1/vehicles/' .. vehicleId .. '/spawn', {
+        spawnedByPrincipalId = principalId,
+        x                    = (coords and coords.x) or 0.0,
+        y                    = (coords and coords.y) or 0.0,
+        z                    = (coords and coords.z) or 0.0,
+        heading              = coords and coords.h or nil,
     }, function(ok, status, data, err)
         if not ok then
             ATC.Log.Error('vehicles', 'SpawnVehicle API error', {
-                source = source, status = status, err = err,
+                source = source, vehicleId = vehicleId, status = status, err = err,
             })
             if callback then callback(nil) end
             return
@@ -134,19 +144,24 @@ ATC.Firewall.On('atc:vehicles:garage:store', {
     local principalId = ATC.Accounts.GetPrincipalId(src)
     if not principalId then return end
 
-    ATC.HTTP.Post('/api/v1/vehicles/store', {
-        principalId  = principalId,
-        vehicleNetId = vehicleNetId,
-    }, function(ok, status, data, err)
-        if not ok then
-            ATC.Log.Error('vehicles', 'garage:store API error', {
-                source = src, vehicleNetId = vehicleNetId, status = status, err = err,
-            })
-        end
-        TriggerClientEvent('atc:vehicles:garage:store:response', src, {
-            success = ok,
-        })
-    end)
+    -- Storing cannot be forwarded to the API yet, and no path change fixes it.
+    -- POST /api/v1/vehicles/{vehicleId}/store needs the registered vehicleId
+    -- plus a garageId (storeVehicleSchema). All this handler has is the FiveM
+    -- network id of the entity in the world and the player's principal.
+    -- Nothing maps a network id back to a vehicleId: that mapping would have to
+    -- be recorded when the vehicle is spawned, and the client does not send a
+    -- garage either. Both are gameplay state this plugin does not yet keep, so
+    -- the old POST to /api/v1/vehicles/store — a route that does not exist —
+    -- is not replaced with a guess.
+    if not _warnedStore then
+        _warnedStore = true
+        ATC.Log.Warn('vehicles', 'Garage store is not persisted: the API needs a vehicleId and a garageId, and this handler only has a network id. Requires a netId-to-vehicleId mapping recorded at spawn time.')
+    end
+
+    TriggerClientEvent('atc:vehicles:garage:store:response', src, {
+        success = false,
+        reason  = 'not_supported',
+    })
 end)
 
 --- atc:vehicles:impound
