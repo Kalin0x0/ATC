@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS atc_runtime_deployments (
   target_node      VARCHAR(128)  NOT NULL,
   owner_server_id  VARCHAR(128)  NOT NULL,
   deployment_nonce VARCHAR(128)  NOT NULL,
-  deployment_data  TEXT          NOT NULL DEFAULT '{}',
+  deployment_data  TEXT          NOT NULL DEFAULT ('{}'),
   started_at       DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   completed_at     DATETIME(3)   NULL,
   created_at       DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),

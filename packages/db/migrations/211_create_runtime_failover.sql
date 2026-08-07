@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS atc_runtime_failover (
   source_server_id  VARCHAR(128)  NOT NULL,
   target_server_id  VARCHAR(128)  NOT NULL,
   failover_nonce    VARCHAR(128)  NOT NULL,
-  failover_data     TEXT          NOT NULL DEFAULT '{}',
+  failover_data     TEXT          NOT NULL DEFAULT ('{}'),
   started_at        DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   completed_at      DATETIME(3)   NULL,
   created_at        DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),

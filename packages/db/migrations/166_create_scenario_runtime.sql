@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS atc_scenario_runtime (
   scenario_type   VARCHAR(64)   NOT NULL,
   status          VARCHAR(32)   NOT NULL DEFAULT 'spawning',
   mission_id      VARCHAR(26)   NULL,
-  config_data     TEXT          NOT NULL DEFAULT '{}',
+  config_data     TEXT          NOT NULL DEFAULT ('{}'),
   last_tick_at    DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   owner_server_id VARCHAR(128)  NULL,
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),

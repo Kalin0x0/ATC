@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS atc_ai_patrols (
   entity_id       VARCHAR(128)  NOT NULL,
   patrol_type     VARCHAR(32)   NOT NULL,
   status          VARCHAR(32)   NOT NULL DEFAULT 'pending',
-  route_data      TEXT          NOT NULL DEFAULT '{}',
+  route_data      TEXT          NOT NULL DEFAULT ('{}'),
   owner_server_id VARCHAR(128)  NULL,
   started_at      DATETIME(3)   NULL,
   completed_at    DATETIME(3)   NULL,

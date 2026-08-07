@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS atc_cluster_nodes (
   owner_server_id VARCHAR(128)  NOT NULL,
   address         VARCHAR(256)  NULL,
   node_nonce      VARCHAR(128)  NOT NULL,
-  node_data       TEXT          NOT NULL DEFAULT '{}',
+  node_data       TEXT          NOT NULL DEFAULT ('{}'),
   joined_at       DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   left_at         DATETIME(3)   NULL,
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),

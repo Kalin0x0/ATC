@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS atc_global_snapshots (
   status          VARCHAR(32)   NOT NULL DEFAULT 'pending',
   owner_server_id VARCHAR(128)  NOT NULL,
   snapshot_nonce  VARCHAR(128)  NOT NULL,
-  snapshot_data   TEXT          NOT NULL DEFAULT '{}',
+  snapshot_data   TEXT          NOT NULL DEFAULT ('{}'),
   taken_at        DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   completed_at    DATETIME(3)   NULL,
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),

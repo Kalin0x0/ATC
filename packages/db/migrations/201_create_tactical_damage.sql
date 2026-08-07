@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS atc_tactical_damage (
   armor_penetration FLOAT         NOT NULL DEFAULT 0,
   body_zone         VARCHAR(64)   NOT NULL DEFAULT 'torso',
   is_processed      TINYINT(1)    NOT NULL DEFAULT 0,
-  damage_data       TEXT          NOT NULL DEFAULT '{}',
+  damage_data       TEXT          NOT NULL DEFAULT ('{}'),
   owner_server_id   VARCHAR(128)  NOT NULL,
   processed_at      DATETIME(3)   NULL,
   created_at        DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),

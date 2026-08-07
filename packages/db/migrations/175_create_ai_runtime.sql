@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS atc_ai_runtime (
   ai_state        VARCHAR(32)   NOT NULL DEFAULT 'idle',
   behavior_mode   VARCHAR(32)   NOT NULL DEFAULT 'passive',
   owner_server_id VARCHAR(128)  NULL,
-  position_data   TEXT          NOT NULL DEFAULT '{}',
+  position_data   TEXT          NOT NULL DEFAULT ('{}'),
   threat_level    DECIMAL(5,2)  NOT NULL DEFAULT 0.00,
   last_tick_at    DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),

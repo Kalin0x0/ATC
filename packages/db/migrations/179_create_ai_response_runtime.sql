@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS atc_ai_response_runtime (
   response_type   VARCHAR(64)   NOT NULL,
   status          VARCHAR(32)   NOT NULL DEFAULT 'activating',
   target_id       VARCHAR(128)  NULL,
-  tactical_data   TEXT          NOT NULL DEFAULT '{}',
+  tactical_data   TEXT          NOT NULL DEFAULT ('{}'),
   owner_server_id VARCHAR(128)  NULL,
   activated_at    DATETIME(3)   NULL,
   completed_at    DATETIME(3)   NULL,

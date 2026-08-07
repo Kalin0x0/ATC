@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS atc_regional_simulation (
   region_id       VARCHAR(128)  NOT NULL,
   simulation_type VARCHAR(32)   NOT NULL,
   owner_server_id VARCHAR(128)  NULL,
-  simulation_data TEXT          NOT NULL DEFAULT '{}',
+  simulation_data TEXT          NOT NULL DEFAULT ('{}'),
   is_active       TINYINT(1)    NOT NULL DEFAULT 1,
   last_tick_at    DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),

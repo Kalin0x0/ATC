@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS atc_shipments (
   destination_id       VARCHAR(128)   NOT NULL,
   carrier_principal_id VARCHAR(128)   NULL,
   status               VARCHAR(32)    NOT NULL DEFAULT 'pending',
-  cargo_manifest       TEXT           NOT NULL DEFAULT '[]',
+  cargo_manifest       TEXT           NOT NULL DEFAULT ('[]'),
   departed_at          DATETIME(3)    NULL,
   arrived_at           DATETIME(3)    NULL,
   created_at           DATETIME(3)    NOT NULL DEFAULT CURRENT_TIMESTAMP(3),

@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS atc_runtime_traces (
   target_node     VARCHAR(128)  NULL,
   owner_server_id VARCHAR(128)  NOT NULL,
   trace_nonce     VARCHAR(128)  NOT NULL,
-  trace_data      TEXT          NOT NULL DEFAULT '{}',
+  trace_data      TEXT          NOT NULL DEFAULT ('{}'),
   started_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   completed_at    DATETIME(3)   NULL,
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),

@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS atc_trace_runtime (
   is_active       TINYINT(1)    NOT NULL DEFAULT 1,
   owner_server_id VARCHAR(128)  NOT NULL,
   expires_at      DATETIME(3)   NULL,
-  trace_data      TEXT          NOT NULL DEFAULT '{}',
+  trace_data      TEXT          NOT NULL DEFAULT ('{}'),
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   updated_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
   PRIMARY KEY (id),

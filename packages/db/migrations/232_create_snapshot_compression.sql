@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS atc_snapshot_compression (
   status            VARCHAR(32)   NOT NULL DEFAULT 'pending',
   owner_server_id   VARCHAR(128)  NOT NULL,
   compression_nonce VARCHAR(128)  NOT NULL,
-  compression_data  TEXT          NOT NULL DEFAULT '{}',
+  compression_data  TEXT          NOT NULL DEFAULT ('{}'),
   started_at        DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   completed_at      DATETIME(3)   NULL,
   created_at        DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),

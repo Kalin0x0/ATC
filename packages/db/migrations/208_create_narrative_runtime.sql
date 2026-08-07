@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS atc_narrative_runtime (
   narrative_type  VARCHAR(64)   NOT NULL,
   status          VARCHAR(32)   NOT NULL DEFAULT 'active',
   owner_server_id VARCHAR(128)  NOT NULL,
-  narrative_data  TEXT          NOT NULL DEFAULT '{}',
+  narrative_data  TEXT          NOT NULL DEFAULT ('{}'),
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   updated_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
   PRIMARY KEY (id),

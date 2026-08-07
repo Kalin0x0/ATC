@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS atc_world_regions (
   region_id       VARCHAR(128)  NOT NULL,
   region_type     VARCHAR(64)   NOT NULL,
   owner_server_id VARCHAR(128)  NULL,
-  bounds_data     TEXT          NOT NULL DEFAULT '{}',
+  bounds_data     TEXT          NOT NULL DEFAULT ('{}'),
   capacity_limit  INT           NULL,
   current_load    INT           NOT NULL DEFAULT 0,
   is_active       TINYINT(1)    NOT NULL DEFAULT 1,

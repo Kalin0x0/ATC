@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS atc_dynamic_events (
   event_nonce     VARCHAR(128)  NOT NULL,
   event_type      VARCHAR(64)   NOT NULL,
   status          VARCHAR(32)   NOT NULL DEFAULT 'pending',
-  trigger_data    TEXT          NOT NULL DEFAULT '{}',
+  trigger_data    TEXT          NOT NULL DEFAULT ('{}'),
   zone_id         VARCHAR(128)  NULL,
   owner_server_id VARCHAR(128)  NULL,
   expires_at      DATETIME(3)   NULL,

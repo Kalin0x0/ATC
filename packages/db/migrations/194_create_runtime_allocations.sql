@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS atc_runtime_allocations (
   server_id       VARCHAR(128)  NOT NULL,
   allocation_type VARCHAR(32)   NOT NULL,
   status          VARCHAR(32)   NOT NULL DEFAULT 'active',
-  allocation_data TEXT          NOT NULL DEFAULT '{}',
+  allocation_data TEXT          NOT NULL DEFAULT ('{}'),
   deallocated_at  DATETIME(3)   NULL,
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   updated_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),

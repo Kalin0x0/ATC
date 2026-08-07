@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS atc_missions (
   status         VARCHAR(32)   NOT NULL DEFAULT 'pending',
   owner_server_id    VARCHAR(128) NULL,
   owner_principal_id VARCHAR(128) NULL,
-  config_data    TEXT          NOT NULL DEFAULT '{}',
+  config_data    TEXT          NOT NULL DEFAULT ('{}'),
   started_at     DATETIME(3)   NULL,
   completed_at   DATETIME(3)   NULL,
   failed_at      DATETIME(3)   NULL,

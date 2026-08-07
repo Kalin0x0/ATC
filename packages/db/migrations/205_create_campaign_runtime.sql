@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS atc_campaign_runtime (
   owner_server_id VARCHAR(128)  NOT NULL,
   region_id       VARCHAR(128)  NULL,
   campaign_nonce  VARCHAR(128)  NOT NULL,
-  campaign_data   TEXT          NOT NULL DEFAULT '{}',
+  campaign_data   TEXT          NOT NULL DEFAULT ('{}'),
   started_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   completed_at    DATETIME(3)   NULL,
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),

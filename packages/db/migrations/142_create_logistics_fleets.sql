@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS atc_logistics_fleets (
   fleet_id           VARCHAR(128)  NOT NULL,
   fleet_name         VARCHAR(256)  NOT NULL,
   owner_principal_id VARCHAR(128)  NOT NULL,
-  vehicle_ids        TEXT          NOT NULL DEFAULT '[]',
+  vehicle_ids        TEXT          NOT NULL DEFAULT ('[]'),
   status             VARCHAR(32)   NOT NULL DEFAULT 'available',
   assigned_route_id  VARCHAR(128)  NULL,
   created_at         DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),

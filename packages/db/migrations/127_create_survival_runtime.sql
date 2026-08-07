@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS atc_survival_runtime (
   hydration_level DECIMAL(5,2)  NOT NULL DEFAULT 100.00,
   fatigue_level   DECIMAL(5,2)  NOT NULL DEFAULT 0.00,
   survival_status VARCHAR(32)   NOT NULL DEFAULT 'normal',
-  penalty_flags   TEXT          NOT NULL DEFAULT '[]',
+  penalty_flags   TEXT          NOT NULL DEFAULT ('[]'),
   owner_server_id VARCHAR(128)  NULL,
   last_tick_at    DATETIME(3)   NULL,
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),

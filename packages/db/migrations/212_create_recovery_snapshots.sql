@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS atc_recovery_snapshots (
   entity_id       VARCHAR(128)  NOT NULL,
   snapshot_type   VARCHAR(64)   NOT NULL,
   owner_server_id VARCHAR(128)  NOT NULL,
-  snapshot_data   TEXT          NOT NULL DEFAULT '{}',
+  snapshot_data   TEXT          NOT NULL DEFAULT ('{}'),
   sequence_number INT           NOT NULL DEFAULT 0,
   is_applied      TINYINT(1)    NOT NULL DEFAULT 0,
   applied_at      DATETIME(3)   NULL,

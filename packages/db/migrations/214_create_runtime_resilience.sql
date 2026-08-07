@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS atc_runtime_resilience (
   status          VARCHAR(32)   NOT NULL DEFAULT 'healthy',
   owner_server_id VARCHAR(128)  NOT NULL,
   health_score    INT           NOT NULL DEFAULT 100,
-  resilience_data TEXT          NOT NULL DEFAULT '{}',
+  resilience_data TEXT          NOT NULL DEFAULT ('{}'),
   last_check_at   DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   updated_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),

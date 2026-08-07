@@ -116,13 +116,13 @@ CREATE TABLE IF NOT EXISTS atc_characters (
 -- 006_alter_sessions_add_character.sql
 -- ---------------------------------------------------------------------------
 ALTER TABLE atc_player_sessions
-  ADD COLUMN IF NOT EXISTS character_id CHAR(26) NULL AFTER account_id,
-  ADD KEY IF NOT EXISTS idx_sessions_character (character_id),
-  -- MariaDB rejects "ADD CONSTRAINT IF NOT EXISTS <name> FOREIGN KEY"; the
+  ADD COLUMN character_id CHAR(26) NULL AFTER account_id,
+  ADD KEY idx_sessions_character (character_id),
+  -- MariaDB rejects "ADD CONSTRAINT <name> FOREIGN KEY"; the
   -- IF NOT EXISTS belongs on ADD FOREIGN KEY instead. The CHECK form in
   -- migration 016 is valid as written — this restriction is specific to
   -- foreign keys.
-  ADD FOREIGN KEY IF NOT EXISTS fk_sessions_character (character_id)
+  ADD FOREIGN KEY fk_sessions_character (character_id)
     REFERENCES atc_characters (id) ON DELETE SET NULL;
 
 -- ---------------------------------------------------------------------------
@@ -290,7 +290,7 @@ CREATE TABLE IF NOT EXISTS atc_inventory_transactions (
 -- Adds composite index for stack-merge lookup and introduces per-character capacity settings table.
 
 ALTER TABLE atc_character_inventory
-  ADD INDEX IF NOT EXISTS idx_inventory_character_item (character_id, item_id);
+  ADD INDEX idx_inventory_character_item (character_id, item_id);
 
 CREATE TABLE IF NOT EXISTS atc_character_inventory_settings (
   character_id     CHAR(26)     NOT NULL,
@@ -315,14 +315,14 @@ CREATE TABLE IF NOT EXISTS atc_character_inventory_settings (
 -- Does NOT remove or rename any existing columns; existing inventory FKs remain intact.
 
 ALTER TABLE atc_item_definitions
-  ADD COLUMN IF NOT EXISTS image_url  VARCHAR(512)   NULL         AFTER metadata_schema_json,
-  ADD COLUMN IF NOT EXISTS icon       VARCHAR(128)   NULL         AFTER image_url,
-  ADD COLUMN IF NOT EXISTS tags_json  JSON           NULL         AFTER icon,
-  ADD COLUMN IF NOT EXISTS sort_order INT            NOT NULL DEFAULT 0   AFTER tags_json,
-  ADD COLUMN IF NOT EXISTS version    INT UNSIGNED   NOT NULL DEFAULT 1   AFTER sort_order;
+  ADD COLUMN image_url  VARCHAR(512)   NULL         AFTER metadata_schema_json,
+  ADD COLUMN icon       VARCHAR(128)   NULL         AFTER image_url,
+  ADD COLUMN tags_json  JSON           NULL         AFTER icon,
+  ADD COLUMN sort_order INT            NOT NULL DEFAULT 0   AFTER tags_json,
+  ADD COLUMN version    INT UNSIGNED   NOT NULL DEFAULT 1   AFTER sort_order;
 
-CREATE INDEX IF NOT EXISTS idx_items_sort_order        ON atc_item_definitions (sort_order);
-CREATE INDEX IF NOT EXISTS idx_items_category_status   ON atc_item_definitions (category, status);
+CREATE INDEX idx_items_sort_order        ON atc_item_definitions (sort_order);
+CREATE INDEX idx_items_category_status   ON atc_item_definitions (category, status);
 
 -- ---------------------------------------------------------------------------
 -- 016_item_runtime_fields.sql
@@ -336,22 +336,22 @@ CREATE INDEX IF NOT EXISTS idx_items_category_status   ON atc_item_definitions (
 -- â”€â”€ atc_character_inventory: runtime slot fields â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 ALTER TABLE atc_character_inventory
-  ADD COLUMN IF NOT EXISTS durability   INT UNSIGNED NULL DEFAULT NULL,
-  ADD COLUMN IF NOT EXISTS equipped     BOOLEAN NOT NULL DEFAULT FALSE,
-  ADD COLUMN IF NOT EXISTS last_used_at TIMESTAMP NULL DEFAULT NULL;
+  ADD COLUMN durability   INT UNSIGNED NULL DEFAULT NULL,
+  ADD COLUMN equipped     BOOLEAN NOT NULL DEFAULT FALSE,
+  ADD COLUMN last_used_at TIMESTAMP NULL DEFAULT NULL;
 
 -- Durability check constraint (separate statement for safety across MariaDB versions)
 ALTER TABLE atc_character_inventory
-  ADD CONSTRAINT IF NOT EXISTS chk_inv_durability CHECK (durability >= 0);
+  ADD CONSTRAINT chk_inv_durability CHECK (durability >= 0);
 
-CREATE INDEX IF NOT EXISTS idx_inv_equipped ON atc_character_inventory (character_id, equipped);
+CREATE INDEX idx_inv_equipped ON atc_character_inventory (character_id, equipped);
 
 -- â”€â”€ atc_item_definitions: action config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 -- Stores the runtime action config (type, cooldownMs, consumeQuantity, etc.)
 -- NULL = item is not usable via the runtime.
 
 ALTER TABLE atc_item_definitions
-  ADD COLUMN IF NOT EXISTS action_config_json JSON NULL DEFAULT NULL;
+  ADD COLUMN action_config_json JSON NULL DEFAULT NULL;
 
 -- ---------------------------------------------------------------------------
 -- 017_create_character_vitals.sql
@@ -1352,7 +1352,7 @@ CREATE TABLE IF NOT EXISTS atc_medical_reports (
   incident_id              CHAR(26)     NULL,
   arrest_id                CHAR(26)     NULL,
   diagnosis                TEXT         NOT NULL,
-  notes                    TEXT         NOT NULL DEFAULT '',
+  notes                    TEXT         NOT NULL DEFAULT (''),
   injury_ids               JSON         NOT NULL DEFAULT (JSON_ARRAY()),
   treatment_ids            JSON         NOT NULL DEFAULT (JSON_ARRAY()),
   vitals_snapshot          JSON         NULL,
@@ -2024,7 +2024,7 @@ CREATE TABLE atc_gang_members (
   id                      CHAR(26)     NOT NULL,
   gang_id                 CHAR(26)     NOT NULL,
   principal_id            VARCHAR(128) NOT NULL,
-  rank                    ENUM('leader','officer','member','associate') NOT NULL DEFAULT 'associate',
+  `rank`                    ENUM('leader','officer','member','associate') NOT NULL DEFAULT 'associate',
   invited_by_principal_id VARCHAR(128) NULL,
   joined_at               DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   left_at                 DATETIME(3)  NULL,
@@ -3006,7 +3006,7 @@ CREATE TABLE IF NOT EXISTS atc_survival_runtime (
   hydration_level DECIMAL(5,2)  NOT NULL DEFAULT 100.00,
   fatigue_level   DECIMAL(5,2)  NOT NULL DEFAULT 0.00,
   survival_status VARCHAR(32)   NOT NULL DEFAULT 'normal',
-  penalty_flags   TEXT          NOT NULL DEFAULT '[]',
+  penalty_flags   TEXT          NOT NULL DEFAULT ('[]'),
   owner_server_id VARCHAR(128)  NULL,
   last_tick_at    DATETIME(3)   NULL,
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -3245,7 +3245,7 @@ CREATE TABLE IF NOT EXISTS atc_shipments (
   destination_id       VARCHAR(128)   NOT NULL,
   carrier_principal_id VARCHAR(128)   NULL,
   status               VARCHAR(32)    NOT NULL DEFAULT 'pending',
-  cargo_manifest       TEXT           NOT NULL DEFAULT '[]',
+  cargo_manifest       TEXT           NOT NULL DEFAULT ('[]'),
   departed_at          DATETIME(3)    NULL,
   arrived_at           DATETIME(3)    NULL,
   created_at           DATETIME(3)    NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -3310,7 +3310,7 @@ CREATE TABLE IF NOT EXISTS atc_logistics_fleets (
   fleet_id           VARCHAR(128)  NOT NULL,
   fleet_name         VARCHAR(256)  NOT NULL,
   owner_principal_id VARCHAR(128)  NOT NULL,
-  vehicle_ids        TEXT          NOT NULL DEFAULT '[]',
+  vehicle_ids        TEXT          NOT NULL DEFAULT ('[]'),
   status             VARCHAR(32)   NOT NULL DEFAULT 'available',
   assigned_route_id  VARCHAR(128)  NULL,
   created_at         DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -3329,8 +3329,8 @@ CREATE TABLE IF NOT EXISTS atc_supply_chain_runtime (
   id           VARCHAR(26)   NOT NULL,
   chain_id     VARCHAR(128)  NOT NULL,
   chain_name   VARCHAR(256)  NOT NULL,
-  nodes        TEXT          NOT NULL DEFAULT '[]',
-  edges        TEXT          NOT NULL DEFAULT '[]',
+  nodes        TEXT          NOT NULL DEFAULT ('[]'),
+  edges        TEXT          NOT NULL DEFAULT ('[]'),
   status       VARCHAR(32)   NOT NULL DEFAULT 'active',
   last_tick_at DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   created_at   DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -3624,7 +3624,7 @@ CREATE TABLE IF NOT EXISTS atc_disaster_events (
   disaster_name            VARCHAR(255)   NOT NULL,
   severity                 DECIMAL(5,2)   NOT NULL DEFAULT 50.00,
   status                   VARCHAR(32)    NOT NULL DEFAULT 'active',
-  affected_zone_ids        TEXT           NOT NULL DEFAULT '[]',
+  affected_zone_ids        TEXT           NOT NULL DEFAULT ('[]'),
   initiated_by_principal_id VARCHAR(128)  NULL,
   owner_server_id          VARCHAR(128)   NULL,
   contained_at             DATETIME(3)    NULL,
@@ -3753,7 +3753,7 @@ CREATE TABLE IF NOT EXISTS atc_missions (
   status         VARCHAR(32)   NOT NULL DEFAULT 'pending',
   owner_server_id    VARCHAR(128) NULL,
   owner_principal_id VARCHAR(128) NULL,
-  config_data    TEXT          NOT NULL DEFAULT '{}',
+  config_data    TEXT          NOT NULL DEFAULT ('{}'),
   started_at     DATETIME(3)   NULL,
   completed_at   DATETIME(3)   NULL,
   failed_at      DATETIME(3)   NULL,
@@ -3778,7 +3778,7 @@ CREATE TABLE IF NOT EXISTS atc_mission_objectives (
   objective_name  VARCHAR(255)  NOT NULL,
   status          VARCHAR(32)   NOT NULL DEFAULT 'pending',
   sequence_order  INT           NOT NULL DEFAULT 0,
-  completion_data TEXT          NOT NULL DEFAULT '{}',
+  completion_data TEXT          NOT NULL DEFAULT ('{}'),
   completed_at    DATETIME(3)   NULL,
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   updated_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
@@ -3819,7 +3819,7 @@ CREATE TABLE IF NOT EXISTS atc_scenario_runtime (
   scenario_type   VARCHAR(64)   NOT NULL,
   status          VARCHAR(32)   NOT NULL DEFAULT 'spawning',
   mission_id      VARCHAR(26)   NULL,
-  config_data     TEXT          NOT NULL DEFAULT '{}',
+  config_data     TEXT          NOT NULL DEFAULT ('{}'),
   last_tick_at    DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   owner_server_id VARCHAR(128)  NULL,
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -3840,7 +3840,7 @@ CREATE TABLE IF NOT EXISTS atc_dynamic_events (
   event_nonce     VARCHAR(128)  NOT NULL,
   event_type      VARCHAR(64)   NOT NULL,
   status          VARCHAR(32)   NOT NULL DEFAULT 'pending',
-  trigger_data    TEXT          NOT NULL DEFAULT '{}',
+  trigger_data    TEXT          NOT NULL DEFAULT ('{}'),
   zone_id         VARCHAR(128)  NULL,
   owner_server_id VARCHAR(128)  NULL,
   expires_at      DATETIME(3)   NULL,
@@ -3989,7 +3989,7 @@ CREATE TABLE IF NOT EXISTS atc_ai_runtime (
   ai_state        VARCHAR(32)   NOT NULL DEFAULT 'idle',
   behavior_mode   VARCHAR(32)   NOT NULL DEFAULT 'passive',
   owner_server_id VARCHAR(128)  NULL,
-  position_data   TEXT          NOT NULL DEFAULT '{}',
+  position_data   TEXT          NOT NULL DEFAULT ('{}'),
   threat_level    DECIMAL(5,2)  NOT NULL DEFAULT 0.00,
   last_tick_at    DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -4011,7 +4011,7 @@ CREATE TABLE IF NOT EXISTS atc_ai_patrols (
   entity_id       VARCHAR(128)  NOT NULL,
   patrol_type     VARCHAR(32)   NOT NULL,
   status          VARCHAR(32)   NOT NULL DEFAULT 'pending',
-  route_data      TEXT          NOT NULL DEFAULT '{}',
+  route_data      TEXT          NOT NULL DEFAULT ('{}'),
   owner_server_id VARCHAR(128)  NULL,
   started_at      DATETIME(3)   NULL,
   completed_at    DATETIME(3)   NULL,
@@ -4035,7 +4035,7 @@ CREATE TABLE IF NOT EXISTS atc_ai_threat_assessment (
   threat_source_id VARCHAR(128)  NULL,
   threat_level     VARCHAR(32)   NOT NULL DEFAULT 'low',
   threat_type      VARCHAR(32)   NOT NULL,
-  assessment_data  TEXT          NOT NULL DEFAULT '{}',
+  assessment_data  TEXT          NOT NULL DEFAULT ('{}'),
   expires_at       DATETIME(3)   NULL,
   created_at       DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   updated_at       DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
@@ -4079,7 +4079,7 @@ CREATE TABLE IF NOT EXISTS atc_ai_response_runtime (
   response_type   VARCHAR(64)   NOT NULL,
   status          VARCHAR(32)   NOT NULL DEFAULT 'activating',
   target_id       VARCHAR(128)  NULL,
-  tactical_data   TEXT          NOT NULL DEFAULT '{}',
+  tactical_data   TEXT          NOT NULL DEFAULT ('{}'),
   owner_server_id VARCHAR(128)  NULL,
   activated_at    DATETIME(3)   NULL,
   completed_at    DATETIME(3)   NULL,
@@ -4353,7 +4353,7 @@ CREATE TABLE IF NOT EXISTS atc_world_regions (
   region_id       VARCHAR(128)  NOT NULL,
   region_type     VARCHAR(64)   NOT NULL,
   owner_server_id VARCHAR(128)  NULL,
-  bounds_data     TEXT          NOT NULL DEFAULT '{}',
+  bounds_data     TEXT          NOT NULL DEFAULT ('{}'),
   capacity_limit  INT           NULL,
   current_load    INT           NOT NULL DEFAULT 0,
   is_active       TINYINT(1)    NOT NULL DEFAULT 1,
@@ -4377,7 +4377,7 @@ CREATE TABLE IF NOT EXISTS atc_runtime_allocations (
   server_id       VARCHAR(128)  NOT NULL,
   allocation_type VARCHAR(32)   NOT NULL,
   status          VARCHAR(32)   NOT NULL DEFAULT 'active',
-  allocation_data TEXT          NOT NULL DEFAULT '{}',
+  allocation_data TEXT          NOT NULL DEFAULT ('{}'),
   deallocated_at  DATETIME(3)   NULL,
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   updated_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
@@ -4419,7 +4419,7 @@ CREATE TABLE IF NOT EXISTS atc_regional_simulation (
   region_id       VARCHAR(128)  NOT NULL,
   simulation_type VARCHAR(32)   NOT NULL,
   owner_server_id VARCHAR(128)  NULL,
-  simulation_data TEXT          NOT NULL DEFAULT '{}',
+  simulation_data TEXT          NOT NULL DEFAULT ('{}'),
   is_active       TINYINT(1)    NOT NULL DEFAULT 1,
   last_tick_at    DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -4443,7 +4443,7 @@ CREATE TABLE IF NOT EXISTS atc_world_balancing (
   shards_after    INT           NOT NULL DEFAULT 0,
   load_before     INT           NOT NULL DEFAULT 0,
   load_after      INT           NOT NULL DEFAULT 0,
-  balancing_data  TEXT          NOT NULL DEFAULT '{}',
+  balancing_data  TEXT          NOT NULL DEFAULT ('{}'),
   completed_at    DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   PRIMARY KEY (id),
@@ -4481,7 +4481,7 @@ CREATE TABLE IF NOT EXISTS atc_combat_runtime (
   owner_server_id VARCHAR(128)  NOT NULL,
   region_id       VARCHAR(128)  NULL,
   session_nonce   VARCHAR(128)  NOT NULL,
-  combat_data     TEXT          NOT NULL DEFAULT '{}',
+  combat_data     TEXT          NOT NULL DEFAULT ('{}'),
   started_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   ended_at        DATETIME(3)   NULL,
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -4503,8 +4503,8 @@ CREATE TABLE IF NOT EXISTS atc_ballistics_runtime (
   session_id        VARCHAR(128)  NOT NULL,
   entity_id         VARCHAR(128)  NOT NULL,
   ballistic_type    VARCHAR(64)   NOT NULL,
-  trajectory_data   TEXT          NOT NULL DEFAULT '{}',
-  impact_data       TEXT          NOT NULL DEFAULT '{}',
+  trajectory_data   TEXT          NOT NULL DEFAULT ('{}'),
+  impact_data       TEXT          NOT NULL DEFAULT ('{}'),
   velocity          FLOAT         NOT NULL DEFAULT 0,
   penetration_depth FLOAT         NOT NULL DEFAULT 0,
   owner_server_id   VARCHAR(128)  NOT NULL,
@@ -4531,7 +4531,7 @@ CREATE TABLE IF NOT EXISTS atc_tactical_damage (
   armor_penetration FLOAT         NOT NULL DEFAULT 0,
   body_zone         VARCHAR(64)   NOT NULL DEFAULT 'torso',
   is_processed      TINYINT(1)    NOT NULL DEFAULT 0,
-  damage_data       TEXT          NOT NULL DEFAULT '{}',
+  damage_data       TEXT          NOT NULL DEFAULT ('{}'),
   owner_server_id   VARCHAR(128)  NOT NULL,
   processed_at      DATETIME(3)   NULL,
   created_at        DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -4578,7 +4578,7 @@ CREATE TABLE IF NOT EXISTS atc_armor_runtime (
   current_integrity     FLOAT         NOT NULL DEFAULT 100,
   owner_server_id       VARCHAR(128)  NOT NULL,
   is_active             TINYINT(1)    NOT NULL DEFAULT 1,
-  armor_data            TEXT          NOT NULL DEFAULT '{}',
+  armor_data            TEXT          NOT NULL DEFAULT ('{}'),
   created_at            DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   updated_at            DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
   PRIMARY KEY (id),
@@ -4595,7 +4595,7 @@ CREATE TABLE IF NOT EXISTS atc_combat_audit (
   session_id  VARCHAR(128)  NULL,
   event_type  VARCHAR(128)  NOT NULL,
   entity_id   VARCHAR(128)  NULL,
-  audit_data  TEXT          NOT NULL DEFAULT '{}',
+  audit_data  TEXT          NOT NULL DEFAULT ('{}'),
   created_at  DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   PRIMARY KEY (id),
   KEY idx_combat_audit_session (session_id),
@@ -4615,7 +4615,7 @@ CREATE TABLE IF NOT EXISTS atc_campaign_runtime (
   owner_server_id VARCHAR(128)  NOT NULL,
   region_id       VARCHAR(128)  NULL,
   campaign_nonce  VARCHAR(128)  NOT NULL,
-  campaign_data   TEXT          NOT NULL DEFAULT '{}',
+  campaign_data   TEXT          NOT NULL DEFAULT ('{}'),
   started_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   completed_at    DATETIME(3)   NULL,
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -4639,7 +4639,7 @@ CREATE TABLE IF NOT EXISTS atc_world_events (
   owner_server_id   VARCHAR(128)  NOT NULL,
   region_id         VARCHAR(128)  NULL,
   trigger_condition VARCHAR(256)  NOT NULL DEFAULT '',
-  event_data        TEXT          NOT NULL DEFAULT '{}',
+  event_data        TEXT          NOT NULL DEFAULT ('{}'),
   started_at        DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   expires_at        DATETIME(3)   NULL,
   created_at        DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -4661,7 +4661,7 @@ CREATE TABLE IF NOT EXISTS atc_story_progression (
   campaign_id      VARCHAR(128)  NULL,
   progression_type VARCHAR(64)   NOT NULL,
   stage_key        VARCHAR(256)  NOT NULL,
-  progression_data TEXT          NOT NULL DEFAULT '{}',
+  progression_data TEXT          NOT NULL DEFAULT ('{}'),
   owner_server_id  VARCHAR(128)  NOT NULL,
   is_active        TINYINT(1)    NOT NULL DEFAULT 1,
   created_at       DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -4684,7 +4684,7 @@ CREATE TABLE IF NOT EXISTS atc_narrative_runtime (
   narrative_type  VARCHAR(64)   NOT NULL,
   status          VARCHAR(32)   NOT NULL DEFAULT 'active',
   owner_server_id VARCHAR(128)  NOT NULL,
-  narrative_data  TEXT          NOT NULL DEFAULT '{}',
+  narrative_data  TEXT          NOT NULL DEFAULT ('{}'),
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   updated_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
   PRIMARY KEY (id),
@@ -4703,7 +4703,7 @@ CREATE TABLE IF NOT EXISTS atc_dynamic_story_state (
   entity_id       VARCHAR(128)  NOT NULL,
   branch_key      VARCHAR(256)  NOT NULL,
   state_type      VARCHAR(64)   NOT NULL,
-  story_data      TEXT          NOT NULL DEFAULT '{}',
+  story_data      TEXT          NOT NULL DEFAULT ('{}'),
   owner_server_id VARCHAR(128)  NOT NULL,
   is_active       TINYINT(1)    NOT NULL DEFAULT 1,
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -4723,7 +4723,7 @@ CREATE TABLE IF NOT EXISTS atc_narrative_audit (
   session_id  VARCHAR(128)  NULL,
   event_type  VARCHAR(128)  NOT NULL,
   entity_id   VARCHAR(128)  NULL,
-  audit_data  TEXT          NOT NULL DEFAULT '{}',
+  audit_data  TEXT          NOT NULL DEFAULT ('{}'),
   created_at  DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   PRIMARY KEY (id),
   KEY idx_narrative_audit_session (session_id),
@@ -4743,7 +4743,7 @@ CREATE TABLE IF NOT EXISTS atc_runtime_failover (
   source_server_id  VARCHAR(128)  NOT NULL,
   target_server_id  VARCHAR(128)  NOT NULL,
   failover_nonce    VARCHAR(128)  NOT NULL,
-  failover_data     TEXT          NOT NULL DEFAULT '{}',
+  failover_data     TEXT          NOT NULL DEFAULT ('{}'),
   started_at        DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   completed_at      DATETIME(3)   NULL,
   created_at        DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -4764,7 +4764,7 @@ CREATE TABLE IF NOT EXISTS atc_recovery_snapshots (
   entity_id       VARCHAR(128)  NOT NULL,
   snapshot_type   VARCHAR(64)   NOT NULL,
   owner_server_id VARCHAR(128)  NOT NULL,
-  snapshot_data   TEXT          NOT NULL DEFAULT '{}',
+  snapshot_data   TEXT          NOT NULL DEFAULT ('{}'),
   sequence_number INT           NOT NULL DEFAULT 0,
   is_applied      TINYINT(1)    NOT NULL DEFAULT 0,
   applied_at      DATETIME(3)   NULL,
@@ -4786,7 +4786,7 @@ CREATE TABLE IF NOT EXISTS atc_chaos_runtime (
   test_type        VARCHAR(64)   NOT NULL,
   status           VARCHAR(32)   NOT NULL DEFAULT 'pending',
   target_server_id VARCHAR(128)  NULL,
-  chaos_data       TEXT          NOT NULL DEFAULT '{}',
+  chaos_data       TEXT          NOT NULL DEFAULT ('{}'),
   started_at       DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   completed_at     DATETIME(3)   NULL,
   created_at       DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -4808,7 +4808,7 @@ CREATE TABLE IF NOT EXISTS atc_runtime_resilience (
   status          VARCHAR(32)   NOT NULL DEFAULT 'healthy',
   owner_server_id VARCHAR(128)  NOT NULL,
   health_score    INT           NOT NULL DEFAULT 100,
-  resilience_data TEXT          NOT NULL DEFAULT '{}',
+  resilience_data TEXT          NOT NULL DEFAULT ('{}'),
   last_check_at   DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   updated_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
@@ -4826,7 +4826,7 @@ CREATE TABLE IF NOT EXISTS atc_failover_audit (
   id          VARCHAR(26)   NOT NULL,
   failover_id VARCHAR(128)  NULL,
   event_type  VARCHAR(128)  NOT NULL,
-  audit_data  TEXT          NOT NULL DEFAULT '{}',
+  audit_data  TEXT          NOT NULL DEFAULT ('{}'),
   created_at  DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   PRIMARY KEY (id),
   KEY idx_failover_audit_failover (failover_id),
@@ -4844,7 +4844,7 @@ CREATE TABLE IF NOT EXISTS atc_recovery_operations (
   status          VARCHAR(32)   NOT NULL DEFAULT 'pending',
   entity_id       VARCHAR(128)  NULL,
   owner_server_id VARCHAR(128)  NOT NULL,
-  recovery_data   TEXT          NOT NULL DEFAULT '{}',
+  recovery_data   TEXT          NOT NULL DEFAULT ('{}'),
   started_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   completed_at    DATETIME(3)   NULL,
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -4869,7 +4869,7 @@ CREATE TABLE IF NOT EXISTS atc_runtime_traces (
   target_node     VARCHAR(128)  NULL,
   owner_server_id VARCHAR(128)  NOT NULL,
   trace_nonce     VARCHAR(128)  NOT NULL,
-  trace_data      TEXT          NOT NULL DEFAULT '{}',
+  trace_data      TEXT          NOT NULL DEFAULT ('{}'),
   started_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   completed_at    DATETIME(3)   NULL,
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -4892,7 +4892,7 @@ CREATE TABLE IF NOT EXISTS atc_runtime_metrics (
   owner_server_id VARCHAR(128)  NOT NULL,
   value           DOUBLE        NOT NULL DEFAULT 0,
   unit            VARCHAR(32)   NULL,
-  metric_data     TEXT          NOT NULL DEFAULT '{}',
+  metric_data     TEXT          NOT NULL DEFAULT ('{}'),
   recorded_at     DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   updated_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
@@ -4912,7 +4912,7 @@ CREATE TABLE IF NOT EXISTS atc_failure_correlation (
   source_node      VARCHAR(128)  NOT NULL,
   status           VARCHAR(32)   NOT NULL DEFAULT 'open',
   owner_server_id  VARCHAR(128)  NOT NULL,
-  correlation_data TEXT          NOT NULL DEFAULT '{}',
+  correlation_data TEXT          NOT NULL DEFAULT ('{}'),
   correlated_at    DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   resolved_at      DATETIME(3)   NULL,
   created_at       DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -4933,7 +4933,7 @@ CREATE TABLE IF NOT EXISTS atc_runtime_diagnostics (
   entity_id       VARCHAR(128)  NULL,
   status          VARCHAR(32)   NOT NULL DEFAULT 'pending',
   owner_server_id VARCHAR(128)  NOT NULL,
-  diagnostic_data TEXT          NOT NULL DEFAULT '{}',
+  diagnostic_data TEXT          NOT NULL DEFAULT ('{}'),
   started_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   completed_at    DATETIME(3)   NULL,
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -4953,7 +4953,7 @@ CREATE TABLE IF NOT EXISTS atc_trace_runtime (
   is_active       TINYINT(1)    NOT NULL DEFAULT 1,
   owner_server_id VARCHAR(128)  NOT NULL,
   expires_at      DATETIME(3)   NULL,
-  trace_data      TEXT          NOT NULL DEFAULT '{}',
+  trace_data      TEXT          NOT NULL DEFAULT ('{}'),
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   updated_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
   PRIMARY KEY (id),
@@ -4969,7 +4969,7 @@ CREATE TABLE IF NOT EXISTS atc_observability_audit (
   id          VARCHAR(26)   NOT NULL,
   trace_id    VARCHAR(128)  NULL,
   event_type  VARCHAR(64)   NOT NULL,
-  audit_data  TEXT          NOT NULL DEFAULT '{}',
+  audit_data  TEXT          NOT NULL DEFAULT ('{}'),
   created_at  DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   PRIMARY KEY (id),
   KEY idx_obs_audit_trace (trace_id),
@@ -4988,7 +4988,7 @@ CREATE TABLE IF NOT EXISTS atc_cluster_nodes (
   owner_server_id VARCHAR(128)  NOT NULL,
   address         VARCHAR(256)  NULL,
   node_nonce      VARCHAR(128)  NOT NULL,
-  node_data       TEXT          NOT NULL DEFAULT '{}',
+  node_data       TEXT          NOT NULL DEFAULT ('{}'),
   joined_at       DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   left_at         DATETIME(3)   NULL,
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -5011,7 +5011,7 @@ CREATE TABLE IF NOT EXISTS atc_runtime_deployments (
   target_node      VARCHAR(128)  NOT NULL,
   owner_server_id  VARCHAR(128)  NOT NULL,
   deployment_nonce VARCHAR(128)  NOT NULL,
-  deployment_data  TEXT          NOT NULL DEFAULT '{}',
+  deployment_data  TEXT          NOT NULL DEFAULT ('{}'),
   started_at       DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   completed_at     DATETIME(3)   NULL,
   created_at       DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -5034,7 +5034,7 @@ CREATE TABLE IF NOT EXISTS atc_cluster_scaling (
   status          VARCHAR(32)   NOT NULL DEFAULT 'pending',
   owner_server_id VARCHAR(128)  NOT NULL,
   scaling_nonce   VARCHAR(128)  NOT NULL,
-  scaling_data    TEXT          NOT NULL DEFAULT '{}',
+  scaling_data    TEXT          NOT NULL DEFAULT ('{}'),
   started_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   completed_at    DATETIME(3)   NULL,
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -5055,7 +5055,7 @@ CREATE TABLE IF NOT EXISTS atc_runtime_allocation (
   node_id         VARCHAR(128)  NOT NULL,
   status          VARCHAR(32)   NOT NULL DEFAULT 'active',
   owner_server_id VARCHAR(128)  NOT NULL,
-  allocation_data TEXT          NOT NULL DEFAULT '{}',
+  allocation_data TEXT          NOT NULL DEFAULT ('{}'),
   allocated_at    DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   released_at     DATETIME(3)   NULL,
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -5077,7 +5077,7 @@ CREATE TABLE IF NOT EXISTS atc_node_lifecycle (
   status          VARCHAR(32)   NOT NULL DEFAULT 'active',
   is_active       TINYINT(1)    NOT NULL DEFAULT 1,
   owner_server_id VARCHAR(128)  NOT NULL,
-  lifecycle_data  TEXT          NOT NULL DEFAULT '{}',
+  lifecycle_data  TEXT          NOT NULL DEFAULT ('{}'),
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   updated_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
   PRIMARY KEY (id),
@@ -5093,7 +5093,7 @@ CREATE TABLE IF NOT EXISTS atc_cluster_audit (
   id          VARCHAR(26)   NOT NULL,
   node_id     VARCHAR(128)  NULL,
   event_type  VARCHAR(64)   NOT NULL,
-  audit_data  TEXT          NOT NULL DEFAULT '{}',
+  audit_data  TEXT          NOT NULL DEFAULT ('{}'),
   created_at  DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   PRIMARY KEY (id),
   KEY idx_cluster_audit_node (node_id),
@@ -5112,7 +5112,7 @@ CREATE TABLE IF NOT EXISTS atc_global_snapshots (
   status          VARCHAR(32)   NOT NULL DEFAULT 'pending',
   owner_server_id VARCHAR(128)  NOT NULL,
   snapshot_nonce  VARCHAR(128)  NOT NULL,
-  snapshot_data   TEXT          NOT NULL DEFAULT '{}',
+  snapshot_data   TEXT          NOT NULL DEFAULT ('{}'),
   taken_at        DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   completed_at    DATETIME(3)   NULL,
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -5137,7 +5137,7 @@ CREATE TABLE IF NOT EXISTS atc_snapshot_archives (
   status             VARCHAR(32)   NOT NULL DEFAULT 'pending',
   owner_server_id    VARCHAR(128)  NOT NULL,
   archive_nonce      VARCHAR(128)  NOT NULL,
-  archive_data       TEXT          NOT NULL DEFAULT '{}',
+  archive_data       TEXT          NOT NULL DEFAULT ('{}'),
   archived_at        DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   completed_at       DATETIME(3)   NULL,
   created_at         DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -5159,7 +5159,7 @@ CREATE TABLE IF NOT EXISTS atc_persistence_runtime (
   status           VARCHAR(32)   NOT NULL DEFAULT 'active',
   is_active        TINYINT(1)    NOT NULL DEFAULT 1,
   owner_server_id  VARCHAR(128)  NOT NULL,
-  persistence_data TEXT          NOT NULL DEFAULT '{}',
+  persistence_data TEXT          NOT NULL DEFAULT ('{}'),
   created_at       DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   updated_at       DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
   PRIMARY KEY (id),
@@ -5179,7 +5179,7 @@ CREATE TABLE IF NOT EXISTS atc_snapshot_compression (
   status            VARCHAR(32)   NOT NULL DEFAULT 'pending',
   owner_server_id   VARCHAR(128)  NOT NULL,
   compression_nonce VARCHAR(128)  NOT NULL,
-  compression_data  TEXT          NOT NULL DEFAULT '{}',
+  compression_data  TEXT          NOT NULL DEFAULT ('{}'),
   started_at        DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   completed_at      DATETIME(3)   NULL,
   created_at        DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -5202,7 +5202,7 @@ CREATE TABLE IF NOT EXISTS atc_longterm_recovery (
   status          VARCHAR(32)   NOT NULL DEFAULT 'pending',
   owner_server_id VARCHAR(128)  NOT NULL,
   recovery_nonce  VARCHAR(128)  NOT NULL,
-  recovery_data   TEXT          NOT NULL DEFAULT '{}',
+  recovery_data   TEXT          NOT NULL DEFAULT ('{}'),
   started_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   completed_at    DATETIME(3)   NULL,
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -5221,7 +5221,7 @@ CREATE TABLE IF NOT EXISTS atc_persistence_audit (
   id          VARCHAR(26)   NOT NULL,
   snapshot_id VARCHAR(128)  NULL,
   event_type  VARCHAR(64)   NOT NULL,
-  audit_data  TEXT          NOT NULL DEFAULT '{}',
+  audit_data  TEXT          NOT NULL DEFAULT ('{}'),
   created_at  DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   PRIMARY KEY (id),
   KEY idx_persistence_audit_snapshot (snapshot_id),

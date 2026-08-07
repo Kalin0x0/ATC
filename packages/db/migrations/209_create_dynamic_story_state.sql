@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS atc_dynamic_story_state (
   entity_id       VARCHAR(128)  NOT NULL,
   branch_key      VARCHAR(256)  NOT NULL,
   state_type      VARCHAR(64)   NOT NULL,
-  story_data      TEXT          NOT NULL DEFAULT '{}',
+  story_data      TEXT          NOT NULL DEFAULT ('{}'),
   owner_server_id VARCHAR(128)  NOT NULL,
   is_active       TINYINT(1)    NOT NULL DEFAULT 1,
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),

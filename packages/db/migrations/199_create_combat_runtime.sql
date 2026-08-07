@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS atc_combat_runtime (
   owner_server_id VARCHAR(128)  NOT NULL,
   region_id       VARCHAR(128)  NULL,
   session_nonce   VARCHAR(128)  NOT NULL,
-  combat_data     TEXT          NOT NULL DEFAULT '{}',
+  combat_data     TEXT          NOT NULL DEFAULT ('{}'),
   started_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   ended_at        DATETIME(3)   NULL,
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),

@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS atc_world_events (
   owner_server_id   VARCHAR(128)  NOT NULL,
   region_id         VARCHAR(128)  NULL,
   trigger_condition VARCHAR(256)  NOT NULL DEFAULT '',
-  event_data        TEXT          NOT NULL DEFAULT '{}',
+  event_data        TEXT          NOT NULL DEFAULT ('{}'),
   started_at        DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   expires_at        DATETIME(3)   NULL,
   created_at        DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),

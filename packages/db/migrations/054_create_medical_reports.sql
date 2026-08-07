@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS atc_medical_reports (
   incident_id              CHAR(26)     NULL,
   arrest_id                CHAR(26)     NULL,
   diagnosis                TEXT         NOT NULL,
-  notes                    TEXT         NOT NULL DEFAULT '',
+  notes                    TEXT         NOT NULL DEFAULT (''),
   injury_ids               JSON         NOT NULL DEFAULT (JSON_ARRAY()),
   treatment_ids            JSON         NOT NULL DEFAULT (JSON_ARRAY()),
   vitals_snapshot          JSON         NULL,

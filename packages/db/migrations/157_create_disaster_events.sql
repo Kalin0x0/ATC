@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS atc_disaster_events (
   disaster_name            VARCHAR(255)   NOT NULL,
   severity                 DECIMAL(5,2)   NOT NULL DEFAULT 50.00,
   status                   VARCHAR(32)    NOT NULL DEFAULT 'active',
-  affected_zone_ids        TEXT           NOT NULL DEFAULT '[]',
+  affected_zone_ids        TEXT           NOT NULL DEFAULT ('[]'),
   initiated_by_principal_id VARCHAR(128)  NULL,
   owner_server_id          VARCHAR(128)   NULL,
   contained_at             DATETIME(3)    NULL,

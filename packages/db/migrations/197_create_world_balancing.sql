@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS atc_world_balancing (
   shards_after    INT           NOT NULL DEFAULT 0,
   load_before     INT           NOT NULL DEFAULT 0,
   load_after      INT           NOT NULL DEFAULT 0,
-  balancing_data  TEXT          NOT NULL DEFAULT '{}',
+  balancing_data  TEXT          NOT NULL DEFAULT ('{}'),
   completed_at    DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   created_at      DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   PRIMARY KEY (id),

@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS atc_story_progression (
   campaign_id      VARCHAR(128)  NULL,
   progression_type VARCHAR(64)   NOT NULL,
   stage_key        VARCHAR(256)  NOT NULL,
-  progression_data TEXT          NOT NULL DEFAULT '{}',
+  progression_data TEXT          NOT NULL DEFAULT ('{}'),
   owner_server_id  VARCHAR(128)  NOT NULL,
   is_active        TINYINT(1)    NOT NULL DEFAULT 1,
   created_at       DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),

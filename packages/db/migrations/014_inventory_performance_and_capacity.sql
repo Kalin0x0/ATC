@@ -2,7 +2,7 @@
 -- Adds composite index for stack-merge lookup and introduces per-character capacity settings table.
 
 ALTER TABLE atc_character_inventory
-  ADD INDEX IF NOT EXISTS idx_inventory_character_item (character_id, item_id);
+  ADD INDEX idx_inventory_character_item (character_id, item_id);
 
 CREATE TABLE IF NOT EXISTS atc_character_inventory_settings (
   character_id     CHAR(26)     NOT NULL,

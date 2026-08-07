@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS atc_failure_correlation (
   source_node      VARCHAR(128)  NOT NULL,
   status           VARCHAR(32)   NOT NULL DEFAULT 'open',
   owner_server_id  VARCHAR(128)  NOT NULL,
-  correlation_data TEXT          NOT NULL DEFAULT '{}',
+  correlation_data TEXT          NOT NULL DEFAULT ('{}'),
   correlated_at    DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   resolved_at      DATETIME(3)   NULL,
   created_at       DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
