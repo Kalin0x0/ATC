@@ -6,8 +6,16 @@ a single file, the same way QBCore ships `qbcore.sql` and ESX ships
 to use.
 
 - **File:** `atc.sql` (366 ordered migrations, ~365 tables, UTF-8 `utf8mb4`)
-- **Database engine:** MariaDB 11 (recommended) or MySQL 8
+- **Database engine:** MariaDB. Verified on 10.11; 11 is the recommended target.
 - **Target database name:** `atc`
+
+> **MySQL is not supported.** This file used to say "or MySQL 8". It was tried
+> against MySQL 8.0.46 and does not import — the schema relies on MariaDB
+> behaviour in three places: `IF NOT EXISTS` on `ALTER TABLE` / `CREATE INDEX`
+> (18 statements), a column named `rank`, which MySQL 8 reserved for window
+> functions, and `DEFAULT` values on 69 JSON columns, which MySQL rejects
+> outright. The first two are syntax; the third would change what those columns
+> hold when a row is inserted, so it is not a search-and-replace. Use MariaDB.
 
 > The database is the same on **FiveM and VMP** — the schema and the import steps
 > below do not depend on your platform. Only the `server.cfg` you point at the ATC
@@ -33,7 +41,7 @@ Klicke oben auf das Sprachkürzel.
 ## English
 
 ### What you need (Windows)
-- A running MariaDB or MySQL server. The easiest options:
+- A running MariaDB server (MySQL is not supported — see the note above). The easiest options:
   - **XAMPP** (includes MariaDB + phpMyAdmin), or
   - **HeidiSQL** + a MariaDB install, or
   - the project's Docker setup (`infra/docker-compose.yml`) which creates the
@@ -123,7 +131,7 @@ You're done. Start the API, then your game server.
 ## فارسی (Farsi)
 
 ### پیش‌نیازها (ویندوز)
-- یک سرور MariaDB یا MySQL در حال اجرا. ساده‌ترین گزینه‌ها:
+- یک سرور MariaDB در حال اجرا (MySQL پشتیبانی نمی‌شود). ساده‌ترین گزینه‌ها:
   - **XAMPP** (شامل MariaDB و phpMyAdmin)، یا
   - **HeidiSQL** به همراه نصب MariaDB، یا
   - راه‌اندازی Docker پروژه (`infra/docker-compose.yml`) که دیتابیس را خودکار می‌سازد.
@@ -211,7 +219,7 @@ FLUSH PRIVILEGES;
 ## Türkçe (Turkish)
 
 ### Gerekenler (Windows)
-- Çalışan bir MariaDB veya MySQL sunucusu. En kolay seçenekler:
+- Çalışan bir MariaDB sunucusu (MySQL desteklenmiyor). En kolay seçenekler:
   - **XAMPP** (MariaDB + phpMyAdmin içerir), veya
   - **HeidiSQL** + bir MariaDB kurulumu, veya
   - projenin Docker kurulumu (`infra/docker-compose.yml`) — veritabanını sizin
@@ -301,7 +309,7 @@ Bitti. Önce API'yi, sonra oyun sunucunuzu başlatın.
 ## Español (Spanish)
 
 ### Qué necesitas (Windows)
-- Un servidor MariaDB o MySQL en ejecución. Las opciones más fáciles:
+- Un servidor MariaDB en ejecución (MySQL no es compatible). Las opciones más fáciles:
   - **XAMPP** (incluye MariaDB + phpMyAdmin), o
   - **HeidiSQL** + una instalación de MariaDB, o
   - la configuración Docker del proyecto (`infra/docker-compose.yml`), que crea
@@ -391,7 +399,7 @@ Listo. Inicia primero la API y luego tu servidor de juego.
 ## Deutsch (German)
 
 ### Was du brauchst (Windows)
-- Einen laufenden MariaDB- oder MySQL-Server. Die einfachsten Optionen:
+- Einen laufenden MariaDB-Server (MySQL wird nicht unterstützt). Die einfachsten Optionen:
   - **XAMPP** (enthält MariaDB + phpMyAdmin), oder
   - **HeidiSQL** + eine MariaDB-Installation, oder
   - das Docker-Setup des Projekts (`infra/docker-compose.yml`), das die Datenbank
