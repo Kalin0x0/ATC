@@ -285,6 +285,7 @@ import type {
   EmergencyBroadcastRepository,
   EncryptedChannelRepository,
   CommunicationAuditRepository,
+  PhoneRepository,
 } from '@atc/communication-runtime'
 import type {
   DisasterRuntimeService,
@@ -1031,6 +1032,8 @@ export interface AppContext {
   emergencyBroadcastRepo?: EmergencyBroadcastRepository
   encryptedChannelRepo?: EncryptedChannelRepository
   communicationAuditRepo?: CommunicationAuditRepository
+  /** Phone messaging: direct messages and contacts, separate from the radio system. */
+  phoneRepo?: PhoneRepository
   disasterRuntimeService?: DisasterRuntimeService
   evacuationRuntimeService?: EvacuationRuntimeService
   emergencyResponseService?: EmergencyResponseService

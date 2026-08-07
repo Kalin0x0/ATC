@@ -584,6 +584,12 @@ export {
   cancelBroadcastSchema,
   setEncryptionSchema,
   reconcileSignalsSchema,
+  sendPhoneMessageSchema,
+  listPhoneMessagesQuerySchema,
+  markPhoneConversationReadSchema,
+  listPhoneContactsQuerySchema,
+  upsertPhoneContactSchema,
+  removePhoneContactSchema,
 } from './schemas.js'
 export type {
   CreateRadioChannelRequest,

@@ -60,3 +60,13 @@ export { RadioRuntimeService } from './radio-runtime.service.js'
 export { EmergencyBroadcastService } from './emergency-broadcast.service.js'
 export { SignalRuntimeService } from './signal-runtime.service.js'
 export { EncryptionRuntimeService } from './encryption-runtime.service.js'
+
+// Phone messaging repository
+export { PhoneRepository } from './phone.repository.js'
+export type {
+  AtcPhoneMessage,
+  AtcPhoneContact,
+  SendPhoneMessageParams,
+  SendPhoneMessageResult,
+  UpsertPhoneContactParams,
+} from './phone.repository.js'

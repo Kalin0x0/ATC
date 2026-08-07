@@ -22,6 +22,7 @@ import {
 import { ItemRuntimeExecutor, ItemCooldownCache, createVitalsModifyHandler } from '@atc/runtime-items'
 import { AtcEventBus, AtcRedisEventBridge } from '@atc/events'
 import { AtcTelemetryService } from '@atc/telemetry'
+import { PhoneRepository } from '@atc/communication-runtime'
 import {
   AtcPluginRegistry,
   AtcPluginLifecycleManager,
@@ -254,6 +255,9 @@ async function main() {
     sessions: new SessionRepository(pool),
     bans: new BanRepository(pool),
     characters: new CharacterRepository(pool),
+    // Phone messaging. Wired here so the routes are live rather than
+    // answering 503 for a feature that exists.
+    phoneRepo: new PhoneRepository(pool),
     wallets: walletsRepo,
     itemDefinitions: itemDefinitionsRepo,
     inventory: inventoryRepo,

@@ -2,19 +2,25 @@ ATC = ATC or {}
 ATC.Phone = {}
 
 -- ── API backing ───────────────────────────────────────────────────────────────
--- The API's /api/v1/comms namespace is a tactical radio system — channels,
--- broadcasts, signals, jamming, encryption. It is not phone messaging: there is
--- no contacts endpoint and no messages endpoint, and no table behind either, so
--- the two requests that used to be here 404'd on every use.
+-- Contacts and messages are served by /api/v1/comms/contacts and
+-- /api/v1/comms/messages, backed by atc_phone_contacts and atc_phone_messages.
+-- They share the comms namespace with the radio system but nothing else: that
+-- is tactical traffic between units, this is a character's phone.
 --
--- Banking is unaffected; that endpoint exists and is called normally below.
---
--- A switch, not a TODO: set it to true once those endpoints exist and the
--- requests resume unchanged.
-local PHONE_API_ENABLED = false
+-- Set to false to run the phone without persistence — messages are then still
+-- delivered live between connected players, but nothing is stored.
+local PHONE_API_ENABLED = true
 
 local _warnedContacts = false
 local _warnedMessages = false
+
+--- Unique key so a retried send cannot store the same message twice.
+local _msgSeq = 0
+local function _messageKey(fromCharacterId)
+    _msgSeq = _msgSeq + 1
+    if _msgSeq > 0xFFFFFF then _msgSeq = 1 end
+    return ('atc:phone:%s:%d:%d'):format(fromCharacterId, os.time(), _msgSeq)
+end
 
 --- Deliver a message to the recipient if they are currently online.
 --- Pure server-side fan-out — needs no API, which is why it is kept out of the
@@ -91,13 +97,18 @@ ATC.Firewall.On('atc:phone:message:send', {
         return
     end
 
+    -- sendPhoneMessageSchema: fromCharacterId, toCharacterId, body, idempotencyKey.
     ATC.HTTP.Post('/api/v1/comms/messages', {
-        characterId = characterId,
-        to          = to,
-        message     = msg,
+        fromCharacterId = characterId,
+        toCharacterId   = to,
+        body            = msg,
+        idempotencyKey  = _messageKey(characterId),
     }, function(ok, _status, _data)
         TriggerClientEvent('atc:phone:message:sent', src, { success = ok })
 
+        -- Deliver only once the message is stored, so the recipient never sees
+        -- something the history will not show. An offline recipient reads it
+        -- from the API on next connect.
         if not ok then return end
 
         _deliverMessage(characterId, to, msg)

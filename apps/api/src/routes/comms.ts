@@ -11,6 +11,12 @@ import {
   cancelBroadcastSchema,
   setEncryptionSchema,
   reconcileSignalsSchema,
+  sendPhoneMessageSchema,
+  listPhoneMessagesQuerySchema,
+  markPhoneConversationReadSchema,
+  listPhoneContactsQuerySchema,
+  upsertPhoneContactSchema,
+  removePhoneContactSchema,
 } from '@atc/operations'
 import { CommunicationRuntimeError } from '@atc/communication-runtime'
 
@@ -247,6 +253,88 @@ export async function commsRoutes(
         if (err instanceof CommunicationRuntimeError) return reply.status(commsErrorToStatus(err)).send({ error: err.message })
         throw err
       }
+    },
+  })
+
+  // ── Phone messaging ─────────────────────────────────────────────────────────
+  // A character's phone, not the radio system above. Same namespace, separate
+  // tables and its own capability so a radio grant does not read private mail.
+
+  fastify.get('/api/v1/comms/contacts', {
+    preHandler: requireCapability(ctx, 'comms:phone:read'),
+    handler: async (req, reply) => {
+      if (!ctx.phoneRepo) return reply.status(503).send(NOT_CONFIGURED)
+      const parsed = listPhoneContactsQuerySchema.safeParse(req.query)
+      if (!parsed.success) return reply.status(400).send({ error: 'Validation', details: parsed.error.issues })
+      const contacts = await ctx.phoneRepo.listContacts(parsed.data.characterId)
+      return reply.send({ contacts })
+    },
+  })
+
+  fastify.post('/api/v1/comms/contacts', {
+    preHandler: requireCapability(ctx, 'comms:phone:write'),
+    handler: async (req, reply) => {
+      if (!ctx.phoneRepo) return reply.status(503).send(NOT_CONFIGURED)
+      const parsed = upsertPhoneContactSchema.safeParse(req.body)
+      if (!parsed.success) return reply.status(400).send({ error: 'Validation', details: parsed.error.issues })
+      if (parsed.data.ownerCharacterId === parsed.data.contactCharacterId) {
+        return reply.status(400).send({ error: 'Validation', message: 'A character cannot add itself as a contact' })
+      }
+      const contact = await ctx.phoneRepo.upsertContact(parsed.data)
+      return reply.status(200).send(contact)
+    },
+  })
+
+  fastify.delete('/api/v1/comms/contacts', {
+    preHandler: requireCapability(ctx, 'comms:phone:write'),
+    handler: async (req, reply) => {
+      if (!ctx.phoneRepo) return reply.status(503).send(NOT_CONFIGURED)
+      const parsed = removePhoneContactSchema.safeParse(req.body)
+      if (!parsed.success) return reply.status(400).send({ error: 'Validation', details: parsed.error.issues })
+      const removed = await ctx.phoneRepo.removeContact(parsed.data.ownerCharacterId, parsed.data.contactCharacterId)
+      if (!removed) return reply.status(404).send({ error: 'ContactNotFound' })
+      return reply.status(200).send({ removed: true })
+    },
+  })
+
+  fastify.post('/api/v1/comms/messages', {
+    preHandler: requireCapability(ctx, 'comms:phone:write'),
+    handler: async (req, reply) => {
+      if (!ctx.phoneRepo) return reply.status(503).send(NOT_CONFIGURED)
+      const parsed = sendPhoneMessageSchema.safeParse(req.body)
+      if (!parsed.success) return reply.status(400).send({ error: 'Validation', details: parsed.error.issues })
+      if (parsed.data.fromCharacterId === parsed.data.toCharacterId) {
+        return reply.status(400).send({ error: 'Validation', message: 'A character cannot message itself' })
+      }
+      const result = await ctx.phoneRepo.sendMessage(parsed.data)
+      // 200 rather than 201 when the key was already used: nothing new was stored.
+      return reply.status(result.idempotent ? 200 : 201).send(result)
+    },
+  })
+
+  fastify.get('/api/v1/comms/messages', {
+    preHandler: requireCapability(ctx, 'comms:phone:read'),
+    handler: async (req, reply) => {
+      if (!ctx.phoneRepo) return reply.status(503).send(NOT_CONFIGURED)
+      const parsed = listPhoneMessagesQuerySchema.safeParse(req.query)
+      if (!parsed.success) return reply.status(400).send({ error: 'Validation', details: parsed.error.issues })
+      const d = parsed.data
+      const messages = d.withCharacterId !== undefined
+        ? await ctx.phoneRepo.listConversation(d.characterId, d.withCharacterId, d.limit, d.offset)
+        : await ctx.phoneRepo.listInbox(d.characterId, d.limit, d.offset)
+      const unread = await ctx.phoneRepo.countUnread(d.characterId)
+      return reply.send({ messages, unread, limit: d.limit, offset: d.offset })
+    },
+  })
+
+  fastify.post('/api/v1/comms/messages/read', {
+    preHandler: requireCapability(ctx, 'comms:phone:write'),
+    handler: async (req, reply) => {
+      if (!ctx.phoneRepo) return reply.status(503).send(NOT_CONFIGURED)
+      const parsed = markPhoneConversationReadSchema.safeParse(req.body)
+      if (!parsed.success) return reply.status(400).send({ error: 'Validation', details: parsed.error.issues })
+      const marked = await ctx.phoneRepo.markConversationRead(parsed.data.characterId, parsed.data.fromCharacterId)
+      return reply.status(200).send({ marked })
     },
   })
 }

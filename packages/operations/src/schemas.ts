@@ -2120,6 +2120,44 @@ export const setEncryptionSchema = z.object({
   encryptionKeyHash:   z.string().min(1).max(255),
 })
 
+// ── Phone messaging ───────────────────────────────────────────────────────────
+// The phone is separate from the radio schemas above: those move traffic
+// between units, these move messages between characters.
+
+export const sendPhoneMessageSchema = z.object({
+  fromCharacterId: z.string().min(1).max(128),
+  toCharacterId:   z.string().min(1).max(128),
+  body:            z.string().trim().min(1).max(1024),
+  idempotencyKey:  z.string().min(1).max(128),
+})
+
+export const listPhoneMessagesQuerySchema = z.object({
+  characterId:     z.string().min(1).max(128),
+  withCharacterId: z.string().min(1).max(128).optional(),
+  limit:           z.coerce.number().int().min(1).max(100).default(50),
+  offset:          z.coerce.number().int().min(0).default(0),
+})
+
+export const markPhoneConversationReadSchema = z.object({
+  characterId:     z.string().min(1).max(128),
+  fromCharacterId: z.string().min(1).max(128),
+})
+
+export const listPhoneContactsQuerySchema = z.object({
+  characterId: z.string().min(1).max(128),
+})
+
+export const upsertPhoneContactSchema = z.object({
+  ownerCharacterId:   z.string().min(1).max(128),
+  contactCharacterId: z.string().min(1).max(128),
+  displayName:        z.string().trim().min(1).max(64),
+})
+
+export const removePhoneContactSchema = z.object({
+  ownerCharacterId:   z.string().min(1).max(128),
+  contactCharacterId: z.string().min(1).max(128),
+})
+
 export const reconcileSignalsSchema = z.object({
   thresholdMs: z.number().int().min(1000).default(30000),
 })
