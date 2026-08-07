@@ -91,7 +91,7 @@ export class ProductionReadinessRepository {
             params.checkpointType,
             params.ownerServerId,
             checkpointDataJson,
-          ] as unknown[]
+          ]
         )
 
         const [rows] = await conn.execute<ProductionReadinessRow[]>(
@@ -100,7 +100,7 @@ export class ProductionReadinessRepository {
            FROM atc_production_readiness
            WHERE readiness_checkpoint_id = ?
            LIMIT 1`,
-          [params.readinessCheckpointId] as unknown[]
+          [params.readinessCheckpointId]
         )
         if (!rows[0]) throw new Error(`Production readiness not found after upsert: ${params.readinessCheckpointId}`)
 
@@ -124,7 +124,7 @@ export class ProductionReadinessRepository {
          FROM atc_production_readiness
          WHERE readiness_checkpoint_id = ?
          LIMIT 1`,
-        [readinessCheckpointId] as unknown[]
+        [readinessCheckpointId]
       )
       if (!rows[0]) return null
       return mapRow(rows[0])
@@ -149,7 +149,7 @@ export class ProductionReadinessRepository {
            WHERE readiness_checkpoint_id = ?
            LIMIT 1
            FOR UPDATE`,
-          [readinessCheckpointId] as unknown[]
+          [readinessCheckpointId]
         )
         if (!lockRows[0]) throw new ProductionReadinessNotFoundError(readinessCheckpointId)
 
@@ -158,14 +158,14 @@ export class ProductionReadinessRepository {
             `UPDATE atc_production_readiness
              SET status = ?, confirmed_at = ?, updated_at = NOW(3)
              WHERE readiness_checkpoint_id = ?`,
-            [status, confirmedAt.toISOString().replace('T', ' ').replace('Z', ''), readinessCheckpointId] as unknown[]
+            [status, confirmedAt.toISOString().replace('T', ' ').replace('Z', ''), readinessCheckpointId]
           )
         } else {
           await conn.execute<ResultSetHeader>(
             `UPDATE atc_production_readiness
              SET status = ?, updated_at = NOW(3)
              WHERE readiness_checkpoint_id = ?`,
-            [status, readinessCheckpointId] as unknown[]
+            [status, readinessCheckpointId]
           )
         }
 
@@ -175,7 +175,7 @@ export class ProductionReadinessRepository {
            FROM atc_production_readiness
            WHERE readiness_checkpoint_id = ?
            LIMIT 1`,
-          [readinessCheckpointId] as unknown[]
+          [readinessCheckpointId]
         )
         if (!rows[0]) throw new ProductionReadinessNotFoundError(readinessCheckpointId)
 
@@ -197,7 +197,7 @@ export class ProductionReadinessRepository {
         `DELETE FROM atc_production_readiness
          WHERE status IN ('blocked', 'failed')
            AND updated_at < DATE_SUB(NOW(3), INTERVAL ? MILLISECOND)`,
-        [thresholdMs] as unknown[]
+        [thresholdMs]
       )
       return result.affectedRows
     } finally {

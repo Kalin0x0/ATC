@@ -89,7 +89,7 @@ export class ProductionDeploymentRepository {
           params.deploymentType,
           params.ownerServerId,
           deploymentDataJson,
-        ] as unknown[]
+        ]
       )
 
       const [rows] = await conn.execute<ProductionDeploymentRow[]>(
@@ -98,7 +98,7 @@ export class ProductionDeploymentRepository {
          FROM atc_production_deployments
          WHERE deployment_id = ?
          LIMIT 1`,
-        [params.deploymentId] as unknown[]
+        [params.deploymentId]
       )
       if (!rows[0]) throw new Error(`Production deployment not found after upsert: ${params.deploymentId}`)
       return mapRow(rows[0])
@@ -116,7 +116,7 @@ export class ProductionDeploymentRepository {
          FROM atc_production_deployments
          WHERE deployment_id = ?
          LIMIT 1`,
-        [deploymentId] as unknown[]
+        [deploymentId]
       )
       if (!rows[0]) return null
       return mapRow(rows[0])
@@ -141,7 +141,7 @@ export class ProductionDeploymentRepository {
            WHERE deployment_id = ?
            LIMIT 1
            FOR UPDATE`,
-          [deploymentId] as unknown[]
+          [deploymentId]
         )
         if (!lockRows[0]) throw new ProductionDeploymentNotFoundError(deploymentId)
 
@@ -150,14 +150,14 @@ export class ProductionDeploymentRepository {
             `UPDATE atc_production_deployments
              SET status = ?, completed_at = ?, updated_at = NOW(3)
              WHERE deployment_id = ?`,
-            [status, completedAt.toISOString().replace('T', ' ').replace('Z', ''), deploymentId] as unknown[]
+            [status, completedAt.toISOString().replace('T', ' ').replace('Z', ''), deploymentId]
           )
         } else {
           await conn.execute<ResultSetHeader>(
             `UPDATE atc_production_deployments
              SET status = ?, updated_at = NOW(3)
              WHERE deployment_id = ?`,
-            [status, deploymentId] as unknown[]
+            [status, deploymentId]
           )
         }
 
@@ -167,7 +167,7 @@ export class ProductionDeploymentRepository {
            FROM atc_production_deployments
            WHERE deployment_id = ?
            LIMIT 1`,
-          [deploymentId] as unknown[]
+          [deploymentId]
         )
         if (!rows[0]) throw new ProductionDeploymentNotFoundError(deploymentId)
 
@@ -189,7 +189,7 @@ export class ProductionDeploymentRepository {
         `DELETE FROM atc_production_deployments
          WHERE status IN ('rolled_back', 'failed')
            AND updated_at < DATE_SUB(NOW(3), INTERVAL ? MILLISECOND)`,
-        [thresholdMs] as unknown[]
+        [thresholdMs]
       )
       return result.affectedRows
     } finally {

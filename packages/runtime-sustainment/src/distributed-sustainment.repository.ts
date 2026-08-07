@@ -86,7 +86,7 @@ export class DistributedSustainmentRepository {
           params.nodeType,
           params.ownerServerId,
           nodeDataJson,
-        ] as unknown[]
+        ]
       )
 
       const [rows] = await conn.execute<DistributedSustainmentRow[]>(
@@ -95,7 +95,7 @@ export class DistributedSustainmentRepository {
          FROM atc_distributed_sustainment
          WHERE sustainment_node_id = ?
          LIMIT 1`,
-        [params.sustainmentNodeId] as unknown[]
+        [params.sustainmentNodeId]
       )
       if (!rows[0]) throw new Error(`Distributed sustainment not found after upsert: ${params.sustainmentNodeId}`)
       return mapRow(rows[0])
@@ -113,7 +113,7 @@ export class DistributedSustainmentRepository {
          FROM atc_distributed_sustainment
          WHERE sustainment_node_id = ?
          LIMIT 1`,
-        [sustainmentNodeId] as unknown[]
+        [sustainmentNodeId]
       )
       if (!rows[0]) return null
       return mapRow(rows[0])
@@ -137,7 +137,7 @@ export class DistributedSustainmentRepository {
            WHERE sustainment_node_id = ?
            LIMIT 1
            FOR UPDATE`,
-          [sustainmentNodeId] as unknown[]
+          [sustainmentNodeId]
         )
         if (!lockRows[0]) throw new SustainmentNodeNotFoundError(sustainmentNodeId)
 
@@ -145,7 +145,7 @@ export class DistributedSustainmentRepository {
           `UPDATE atc_distributed_sustainment
            SET status = ?, updated_at = NOW(3)
            WHERE sustainment_node_id = ?`,
-          [status, sustainmentNodeId] as unknown[]
+          [status, sustainmentNodeId]
         )
 
         const [rows] = await conn.execute<DistributedSustainmentRow[]>(
@@ -154,7 +154,7 @@ export class DistributedSustainmentRepository {
            FROM atc_distributed_sustainment
            WHERE sustainment_node_id = ?
            LIMIT 1`,
-          [sustainmentNodeId] as unknown[]
+          [sustainmentNodeId]
         )
         if (!rows[0]) throw new SustainmentNodeNotFoundError(sustainmentNodeId)
 
@@ -176,7 +176,7 @@ export class DistributedSustainmentRepository {
         `DELETE FROM atc_distributed_sustainment
          WHERE status IN ('offline', 'failed')
            AND updated_at < DATE_SUB(NOW(3), INTERVAL ? MILLISECOND)`,
-        [thresholdMs] as unknown[]
+        [thresholdMs]
       )
       return result.affectedRows
     } finally {

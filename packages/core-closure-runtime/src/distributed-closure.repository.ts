@@ -86,7 +86,7 @@ export class DistributedClosureRepository {
           params.nodeType,
           params.ownerServerId,
           closureNodeDataJson,
-        ] as unknown[]
+        ]
       )
 
       const [rows] = await conn.execute<DistributedClosureRow[]>(
@@ -95,7 +95,7 @@ export class DistributedClosureRepository {
          FROM atc_distributed_closure
          WHERE closure_node_id = ?
          LIMIT 1`,
-        [params.closureNodeId] as unknown[]
+        [params.closureNodeId]
       )
       if (!rows[0]) throw new Error(`Distributed closure not found after upsert: ${params.closureNodeId}`)
       return mapRow(rows[0])
@@ -113,7 +113,7 @@ export class DistributedClosureRepository {
          FROM atc_distributed_closure
          WHERE closure_node_id = ?
          LIMIT 1`,
-        [closureNodeId] as unknown[]
+        [closureNodeId]
       )
       if (!rows[0]) return null
       return mapRow(rows[0])
@@ -137,7 +137,7 @@ export class DistributedClosureRepository {
            WHERE closure_node_id = ?
            LIMIT 1
            FOR UPDATE`,
-          [closureNodeId] as unknown[]
+          [closureNodeId]
         )
         if (!lockRows[0]) throw new DistributedClosureNotFoundError(closureNodeId)
 
@@ -145,7 +145,7 @@ export class DistributedClosureRepository {
           `UPDATE atc_distributed_closure
            SET status = ?, updated_at = NOW(3)
            WHERE closure_node_id = ?`,
-          [status, closureNodeId] as unknown[]
+          [status, closureNodeId]
         )
 
         const [rows] = await conn.execute<DistributedClosureRow[]>(
@@ -154,7 +154,7 @@ export class DistributedClosureRepository {
            FROM atc_distributed_closure
            WHERE closure_node_id = ?
            LIMIT 1`,
-          [closureNodeId] as unknown[]
+          [closureNodeId]
         )
         if (!rows[0]) throw new DistributedClosureNotFoundError(closureNodeId)
 
@@ -176,7 +176,7 @@ export class DistributedClosureRepository {
         `DELETE FROM atc_distributed_closure
          WHERE status IN ('degraded', 'failed')
            AND updated_at < DATE_SUB(NOW(3), INTERVAL ? MILLISECOND)`,
-        [thresholdMs] as unknown[]
+        [thresholdMs]
       )
       return result.affectedRows
     } finally {

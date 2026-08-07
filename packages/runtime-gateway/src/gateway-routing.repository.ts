@@ -44,7 +44,7 @@ export class GatewayRoutingRepository {
       try {
         await conn.execute<ResultSetHeader>(
           `INSERT INTO atc_gateway_routing (id, routing_id, routing_type, status, owner_server_id, routing_data, synced_at, created_at, updated_at) VALUES (?, ?, ?, 'active', ?, ?, NOW(3), NOW(3), NOW(3)) ON DUPLICATE KEY UPDATE routing_type = VALUES(routing_type), owner_server_id = VALUES(owner_server_id), routing_data = VALUES(routing_data), synced_at = NOW(3), updated_at = NOW(3)`,
-          [id, params.routingId, params.routingType, params.ownerServerId, routingDataJson] as unknown[]
+          [id, params.routingId, params.routingType, params.ownerServerId, routingDataJson]
         )
         const [rows] = await conn.execute<RoutingRow[]>(
           `SELECT id, routing_id, routing_type, status, owner_server_id, routing_data, synced_at, created_at, updated_at FROM atc_gateway_routing WHERE routing_id = ? LIMIT 1`,
@@ -81,7 +81,7 @@ export class GatewayRoutingRepository {
         if (!lockRows[0]) throw new GatewayRoutingNotFoundError(routingId)
         await conn.execute<ResultSetHeader>(
           `UPDATE atc_gateway_routing SET status = ?, updated_at = NOW(3) WHERE routing_id = ?`,
-          [status, routingId] as unknown[]
+          [status, routingId]
         )
         const [rows] = await conn.execute<RoutingRow[]>(
           `SELECT id, routing_id, routing_type, status, owner_server_id, routing_data, synced_at, created_at, updated_at FROM atc_gateway_routing WHERE routing_id = ? LIMIT 1`,

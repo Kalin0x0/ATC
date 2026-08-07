@@ -43,7 +43,7 @@ export class SurfaceProtectionRepository {
       try {
         await conn.execute<ResultSetHeader>(
           `INSERT INTO atc_surface_protection (id, protection_id, protection_type, status, owner_server_id, protection_nonce, protection_data, activated_at, created_at, updated_at) VALUES (?, ?, ?, 'pending', ?, ?, ?, NULL, NOW(3), NOW(3))`,
-          [id, protectionId, params.protectionType, params.ownerServerId, params.protectionNonce, JSON.stringify(params.protectionData ?? {})] as unknown[]
+          [id, protectionId, params.protectionType, params.ownerServerId, params.protectionNonce, JSON.stringify(params.protectionData ?? {})]
         )
       } catch (err) {
         if ((err as { code?: string }).code === 'ER_DUP_ENTRY') throw new DuplicateSurfaceProtectionError(params.protectionNonce)
@@ -83,12 +83,12 @@ export class SurfaceProtectionRepository {
         if (activatedAt !== undefined) {
           await conn.execute<ResultSetHeader>(
             `UPDATE atc_surface_protection SET status = ?, activated_at = ?, updated_at = NOW(3) WHERE id = ?`,
-            [status, activatedAt.toISOString().replace('T', ' ').replace('Z', ''), id] as unknown[]
+            [status, activatedAt.toISOString().replace('T', ' ').replace('Z', ''), id]
           )
         } else {
           await conn.execute<ResultSetHeader>(
             `UPDATE atc_surface_protection SET status = ?, updated_at = NOW(3) WHERE id = ?`,
-            [status, id] as unknown[]
+            [status, id]
           )
         }
         const [rows] = await conn.execute<ProtectionRow[]>(

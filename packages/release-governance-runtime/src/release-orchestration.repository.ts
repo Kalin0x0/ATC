@@ -86,7 +86,7 @@ export class ReleaseOrchestrationRepository {
           params.orchestrationType,
           params.ownerServerId,
           orchestrationDataJson,
-        ] as unknown[]
+        ]
       )
 
       const [rows] = await conn.execute<ReleaseOrchestrationRow[]>(
@@ -95,7 +95,7 @@ export class ReleaseOrchestrationRepository {
          FROM atc_release_orchestration
          WHERE orchestration_id = ?
          LIMIT 1`,
-        [params.orchestrationId] as unknown[]
+        [params.orchestrationId]
       )
       if (!rows[0]) throw new Error(`Release orchestration not found after upsert: ${params.orchestrationId}`)
       return mapRow(rows[0])
@@ -113,7 +113,7 @@ export class ReleaseOrchestrationRepository {
          FROM atc_release_orchestration
          WHERE orchestration_id = ?
          LIMIT 1`,
-        [orchestrationId] as unknown[]
+        [orchestrationId]
       )
       if (!rows[0]) return null
       return mapRow(rows[0])
@@ -137,7 +137,7 @@ export class ReleaseOrchestrationRepository {
            WHERE orchestration_id = ?
            LIMIT 1
            FOR UPDATE`,
-          [orchestrationId] as unknown[]
+          [orchestrationId]
         )
         if (!lockRows[0]) throw new ReleaseOrchestrationNotFoundError(orchestrationId)
 
@@ -145,7 +145,7 @@ export class ReleaseOrchestrationRepository {
           `UPDATE atc_release_orchestration
            SET status = ?, updated_at = NOW(3)
            WHERE orchestration_id = ?`,
-          [status, orchestrationId] as unknown[]
+          [status, orchestrationId]
         )
 
         const [rows] = await conn.execute<ReleaseOrchestrationRow[]>(
@@ -154,7 +154,7 @@ export class ReleaseOrchestrationRepository {
            FROM atc_release_orchestration
            WHERE orchestration_id = ?
            LIMIT 1`,
-          [orchestrationId] as unknown[]
+          [orchestrationId]
         )
         if (!rows[0]) throw new ReleaseOrchestrationNotFoundError(orchestrationId)
 
@@ -176,7 +176,7 @@ export class ReleaseOrchestrationRepository {
         `DELETE FROM atc_release_orchestration
          WHERE status IN ('failed')
            AND updated_at < DATE_SUB(NOW(3), INTERVAL ? MILLISECOND)`,
-        [thresholdMs] as unknown[]
+        [thresholdMs]
       )
       return result.affectedRows
     } finally {

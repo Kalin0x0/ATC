@@ -44,7 +44,7 @@ export class AccessMeshRepository {
       try {
         await conn.execute<ResultSetHeader>(
           `INSERT INTO atc_access_mesh (id, mesh_id, mesh_type, status, owner_server_id, mesh_data, synced_at, created_at, updated_at) VALUES (?, ?, ?, 'active', ?, ?, NOW(3), NOW(3), NOW(3)) ON DUPLICATE KEY UPDATE mesh_type = VALUES(mesh_type), owner_server_id = VALUES(owner_server_id), mesh_data = VALUES(mesh_data), synced_at = NOW(3), updated_at = NOW(3)`,
-          [id, params.meshId, params.meshType, params.ownerServerId, meshDataJson] as unknown[]
+          [id, params.meshId, params.meshType, params.ownerServerId, meshDataJson]
         )
         const [rows] = await conn.execute<MeshRow[]>(
           `SELECT id, mesh_id, mesh_type, status, owner_server_id, mesh_data, synced_at, created_at, updated_at FROM atc_access_mesh WHERE mesh_id = ? LIMIT 1`,
@@ -81,7 +81,7 @@ export class AccessMeshRepository {
         if (!lockRows[0]) throw new AccessMeshNotFoundError(meshId)
         await conn.execute<ResultSetHeader>(
           `UPDATE atc_access_mesh SET status = ?, updated_at = NOW(3) WHERE mesh_id = ?`,
-          [status, meshId] as unknown[]
+          [status, meshId]
         )
         const [rows] = await conn.execute<MeshRow[]>(
           `SELECT id, mesh_id, mesh_type, status, owner_server_id, mesh_data, synced_at, created_at, updated_at FROM atc_access_mesh WHERE mesh_id = ? LIMIT 1`,

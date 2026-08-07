@@ -35,7 +35,7 @@ export class CoreClosureAuditRepository {
         `INSERT INTO atc_core_closure_audit
            (id, entity_id, event_type, event_data, occurred_at)
          VALUES (?, ?, ?, ?, NOW(3))`,
-        [id, entityId, eventType, eventDataJson] as unknown[]
+        [id, entityId, eventType, eventDataJson]
       )
     } finally {
       conn.release()

@@ -85,7 +85,7 @@ export class DeterministicAuditRepository {
             params.ownerServerId,
             params.auditNonce,
             auditDataJson,
-          ] as unknown[]
+          ]
         )
       } catch (err) {
         if ((err as { code?: string }).code === 'ER_DUP_ENTRY') {
@@ -100,7 +100,7 @@ export class DeterministicAuditRepository {
          FROM atc_deterministic_audit
          WHERE id = ?
          LIMIT 1`,
-        [id] as unknown[]
+        [id]
       )
       if (!rows[0]) throw new Error(`Deterministic audit not found after insert: ${id}`)
       return mapRow(rows[0])
@@ -118,7 +118,7 @@ export class DeterministicAuditRepository {
          FROM atc_deterministic_audit
          WHERE id = ?
          LIMIT 1`,
-        [id] as unknown[]
+        [id]
       )
       if (!rows[0]) return null
       return mapRow(rows[0])
@@ -143,7 +143,7 @@ export class DeterministicAuditRepository {
            WHERE id = ?
            LIMIT 1
            FOR UPDATE`,
-          [id] as unknown[]
+          [id]
         )
         if (!lockRows[0]) throw new DeterministicAuditNotFoundError(id)
 
@@ -152,14 +152,14 @@ export class DeterministicAuditRepository {
             `UPDATE atc_deterministic_audit
              SET status = ?, completed_at = ?, updated_at = NOW(3)
              WHERE id = ?`,
-            [status, completedAt.toISOString().replace('T', ' ').replace('Z', ''), id] as unknown[]
+            [status, completedAt.toISOString().replace('T', ' ').replace('Z', ''), id]
           )
         } else {
           await conn.execute<ResultSetHeader>(
             `UPDATE atc_deterministic_audit
              SET status = ?, updated_at = NOW(3)
              WHERE id = ?`,
-            [status, id] as unknown[]
+            [status, id]
           )
         }
 
@@ -169,7 +169,7 @@ export class DeterministicAuditRepository {
            FROM atc_deterministic_audit
            WHERE id = ?
            LIMIT 1`,
-          [id] as unknown[]
+          [id]
         )
         if (!rows[0]) throw new DeterministicAuditNotFoundError(id)
 
@@ -191,7 +191,7 @@ export class DeterministicAuditRepository {
         `DELETE FROM atc_deterministic_audit
          WHERE status IN ('failed', 'archived')
            AND updated_at < DATE_SUB(NOW(3), INTERVAL ? MILLISECOND)`,
-        [thresholdMs] as unknown[]
+        [thresholdMs]
       )
       return result.affectedRows
     } finally {

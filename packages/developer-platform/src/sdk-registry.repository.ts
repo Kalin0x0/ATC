@@ -86,7 +86,7 @@ export class SdkRegistryRepository {
           params.sdkType,
           params.ownerServerId,
           sdkDataJson,
-        ] as unknown[]
+        ]
       )
 
       const [rows] = await conn.execute<SdkRegistryRow[]>(
@@ -95,7 +95,7 @@ export class SdkRegistryRepository {
          FROM atc_sdk_registry
          WHERE sdk_id = ?
          LIMIT 1`,
-        [params.sdkId] as unknown[]
+        [params.sdkId]
       )
       if (!rows[0]) throw new Error(`SDK registry not found after upsert: ${params.sdkId}`)
       return mapRow(rows[0])
@@ -113,7 +113,7 @@ export class SdkRegistryRepository {
          FROM atc_sdk_registry
          WHERE sdk_id = ?
          LIMIT 1`,
-        [sdkId] as unknown[]
+        [sdkId]
       )
       if (!rows[0]) return null
       return mapRow(rows[0])
@@ -134,7 +134,7 @@ export class SdkRegistryRepository {
            WHERE sdk_id = ?
            LIMIT 1
            FOR UPDATE`,
-          [sdkId] as unknown[]
+          [sdkId]
         )
         if (!lockRows[0]) throw new SdkRegistryNotFoundError(sdkId)
 
@@ -142,7 +142,7 @@ export class SdkRegistryRepository {
           `UPDATE atc_sdk_registry
            SET status = ?, updated_at = NOW(3)
            WHERE sdk_id = ?`,
-          [status, sdkId] as unknown[]
+          [status, sdkId]
         )
 
         const [rows] = await conn.execute<SdkRegistryRow[]>(
@@ -151,7 +151,7 @@ export class SdkRegistryRepository {
            FROM atc_sdk_registry
            WHERE sdk_id = ?
            LIMIT 1`,
-          [sdkId] as unknown[]
+          [sdkId]
         )
         if (!rows[0]) throw new SdkRegistryNotFoundError(sdkId)
 
@@ -173,7 +173,7 @@ export class SdkRegistryRepository {
         `DELETE FROM atc_sdk_registry
          WHERE status IN ('retired', 'failed')
            AND updated_at < DATE_SUB(NOW(3), INTERVAL ? MILLISECOND)`,
-        [thresholdMs] as unknown[]
+        [thresholdMs]
       )
       return result.affectedRows
     } finally {

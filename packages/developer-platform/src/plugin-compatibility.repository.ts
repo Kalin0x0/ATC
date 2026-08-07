@@ -85,7 +85,7 @@ export class PluginCompatibilityRepository {
             params.ownerServerId,
             params.compatibilityNonce,
             compatibilityDataJson,
-          ] as unknown[]
+          ]
         )
       } catch (err) {
         if ((err as { code?: string }).code === 'ER_DUP_ENTRY') {
@@ -100,7 +100,7 @@ export class PluginCompatibilityRepository {
          FROM atc_plugin_compatibility
          WHERE id = ?
          LIMIT 1`,
-        [id] as unknown[]
+        [id]
       )
       if (!rows[0]) throw new Error(`Plugin compatibility not found after insert: ${id}`)
       return mapRow(rows[0])
@@ -118,7 +118,7 @@ export class PluginCompatibilityRepository {
          FROM atc_plugin_compatibility
          WHERE id = ?
          LIMIT 1`,
-        [id] as unknown[]
+        [id]
       )
       if (!rows[0]) return null
       return mapRow(rows[0])
@@ -143,7 +143,7 @@ export class PluginCompatibilityRepository {
            WHERE id = ?
            LIMIT 1
            FOR UPDATE`,
-          [id] as unknown[]
+          [id]
         )
         if (!lockRows[0]) throw new PluginCompatibilityNotFoundError(id)
 
@@ -152,14 +152,14 @@ export class PluginCompatibilityRepository {
             `UPDATE atc_plugin_compatibility
              SET status = ?, validated_at = ?, updated_at = NOW(3)
              WHERE id = ?`,
-            [status, validatedAt.toISOString().replace('T', ' ').replace('Z', ''), id] as unknown[]
+            [status, validatedAt.toISOString().replace('T', ' ').replace('Z', ''), id]
           )
         } else {
           await conn.execute<ResultSetHeader>(
             `UPDATE atc_plugin_compatibility
              SET status = ?, updated_at = NOW(3)
              WHERE id = ?`,
-            [status, id] as unknown[]
+            [status, id]
           )
         }
 
@@ -169,7 +169,7 @@ export class PluginCompatibilityRepository {
            FROM atc_plugin_compatibility
            WHERE id = ?
            LIMIT 1`,
-          [id] as unknown[]
+          [id]
         )
         if (!rows[0]) throw new PluginCompatibilityNotFoundError(id)
 
@@ -191,7 +191,7 @@ export class PluginCompatibilityRepository {
         `DELETE FROM atc_plugin_compatibility
          WHERE status IN ('incompatible', 'failed')
            AND updated_at < DATE_SUB(NOW(3), INTERVAL ? MILLISECOND)`,
-        [thresholdMs] as unknown[]
+        [thresholdMs]
       )
       return result.affectedRows
     } finally {

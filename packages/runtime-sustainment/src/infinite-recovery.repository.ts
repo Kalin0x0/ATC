@@ -89,7 +89,7 @@ export class InfiniteRecoveryRepository {
           params.recoveryType,
           params.ownerServerId,
           recoveryDataJson,
-        ] as unknown[]
+        ]
       )
 
       const [rows] = await conn.execute<InfiniteRecoveryRow[]>(
@@ -98,7 +98,7 @@ export class InfiniteRecoveryRepository {
          FROM atc_infinite_recovery
          WHERE recovery_id = ?
          LIMIT 1`,
-        [params.recoveryId] as unknown[]
+        [params.recoveryId]
       )
       if (!rows[0]) throw new Error(`Infinite recovery not found after upsert: ${params.recoveryId}`)
       return mapRow(rows[0])
@@ -116,7 +116,7 @@ export class InfiniteRecoveryRepository {
          FROM atc_infinite_recovery
          WHERE recovery_id = ?
          LIMIT 1`,
-        [recoveryId] as unknown[]
+        [recoveryId]
       )
       if (!rows[0]) return null
       return mapRow(rows[0])
@@ -141,7 +141,7 @@ export class InfiniteRecoveryRepository {
            WHERE recovery_id = ?
            LIMIT 1
            FOR UPDATE`,
-          [recoveryId] as unknown[]
+          [recoveryId]
         )
         if (!lockRows[0]) throw new RecoveryNotFoundError(recoveryId)
 
@@ -150,14 +150,14 @@ export class InfiniteRecoveryRepository {
             `UPDATE atc_infinite_recovery
              SET status = ?, completed_at = ?, updated_at = NOW(3)
              WHERE recovery_id = ?`,
-            [status, completedAt.toISOString().replace('T', ' ').replace('Z', ''), recoveryId] as unknown[]
+            [status, completedAt.toISOString().replace('T', ' ').replace('Z', ''), recoveryId]
           )
         } else {
           await conn.execute<ResultSetHeader>(
             `UPDATE atc_infinite_recovery
              SET status = ?, updated_at = NOW(3)
              WHERE recovery_id = ?`,
-            [status, recoveryId] as unknown[]
+            [status, recoveryId]
           )
         }
 
@@ -167,7 +167,7 @@ export class InfiniteRecoveryRepository {
            FROM atc_infinite_recovery
            WHERE recovery_id = ?
            LIMIT 1`,
-          [recoveryId] as unknown[]
+          [recoveryId]
         )
         if (!rows[0]) throw new RecoveryNotFoundError(recoveryId)
 
@@ -189,7 +189,7 @@ export class InfiniteRecoveryRepository {
         `DELETE FROM atc_infinite_recovery
          WHERE status IN ('completed', 'failed')
            AND updated_at < DATE_SUB(NOW(3), INTERVAL ? MILLISECOND)`,
-        [thresholdMs] as unknown[]
+        [thresholdMs]
       )
       return result.affectedRows
     } finally {

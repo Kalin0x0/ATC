@@ -10,7 +10,7 @@ export class GatewayAuditRepository {
     try {
       await conn.execute<ResultSetHeader>(
         `INSERT INTO atc_gateway_audit (id, gateway_id, event_type, event_data, occurred_at) VALUES (?, ?, ?, ?, NOW(3))`,
-        [generateId(), gatewayId, eventType, JSON.stringify(eventData)] as unknown[]
+        [generateId(), gatewayId, eventType, JSON.stringify(eventData)]
       )
     } finally { conn.release() }
   }

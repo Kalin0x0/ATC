@@ -43,7 +43,7 @@ export class RuntimeExposureRepository {
       try {
         await conn.execute<ResultSetHeader>(
           `INSERT INTO atc_runtime_exposure (id, exposure_id, exposure_type, status, owner_server_id, exposure_nonce, exposure_data, exposed_at, created_at, updated_at) VALUES (?, ?, ?, 'pending', ?, ?, ?, NULL, NOW(3), NOW(3))`,
-          [id, exposureId, params.exposureType, params.ownerServerId, params.exposureNonce, JSON.stringify(params.exposureData ?? {})] as unknown[]
+          [id, exposureId, params.exposureType, params.ownerServerId, params.exposureNonce, JSON.stringify(params.exposureData ?? {})]
         )
       } catch (err) {
         if ((err as { code?: string }).code === 'ER_DUP_ENTRY') throw new DuplicateExposureError(params.exposureNonce)
@@ -83,12 +83,12 @@ export class RuntimeExposureRepository {
         if (exposedAt !== undefined) {
           await conn.execute<ResultSetHeader>(
             `UPDATE atc_runtime_exposure SET status = ?, exposed_at = ?, updated_at = NOW(3) WHERE id = ?`,
-            [status, exposedAt.toISOString().replace('T', ' ').replace('Z', ''), id] as unknown[]
+            [status, exposedAt.toISOString().replace('T', ' ').replace('Z', ''), id]
           )
         } else {
           await conn.execute<ResultSetHeader>(
             `UPDATE atc_runtime_exposure SET status = ?, updated_at = NOW(3) WHERE id = ?`,
-            [status, id] as unknown[]
+            [status, id]
           )
         }
         const [rows] = await conn.execute<ExposureRow[]>(

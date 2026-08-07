@@ -85,7 +85,7 @@ export class DeveloperPlatformRepository {
             params.ownerServerId,
             params.platformNonce,
             platformDataJson,
-          ] as unknown[]
+          ]
         )
       } catch (err) {
         if ((err as { code?: string }).code === 'ER_DUP_ENTRY') {
@@ -100,7 +100,7 @@ export class DeveloperPlatformRepository {
          FROM atc_developer_platform
          WHERE id = ?
          LIMIT 1`,
-        [id] as unknown[]
+        [id]
       )
       if (!rows[0]) throw new Error(`Developer platform not found after insert: ${id}`)
       return mapRow(rows[0])
@@ -118,7 +118,7 @@ export class DeveloperPlatformRepository {
          FROM atc_developer_platform
          WHERE id = ?
          LIMIT 1`,
-        [id] as unknown[]
+        [id]
       )
       if (!rows[0]) return null
       return mapRow(rows[0])
@@ -143,7 +143,7 @@ export class DeveloperPlatformRepository {
            WHERE id = ?
            LIMIT 1
            FOR UPDATE`,
-          [id] as unknown[]
+          [id]
         )
         if (!lockRows[0]) throw new DeveloperPlatformNotFoundError(id)
 
@@ -152,14 +152,14 @@ export class DeveloperPlatformRepository {
             `UPDATE atc_developer_platform
              SET status = ?, activated_at = ?, updated_at = NOW(3)
              WHERE id = ?`,
-            [status, activatedAt.toISOString().replace('T', ' ').replace('Z', ''), id] as unknown[]
+            [status, activatedAt.toISOString().replace('T', ' ').replace('Z', ''), id]
           )
         } else {
           await conn.execute<ResultSetHeader>(
             `UPDATE atc_developer_platform
              SET status = ?, updated_at = NOW(3)
              WHERE id = ?`,
-            [status, id] as unknown[]
+            [status, id]
           )
         }
 
@@ -169,7 +169,7 @@ export class DeveloperPlatformRepository {
            FROM atc_developer_platform
            WHERE id = ?
            LIMIT 1`,
-          [id] as unknown[]
+          [id]
         )
         if (!rows[0]) throw new DeveloperPlatformNotFoundError(id)
 
@@ -191,7 +191,7 @@ export class DeveloperPlatformRepository {
         `DELETE FROM atc_developer_platform
          WHERE status IN ('deprecated', 'archived', 'failed')
            AND updated_at < DATE_SUB(NOW(3), INTERVAL ? MILLISECOND)`,
-        [thresholdMs] as unknown[]
+        [thresholdMs]
       )
       return result.affectedRows
     } finally {

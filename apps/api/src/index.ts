@@ -47,6 +47,7 @@ import { AtcTaskRuntime, RedisTaskQueueStorage } from '@atc/task-runtime'
 import { AtcEventStore, RedisEventStoreStorage } from '@atc/event-store'
 import { AtcRuntimeNodeService } from '@atc/runtime-node'
 import type { AtcStatusEffect, AtcWallet } from '@atc/shared-types'
+import { buildRuntimeServices } from './wiring.js'
 import { config } from './config.js'
 import { logger } from './logger.js'
 import { buildServer } from './server.js'
@@ -261,6 +262,10 @@ async function main() {
   const craftingRecipeService = new CraftingRecipeService(craftingRecipeRepo, eventBus)
 
   const ctx = {
+    // Every runtime service, constructed from the built type declarations —
+    // see wiring.ts. Spread first so the hand-written entries below win where
+    // both name the same field.
+    ...buildRuntimeServices({ pool, redis, eventBus, telemetry }),
     pool,
     redis,
     accounts: new AccountRepository(pool),

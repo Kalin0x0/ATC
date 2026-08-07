@@ -88,7 +88,7 @@ export class ProductionFreezeRepository {
             params.freezeType,
             params.ownerServerId,
             freezeDataJson,
-          ] as unknown[]
+          ]
         )
 
         const [rows] = await conn.execute<ProductionFreezeRow[]>(
@@ -97,7 +97,7 @@ export class ProductionFreezeRepository {
            FROM atc_production_freeze
            WHERE freeze_id = ?
            LIMIT 1`,
-          [params.freezeId] as unknown[]
+          [params.freezeId]
         )
         if (!rows[0]) throw new Error(`Production freeze not found after upsert: ${params.freezeId}`)
 
@@ -121,7 +121,7 @@ export class ProductionFreezeRepository {
          FROM atc_production_freeze
          WHERE freeze_id = ?
          LIMIT 1`,
-        [freezeId] as unknown[]
+        [freezeId]
       )
       if (!rows[0]) return null
       return mapRow(rows[0])
@@ -145,7 +145,7 @@ export class ProductionFreezeRepository {
            WHERE freeze_id = ?
            LIMIT 1
            FOR UPDATE`,
-          [freezeId] as unknown[]
+          [freezeId]
         )
         if (!lockRows[0]) throw new ProductionFreezeNotFoundError(freezeId)
 
@@ -153,7 +153,7 @@ export class ProductionFreezeRepository {
           `UPDATE atc_production_freeze
            SET status = ?, updated_at = NOW(3)
            WHERE freeze_id = ?`,
-          [status, freezeId] as unknown[]
+          [status, freezeId]
         )
 
         const [rows] = await conn.execute<ProductionFreezeRow[]>(
@@ -162,7 +162,7 @@ export class ProductionFreezeRepository {
            FROM atc_production_freeze
            WHERE freeze_id = ?
            LIMIT 1`,
-          [freezeId] as unknown[]
+          [freezeId]
         )
         if (!rows[0]) throw new ProductionFreezeNotFoundError(freezeId)
 
@@ -184,7 +184,7 @@ export class ProductionFreezeRepository {
         `DELETE FROM atc_production_freeze
          WHERE status IN ('failed')
            AND updated_at < DATE_SUB(NOW(3), INTERVAL ? MILLISECOND)`,
-        [thresholdMs] as unknown[]
+        [thresholdMs]
       )
       return result.affectedRows
     } finally {

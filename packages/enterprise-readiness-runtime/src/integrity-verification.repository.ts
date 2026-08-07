@@ -85,7 +85,7 @@ export class IntegrityVerificationRepository {
             params.ownerServerId,
             params.verificationNonce,
             verificationDataJson,
-          ] as unknown[]
+          ]
         )
       } catch (err) {
         if ((err as { code?: string }).code === 'ER_DUP_ENTRY') {
@@ -100,7 +100,7 @@ export class IntegrityVerificationRepository {
          FROM atc_runtime_integrity_verification
          WHERE id = ?
          LIMIT 1`,
-        [id] as unknown[]
+        [id]
       )
       if (!rows[0]) throw new Error(`Integrity verification not found after insert: ${id}`)
       return mapRow(rows[0])
@@ -118,7 +118,7 @@ export class IntegrityVerificationRepository {
          FROM atc_runtime_integrity_verification
          WHERE id = ?
          LIMIT 1`,
-        [id] as unknown[]
+        [id]
       )
       if (!rows[0]) return null
       return mapRow(rows[0])
@@ -143,7 +143,7 @@ export class IntegrityVerificationRepository {
            WHERE id = ?
            LIMIT 1
            FOR UPDATE`,
-          [id] as unknown[]
+          [id]
         )
         if (!lockRows[0]) throw new IntegrityVerificationNotFoundError(id)
 
@@ -152,14 +152,14 @@ export class IntegrityVerificationRepository {
             `UPDATE atc_runtime_integrity_verification
              SET status = ?, verified_at = ?, updated_at = NOW(3)
              WHERE id = ?`,
-            [status, verifiedAt.toISOString().replace('T', ' ').replace('Z', ''), id] as unknown[]
+            [status, verifiedAt.toISOString().replace('T', ' ').replace('Z', ''), id]
           )
         } else {
           await conn.execute<ResultSetHeader>(
             `UPDATE atc_runtime_integrity_verification
              SET status = ?, updated_at = NOW(3)
              WHERE id = ?`,
-            [status, id] as unknown[]
+            [status, id]
           )
         }
 
@@ -169,7 +169,7 @@ export class IntegrityVerificationRepository {
            FROM atc_runtime_integrity_verification
            WHERE id = ?
            LIMIT 1`,
-          [id] as unknown[]
+          [id]
         )
         if (!rows[0]) throw new IntegrityVerificationNotFoundError(id)
 
@@ -191,7 +191,7 @@ export class IntegrityVerificationRepository {
         `DELETE FROM atc_runtime_integrity_verification
          WHERE status IN ('failed', 'corrupted')
            AND updated_at < DATE_SUB(NOW(3), INTERVAL ? MILLISECOND)`,
-        [thresholdMs] as unknown[]
+        [thresholdMs]
       )
       return result.affectedRows
     } finally {

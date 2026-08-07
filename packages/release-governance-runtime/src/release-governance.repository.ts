@@ -85,7 +85,7 @@ export class ReleaseGovernanceRepository {
             params.ownerServerId,
             params.governanceNonce,
             governanceDataJson,
-          ] as unknown[]
+          ]
         )
       } catch (err) {
         if ((err as { code?: string }).code === 'ER_DUP_ENTRY') {
@@ -100,7 +100,7 @@ export class ReleaseGovernanceRepository {
          FROM atc_release_governance
          WHERE id = ?
          LIMIT 1`,
-        [id] as unknown[]
+        [id]
       )
       if (!rows[0]) throw new Error(`Release governance not found after insert: ${id}`)
       return mapRow(rows[0])
@@ -118,7 +118,7 @@ export class ReleaseGovernanceRepository {
          FROM atc_release_governance
          WHERE id = ?
          LIMIT 1`,
-        [id] as unknown[]
+        [id]
       )
       if (!rows[0]) return null
       return mapRow(rows[0])
@@ -143,7 +143,7 @@ export class ReleaseGovernanceRepository {
            WHERE id = ?
            LIMIT 1
            FOR UPDATE`,
-          [id] as unknown[]
+          [id]
         )
         if (!lockRows[0]) throw new ReleaseGovernanceNotFoundError(id)
 
@@ -152,14 +152,14 @@ export class ReleaseGovernanceRepository {
             `UPDATE atc_release_governance
              SET status = ?, started_at = ?, updated_at = NOW(3)
              WHERE id = ?`,
-            [status, startedAt.toISOString().replace('T', ' ').replace('Z', ''), id] as unknown[]
+            [status, startedAt.toISOString().replace('T', ' ').replace('Z', ''), id]
           )
         } else {
           await conn.execute<ResultSetHeader>(
             `UPDATE atc_release_governance
              SET status = ?, updated_at = NOW(3)
              WHERE id = ?`,
-            [status, id] as unknown[]
+            [status, id]
           )
         }
 
@@ -169,7 +169,7 @@ export class ReleaseGovernanceRepository {
            FROM atc_release_governance
            WHERE id = ?
            LIMIT 1`,
-          [id] as unknown[]
+          [id]
         )
         if (!rows[0]) throw new ReleaseGovernanceNotFoundError(id)
 
@@ -191,7 +191,7 @@ export class ReleaseGovernanceRepository {
         `DELETE FROM atc_release_governance
          WHERE status IN ('rejected', 'failed')
            AND updated_at < DATE_SUB(NOW(3), INTERVAL ? MILLISECOND)`,
-        [thresholdMs] as unknown[]
+        [thresholdMs]
       )
       return result.affectedRows
     } finally {

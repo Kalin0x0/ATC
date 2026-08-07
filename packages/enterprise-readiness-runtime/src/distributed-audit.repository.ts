@@ -86,7 +86,7 @@ export class DistributedAuditRepository {
           params.nodeType,
           params.ownerServerId,
           nodeDataJson,
-        ] as unknown[]
+        ]
       )
 
       const [rows] = await conn.execute<DistributedAuditRow[]>(
@@ -95,7 +95,7 @@ export class DistributedAuditRepository {
          FROM atc_distributed_audit
          WHERE audit_node_id = ?
          LIMIT 1`,
-        [params.auditNodeId] as unknown[]
+        [params.auditNodeId]
       )
       if (!rows[0]) throw new Error(`Distributed audit not found after upsert: ${params.auditNodeId}`)
       return mapRow(rows[0])
@@ -113,7 +113,7 @@ export class DistributedAuditRepository {
          FROM atc_distributed_audit
          WHERE audit_node_id = ?
          LIMIT 1`,
-        [auditNodeId] as unknown[]
+        [auditNodeId]
       )
       if (!rows[0]) return null
       return mapRow(rows[0])
@@ -137,7 +137,7 @@ export class DistributedAuditRepository {
            WHERE audit_node_id = ?
            LIMIT 1
            FOR UPDATE`,
-          [auditNodeId] as unknown[]
+          [auditNodeId]
         )
         if (!lockRows[0]) throw new DistributedAuditNotFoundError(auditNodeId)
 
@@ -145,7 +145,7 @@ export class DistributedAuditRepository {
           `UPDATE atc_distributed_audit
            SET status = ?, updated_at = NOW(3)
            WHERE audit_node_id = ?`,
-          [status, auditNodeId] as unknown[]
+          [status, auditNodeId]
         )
 
         const [rows] = await conn.execute<DistributedAuditRow[]>(
@@ -154,7 +154,7 @@ export class DistributedAuditRepository {
            FROM atc_distributed_audit
            WHERE audit_node_id = ?
            LIMIT 1`,
-          [auditNodeId] as unknown[]
+          [auditNodeId]
         )
         if (!rows[0]) throw new DistributedAuditNotFoundError(auditNodeId)
 
@@ -176,7 +176,7 @@ export class DistributedAuditRepository {
         `DELETE FROM atc_distributed_audit
          WHERE status IN ('degraded', 'failed')
            AND updated_at < DATE_SUB(NOW(3), INTERVAL ? MILLISECOND)`,
-        [thresholdMs] as unknown[]
+        [thresholdMs]
       )
       return result.affectedRows
     } finally {

@@ -43,7 +43,7 @@ export class RuntimeGatewayRepository {
       try {
         await conn.execute<ResultSetHeader>(
           `INSERT INTO atc_runtime_gateway (id, gateway_id, gateway_type, status, owner_server_id, gateway_nonce, gateway_data, activated_at, created_at, updated_at) VALUES (?, ?, ?, 'pending', ?, ?, ?, NULL, NOW(3), NOW(3))`,
-          [id, gatewayId, params.gatewayType, params.ownerServerId, params.gatewayNonce, JSON.stringify(params.gatewayData ?? {})] as unknown[]
+          [id, gatewayId, params.gatewayType, params.ownerServerId, params.gatewayNonce, JSON.stringify(params.gatewayData ?? {})]
         )
       } catch (err) {
         if ((err as { code?: string }).code === 'ER_DUP_ENTRY') throw new DuplicateGatewayError(params.gatewayNonce)
@@ -83,12 +83,12 @@ export class RuntimeGatewayRepository {
         if (activatedAt !== undefined) {
           await conn.execute<ResultSetHeader>(
             `UPDATE atc_runtime_gateway SET status = ?, activated_at = ?, updated_at = NOW(3) WHERE id = ?`,
-            [status, activatedAt.toISOString().replace('T', ' ').replace('Z', ''), id] as unknown[]
+            [status, activatedAt.toISOString().replace('T', ' ').replace('Z', ''), id]
           )
         } else {
           await conn.execute<ResultSetHeader>(
             `UPDATE atc_runtime_gateway SET status = ?, updated_at = NOW(3) WHERE id = ?`,
-            [status, id] as unknown[]
+            [status, id]
           )
         }
         const [rows] = await conn.execute<GatewayRow[]>(

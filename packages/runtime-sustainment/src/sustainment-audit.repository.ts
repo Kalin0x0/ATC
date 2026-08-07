@@ -35,7 +35,7 @@ export class SustainmentAuditRepository {
         `INSERT INTO atc_sustainment_audit
            (id, sustainment_id, event_type, event_data, occurred_at)
          VALUES (?, ?, ?, ?, NOW(3))`,
-        [id, sustainmentId, eventType, eventDataJson] as unknown[]
+        [id, sustainmentId, eventType, eventDataJson]
       )
     } finally {
       conn.release()

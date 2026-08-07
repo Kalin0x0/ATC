@@ -85,7 +85,7 @@ export class AutonomousMaintenanceRepository {
             params.ownerServerId,
             params.maintenanceNonce,
             maintenanceDataJson,
-          ] as unknown[]
+          ]
         )
       } catch (err) {
         if ((err as { code?: string }).code === 'ER_DUP_ENTRY') {
@@ -100,7 +100,7 @@ export class AutonomousMaintenanceRepository {
          FROM atc_autonomous_maintenance
          WHERE id = ?
          LIMIT 1`,
-        [id] as unknown[]
+        [id]
       )
       if (!rows[0]) throw new Error(`Autonomous maintenance not found after insert: ${id}`)
       return mapRow(rows[0])
@@ -118,7 +118,7 @@ export class AutonomousMaintenanceRepository {
          FROM atc_autonomous_maintenance
          WHERE id = ?
          LIMIT 1`,
-        [id] as unknown[]
+        [id]
       )
       if (!rows[0]) return null
       return mapRow(rows[0])
@@ -143,7 +143,7 @@ export class AutonomousMaintenanceRepository {
            WHERE id = ?
            LIMIT 1
            FOR UPDATE`,
-          [id] as unknown[]
+          [id]
         )
         if (!lockRows[0]) throw new MaintenanceNotFoundError(id)
 
@@ -152,14 +152,14 @@ export class AutonomousMaintenanceRepository {
             `UPDATE atc_autonomous_maintenance
              SET status = ?, completed_at = ?, updated_at = NOW(3)
              WHERE id = ?`,
-            [status, completedAt.toISOString().replace('T', ' ').replace('Z', ''), id] as unknown[]
+            [status, completedAt.toISOString().replace('T', ' ').replace('Z', ''), id]
           )
         } else {
           await conn.execute<ResultSetHeader>(
             `UPDATE atc_autonomous_maintenance
              SET status = ?, updated_at = NOW(3)
              WHERE id = ?`,
-            [status, id] as unknown[]
+            [status, id]
           )
         }
 
@@ -169,7 +169,7 @@ export class AutonomousMaintenanceRepository {
            FROM atc_autonomous_maintenance
            WHERE id = ?
            LIMIT 1`,
-          [id] as unknown[]
+          [id]
         )
         if (!rows[0]) throw new MaintenanceNotFoundError(id)
 
@@ -191,7 +191,7 @@ export class AutonomousMaintenanceRepository {
         `DELETE FROM atc_autonomous_maintenance
          WHERE status IN ('completed', 'failed', 'skipped')
            AND updated_at < DATE_SUB(NOW(3), INTERVAL ? MILLISECOND)`,
-        [thresholdMs] as unknown[]
+        [thresholdMs]
       )
       return result.affectedRows
     } finally {
