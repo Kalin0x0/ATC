@@ -20,6 +20,83 @@ interface MigrationRow extends RowDataPacket {
   applied_at: Date
 }
 
+/**
+ * Split a migration file into statements.
+ *
+ * Not `sql.split(';')`, which was what stood here: a semicolon inside a comment
+ * or a string literal cut the statement it sat in, and the halves were then
+ * executed as if they were whole. Eight of the migrations in this directory have
+ * one in a comment — plain English punctuation — and each of them failed with a
+ * syntax error pointing at the comment line, which is a confusing way to be told
+ * that the splitter is wrong.
+ *
+ * So comments are removed first, quoting respected, and only the semicolons that
+ * really terminate a statement are treated as separators.
+ */
+export function splitSqlStatements(sql: string): string[] {
+  const statements: string[] = []
+  let current = ''
+  let i = 0
+
+  while (i < sql.length) {
+    const ch = sql[i] as string
+    const next = sql[i + 1]
+
+    // Line comment: -- to end of line, and # to end of line (MySQL accepts both).
+    if ((ch === '-' && next === '-') || ch === '#') {
+      while (i < sql.length && sql[i] !== '\n') i++
+      continue
+    }
+
+    // Block comment. /*! ... */ is an executable hint, not a comment, so it is
+    // kept — stripping it would silently drop whatever it guards.
+    if (ch === '/' && next === '*' && sql[i + 2] !== '!') {
+      i += 2
+      while (i < sql.length && !(sql[i] === '*' && sql[i + 1] === '/')) i++
+      i += 2
+      continue
+    }
+
+    // Quoted text, including backtick identifiers. Copied through verbatim so a
+    // semicolon or a comment marker inside one is never interpreted.
+    if (ch === "'" || ch === '"' || ch === '`') {
+      const quote = ch
+      current += ch
+      i++
+      while (i < sql.length) {
+        const c = sql[i] as string
+        current += c
+        // Backslash escapes apply inside ' and " but not inside backticks.
+        if (c === '\\' && quote !== '`' && i + 1 < sql.length) {
+          current += sql[i + 1] as string
+          i += 2
+          continue
+        }
+        i++
+        if (c === quote) {
+          // A doubled quote is an escaped quote, not the end of the literal.
+          if (sql[i] === quote) { current += quote; i++; continue }
+          break
+        }
+      }
+      continue
+    }
+
+    if (ch === ';') {
+      statements.push(current)
+      current = ''
+      i++
+      continue
+    }
+
+    current += ch
+    i++
+  }
+
+  statements.push(current)
+  return statements.map((s) => s.trim()).filter((s) => s.length > 0)
+}
+
 export async function runMigrations(pool: DbPool): Promise<void> {
   const conn = await pool.getConnection()
   try {
@@ -38,15 +115,14 @@ export async function runMigrations(pool: DbPool): Promise<void> {
       if (applied.has(file)) continue
 
       const sql = await readFile(join(MIGRATIONS_DIR, file), 'utf-8')
-      const statements = sql
-        .split(';')
-        .map((s) => s.trim())
-        .filter((s) => s.length > 0)
+      const statements = splitSqlStatements(sql)
 
       await conn.beginTransaction()
       try {
         for (const statement of statements) {
-          await conn.execute(statement)
+          // query, not execute: these are DDL with no placeholders, and the
+          // prepared-statement protocol refuses some of it outright.
+          await conn.query(statement)
         }
         await conn.execute('INSERT INTO atc_migrations (filename) VALUES (?)', [file])
         await conn.commit()

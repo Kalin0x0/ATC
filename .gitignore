@@ -55,7 +55,11 @@ desktop.ini
 
 # FiveM
 *.fxdl
-cache/
+# The server's runtime cache directory, anchored to the repository root.
+# Unanchored, `cache/` matches a directory of that name at any depth — which
+# silently swallowed packages/cache, so @atc/cache was never committed and the
+# API could not build. Add a path here if you run a server from a subdirectory.
+/cache/
 
 # Database
 *.sql.bak
