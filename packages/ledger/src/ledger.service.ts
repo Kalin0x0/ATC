@@ -320,7 +320,7 @@ export class LedgerService {
       )
       const total = countRows[0]?.total ?? 0
 
-      const [journalRows] = await conn.execute<JournalRow[]>(
+      const [journalRows] = await conn.query<JournalRow[]>(
         `SELECT * FROM atc_financial_journals ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
         [...filterArgs, limit, offset],
       )

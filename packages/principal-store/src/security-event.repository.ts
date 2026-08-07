@@ -113,7 +113,7 @@ export class SecurityEventRepository {
       )
       const total = countRows[0]?.total ?? 0
 
-      const [rows] = await conn.execute<SecurityEventRow[]>(
+      const [rows] = await conn.query<SecurityEventRow[]>(
         `SELECT * FROM atc_security_events ${where}
          ORDER BY created_at DESC LIMIT ? OFFSET ?`,
         [...filterArgs, limit, offset],

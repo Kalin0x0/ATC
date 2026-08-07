@@ -386,7 +386,7 @@ export class ItemDefinitionRepository {
     }
 
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
-    const [rows] = await this.pool.execute<ItemDefinitionRow[]>(
+    const [rows] = await this.pool.query<ItemDefinitionRow[]>(
       `SELECT * FROM atc_item_definitions ${where} ORDER BY sort_order ASC, id ASC LIMIT ? OFFSET ?`,
       [...values, limit, offset],
     )

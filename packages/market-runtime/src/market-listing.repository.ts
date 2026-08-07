@@ -209,7 +209,7 @@ export class MarketListingRepository {
   async listActive(limit: number, offset: number): Promise<AtcMarketListing[]> {
     const conn = await this.pool.getConnection()
     try {
-      const [rows] = await conn.execute<MarketListingRow[]>(
+      const [rows] = await conn.query<MarketListingRow[]>(
         `SELECT * FROM atc_market_listings
          WHERE status = 'active' AND expires_at > NOW()
          ORDER BY created_at DESC

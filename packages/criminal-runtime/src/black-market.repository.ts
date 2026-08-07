@@ -92,7 +92,7 @@ export class BlackMarketRepository {
   async listBySeller(principalId: string, limit = 50): Promise<AtcBlackMarketTransaction[]> {
     const conn = await this.pool.getConnection()
     try {
-      const [rows] = await conn.execute<BlackMarketRow[]>(
+      const [rows] = await conn.query<BlackMarketRow[]>(
         `SELECT * FROM atc_black_market_transactions
          WHERE seller_principal_id = ?
          ORDER BY created_at DESC
@@ -108,7 +108,7 @@ export class BlackMarketRepository {
   async listByBuyer(principalId: string, limit = 50): Promise<AtcBlackMarketTransaction[]> {
     const conn = await this.pool.getConnection()
     try {
-      const [rows] = await conn.execute<BlackMarketRow[]>(
+      const [rows] = await conn.query<BlackMarketRow[]>(
         `SELECT * FROM atc_black_market_transactions
          WHERE buyer_principal_id = ?
          ORDER BY created_at DESC

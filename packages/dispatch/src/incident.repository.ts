@@ -239,7 +239,7 @@ export class IncidentRepository {
         `SELECT COUNT(*) AS total FROM atc_incidents ${where}`, args,
       )
       const total = countRows[0]?.total ?? 0
-      const [rows] = await conn.execute<IncidentRow[]>(
+      const [rows] = await conn.query<IncidentRow[]>(
         `SELECT * FROM atc_incidents ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
         [...args, limit, offset],
       )

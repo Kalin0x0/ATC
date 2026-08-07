@@ -216,7 +216,7 @@ export class InvoiceRepository {
       )
       const total = countRows[0]?.total ?? 0
 
-      const [rows] = await conn.execute<InvoiceRow[]>(
+      const [rows] = await conn.query<InvoiceRow[]>(
         `SELECT * FROM atc_invoices ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
         [...filterArgs, limit, offset],
       )

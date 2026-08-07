@@ -198,7 +198,7 @@ export class RelationshipRepository {
       )
       const total = countRows[0]?.total ?? 0
 
-      const [rows] = await conn.execute<EdgeRowWithRefs[]>(
+      const [rows] = await conn.query<EdgeRowWithRefs[]>(
         `${SELECT_EDGE_WITH_REFS} ${where} ORDER BY r.observed_at DESC, r.id ASC LIMIT ? OFFSET ?`,
         [...args, limit, offset],
       )
@@ -233,13 +233,13 @@ export class RelationshipRepository {
 
     const conn = await this.pool.getConnection()
     try {
-      const [outbound] = await conn.execute<EdgeRowWithRefs[]>(
+      const [outbound] = await conn.query<EdgeRowWithRefs[]>(
         `${SELECT_EDGE_WITH_REFS}
          WHERE r.from_entity_id IN (${placeholders})${endedClause}
          ORDER BY r.observed_at DESC LIMIT ?`,
         [...entityIds, totalLimit],
       )
-      const [inbound] = await conn.execute<EdgeRowWithRefs[]>(
+      const [inbound] = await conn.query<EdgeRowWithRefs[]>(
         `${SELECT_EDGE_WITH_REFS}
          WHERE r.to_entity_id IN (${placeholders})${endedClause}
          ORDER BY r.observed_at DESC LIMIT ?`,

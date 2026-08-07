@@ -84,7 +84,7 @@ export class InfluenceHistoryRepository {
   ): Promise<AtcInfluenceHistory[]> {
     const conn = await this.pool.getConnection()
     try {
-      const [rows] = await conn.execute<InfluenceHistoryRow[]>(
+      const [rows] = await conn.query<InfluenceHistoryRow[]>(
         'SELECT * FROM atc_influence_history WHERE principal_id = ? ORDER BY created_at DESC LIMIT ?',
         [principalId, limit],
       )
@@ -101,7 +101,7 @@ export class InfluenceHistoryRepository {
   ): Promise<AtcInfluenceHistory[]> {
     const conn = await this.pool.getConnection()
     try {
-      const [rows] = await conn.execute<InfluenceHistoryRow[]>(
+      const [rows] = await conn.query<InfluenceHistoryRow[]>(
         'SELECT * FROM atc_influence_history WHERE principal_id = ? AND faction_id = ? ORDER BY created_at DESC LIMIT ?',
         [principalId, factionId, limit],
       )

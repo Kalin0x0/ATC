@@ -11,12 +11,19 @@ import type { PrincipalStorePool } from '@atc/principal-store'
 
 type MockConn = {
   execute: ReturnType<typeof vi.fn>
+  query: ReturnType<typeof vi.fn>
   release: ReturnType<typeof vi.fn>
 }
 
 function makePool(conn: Partial<MockConn> = {}): PrincipalStorePool {
+  // query and execute share one mock deliberately. Paginated reads go through
+  // query — MySQL 8 rejects a bound LIMIT over the prepared-statement protocol
+  // — while writes still use execute, and a caller passing `{ execute }` means
+  // "intercept the statement", not "intercept one of the two protocols".
+  const run = conn.execute ?? conn.query ?? vi.fn().mockResolvedValue([[], {}])
   const mockConn: MockConn = {
-    execute: conn.execute ?? vi.fn().mockResolvedValue([[],{}]),
+    execute: run,
+    query: run,
     release: conn.release ?? vi.fn(),
   }
   return {

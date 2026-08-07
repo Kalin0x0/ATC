@@ -65,7 +65,7 @@ export class NpcCleanupRepository {
     const conn = await this.pool.getConnection()
     try {
       const effectiveLimit = limit ?? 100
-      const [rows] = await conn.execute<NpcCleanupRow[]>(
+      const [rows] = await conn.query<NpcCleanupRow[]>(
         `SELECT * FROM atc_npc_cleanup
          ORDER BY cleaned_at DESC
          LIMIT ?`,

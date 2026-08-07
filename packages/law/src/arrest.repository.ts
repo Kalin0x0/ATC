@@ -121,7 +121,7 @@ export class ArrestRepository {
         `SELECT COUNT(*) AS total FROM atc_arrest_records ${where}`, args,
       )
       const total = countRows[0]?.total ?? 0
-      const [rows] = await conn.execute<ArrestRow[]>(
+      const [rows] = await conn.query<ArrestRow[]>(
         `SELECT * FROM atc_arrest_records ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
         [...args, limit, offset],
       )

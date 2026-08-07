@@ -136,7 +136,7 @@ export class AccountRepository {
       )
       const total = countRows[0]?.total ?? 0
 
-      const [rows] = await conn.execute<AccountRow[]>(
+      const [rows] = await conn.query<AccountRow[]>(
         `SELECT * FROM atc_financial_accounts ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
         [...filterArgs, limit, offset],
       )

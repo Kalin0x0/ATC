@@ -174,7 +174,7 @@ export class PrincipalRepository {
       )
       const total = countRows[0]?.total ?? 0
 
-      const [rows] = await conn.execute<PrincipalRow[]>(
+      const [rows] = await conn.query<PrincipalRow[]>(
         `SELECT * FROM atc_principals ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
         [...filterArgs, limit, offset],
       )

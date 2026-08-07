@@ -21,6 +21,11 @@ function makeConn(overrides: Record<string, unknown> = {}) {
 function makePool(executeFn: ReturnType<typeof vi.fn>, conn?: ReturnType<typeof makeConn>) {
   return {
     execute: executeFn,
+    // query is the same mock: listCatalog goes through it, because MySQL 8
+    // rejects a bound LIMIT over the prepared-statement protocol. A caller
+    // passing one function means "intercept the statement", not "intercept one
+    // of the two protocols".
+    query: executeFn,
     ...(conn ? { getConnection: vi.fn().mockResolvedValue(conn) } : {}),
   } as unknown as ConstructorParameters<typeof ItemDefinitionRepository>[0]
 }

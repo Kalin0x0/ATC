@@ -75,7 +75,7 @@ export class ResourceConsumptionRepository {
     const conn = await this.pool.getConnection()
     try {
       const effectiveLimit = limit ?? 100
-      const [rows] = await conn.execute<ConsumptionRow[]>(
+      const [rows] = await conn.query<ConsumptionRow[]>(
         `SELECT * FROM atc_resource_consumption
          WHERE grid_id = ?
          ORDER BY recorded_at DESC

@@ -192,7 +192,7 @@ export class BankTransactionRepository {
   ): Promise<AtcBankTransaction[]> {
     const conn = await this.pool.getConnection()
     try {
-      const [rows] = await conn.execute<BankTransactionRow[]>(
+      const [rows] = await conn.query<BankTransactionRow[]>(
         `SELECT * FROM atc_bank_transactions
          WHERE from_account_id = ? OR to_account_id = ?
          ORDER BY created_at DESC
@@ -211,7 +211,7 @@ export class BankTransactionRepository {
   ): Promise<AtcBankTransaction[]> {
     const conn = await this.pool.getConnection()
     try {
-      const [rows] = await conn.execute<BankTransactionRow[]>(
+      const [rows] = await conn.query<BankTransactionRow[]>(
         `SELECT t.* FROM atc_bank_transactions t
          JOIN atc_bank_accounts a
            ON a.id = t.from_account_id OR a.id = t.to_account_id

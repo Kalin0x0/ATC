@@ -179,7 +179,7 @@ export class WarrantRepository {
         `SELECT COUNT(*) AS total FROM atc_warrants ${where}`, args,
       )
       const total = countRows[0]?.total ?? 0
-      const [rows] = await conn.execute<WarrantRow[]>(
+      const [rows] = await conn.query<WarrantRow[]>(
         `SELECT * FROM atc_warrants ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
         [...args, limit, offset],
       )

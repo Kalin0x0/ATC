@@ -139,7 +139,7 @@ export class MedicalReportRepository {
         `SELECT COUNT(*) AS total FROM atc_medical_reports ${where}`, args,
       )
       const total = countRows[0]?.total ?? 0
-      const [rows] = await conn.execute<ReportRow[]>(
+      const [rows] = await conn.query<ReportRow[]>(
         `SELECT * FROM atc_medical_reports ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
         [...args, limit, offset],
       )

@@ -76,7 +76,7 @@ export class TreatmentRepository {
   async listByCharacter(characterId: string, limit = 50): Promise<AtcTreatmentRecord[]> {
     const conn = await this.pool.getConnection()
     try {
-      const [rows] = await conn.execute<TreatmentRow[]>(
+      const [rows] = await conn.query<TreatmentRow[]>(
         `SELECT * FROM atc_treatment_records WHERE character_id = ? ORDER BY applied_at DESC LIMIT ?`,
         [characterId, Math.min(limit, 100)],
       )

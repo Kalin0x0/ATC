@@ -158,7 +158,7 @@ export class TrafficViolationRepository {
   async listByPrincipal(principalId: string, limit: number): Promise<AtcTrafficViolation[]> {
     const conn = await this.pool.getConnection()
     try {
-      const [rows] = await conn.execute<ViolationRow[]>(
+      const [rows] = await conn.query<ViolationRow[]>(
         `SELECT * FROM atc_vehicle_traffic_violations
          WHERE principal_id = ?
          ORDER BY created_at DESC

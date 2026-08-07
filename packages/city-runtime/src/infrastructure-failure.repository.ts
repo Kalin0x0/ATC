@@ -237,7 +237,7 @@ export class InfrastructureFailureRepository {
     const conn = await this.pool.getConnection()
     try {
       const effectiveLimit = limit ?? 50
-      const [rows] = await conn.execute<FailureRow[]>(
+      const [rows] = await conn.query<FailureRow[]>(
         `SELECT * FROM atc_infrastructure_failures
          WHERE node_id = ?
          ORDER BY failed_at DESC

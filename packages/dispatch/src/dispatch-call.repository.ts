@@ -165,7 +165,7 @@ export class DispatchCallRepository {
         `SELECT COUNT(*) AS total FROM atc_dispatch_calls ${where}`, args,
       )
       const total = countRows[0]?.total ?? 0
-      const [rows] = await conn.execute<DispatchCallRow[]>(
+      const [rows] = await conn.query<DispatchCallRow[]>(
         `SELECT * FROM atc_dispatch_calls ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
         [...args, limit, offset],
       )

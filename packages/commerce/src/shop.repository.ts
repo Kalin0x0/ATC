@@ -135,7 +135,7 @@ export class ShopRepository {
         args,
       )
       const total = countRows[0]?.total ?? 0
-      const [rows] = await conn.execute<ShopRow[]>(
+      const [rows] = await conn.query<ShopRow[]>(
         `SELECT * FROM atc_shops ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
         [...args, limit, offset],
       )

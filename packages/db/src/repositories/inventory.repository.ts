@@ -507,7 +507,7 @@ export class InventoryRepository {
     limit: number,
     offset: number,
   ): Promise<AtcInventoryTransaction[]> {
-    const [rows] = await this.pool.execute<InventoryTransactionRow[]>(
+    const [rows] = await this.pool.query<InventoryTransactionRow[]>(
       'SELECT * FROM atc_inventory_transactions WHERE character_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
       [characterId, limit, offset],
     )

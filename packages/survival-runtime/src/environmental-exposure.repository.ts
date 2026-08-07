@@ -98,7 +98,7 @@ export class EnvironmentalExposureRepository {
   async listRecent(playerId: string, limit: number): Promise<AtcEnvironmentalExposure[]> {
     const conn = await this.pool.getConnection()
     try {
-      const [rows] = await conn.execute<EnvironmentalExposureRow[]>(
+      const [rows] = await conn.query<EnvironmentalExposureRow[]>(
         `SELECT * FROM atc_environmental_exposure
          WHERE player_id = ?
          ORDER BY exposed_at DESC

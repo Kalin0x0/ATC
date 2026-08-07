@@ -124,7 +124,7 @@ export class AgencyRepository {
         `SELECT COUNT(*) AS total FROM atc_agencies ${where}`, args,
       )
       const total = countRows[0]?.total ?? 0
-      const [rows] = await conn.execute<AgencyRow[]>(
+      const [rows] = await conn.query<AgencyRow[]>(
         `SELECT * FROM atc_agencies ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
         [...args, limit, offset],
       )

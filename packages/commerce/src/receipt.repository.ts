@@ -100,7 +100,7 @@ export class ReceiptRepository {
         args,
       )
       const total = countRows[0]?.total ?? 0
-      const [rows] = await conn.execute<ReceiptRow[]>(
+      const [rows] = await conn.query<ReceiptRow[]>(
         `SELECT * FROM atc_commerce_receipts ${where} ORDER BY issued_at DESC LIMIT ? OFFSET ?`,
         [...args, limit, offset],
       )

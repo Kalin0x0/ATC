@@ -136,7 +136,7 @@ export class DamageRepository {
   async listByVictim(victimPrincipalId: string, limit = 100): Promise<AtcDamageEvent[]> {
     const conn = await this.pool.getConnection()
     try {
-      const [rows] = await conn.execute<DamageEventRow[]>(
+      const [rows] = await conn.query<DamageEventRow[]>(
         `SELECT * FROM atc_damage_events
          WHERE victim_principal_id = ?
          ORDER BY created_at DESC LIMIT ?`,
@@ -151,7 +151,7 @@ export class DamageRepository {
   async listByAttacker(attackerPrincipalId: string, limit = 100): Promise<AtcDamageEvent[]> {
     const conn = await this.pool.getConnection()
     try {
-      const [rows] = await conn.execute<DamageEventRow[]>(
+      const [rows] = await conn.query<DamageEventRow[]>(
         `SELECT * FROM atc_damage_events
          WHERE attacker_principal_id = ?
          ORDER BY created_at DESC LIMIT ?`,

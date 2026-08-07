@@ -154,7 +154,7 @@ export class EvidenceRepository {
         `SELECT COUNT(*) AS total FROM atc_evidence_records ${where}`, args,
       )
       const total = countRows[0]?.total ?? 0
-      const [rows] = await conn.execute<EvidenceRow[]>(
+      const [rows] = await conn.query<EvidenceRow[]>(
         `SELECT * FROM atc_evidence_records ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
         [...args, limit, offset],
       )

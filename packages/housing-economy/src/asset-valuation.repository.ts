@@ -118,7 +118,7 @@ export class AssetValuationRepository {
     const conn = await this.pool.getConnection()
     try {
       const cap = limit ?? 50
-      const [rows] = await conn.execute<AssetValuationRow[]>(
+      const [rows] = await conn.query<AssetValuationRow[]>(
         `SELECT * FROM atc_asset_valuations
          WHERE property_id = ?
          ORDER BY valued_at DESC

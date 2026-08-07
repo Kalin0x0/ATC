@@ -607,7 +607,7 @@ export class WalletRepository {
       )
       const total = Number(countRows[0]?.total ?? 0)
 
-      const [rows] = await conn.execute<TransactionRow[]>(
+      const [rows] = await conn.query<TransactionRow[]>(
         'SELECT * FROM atc_wallet_transactions WHERE character_id = ? AND currency = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
         [characterId, currency, limit, offset],
       )

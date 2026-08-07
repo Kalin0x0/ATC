@@ -104,7 +104,7 @@ export class LegalCaseRepository {
         `SELECT COUNT(*) AS total FROM atc_legal_cases ${where}`, args,
       )
       const total = countRows[0]?.total ?? 0
-      const [rows] = await conn.execute<LegalCaseRow[]>(
+      const [rows] = await conn.query<LegalCaseRow[]>(
         `SELECT * FROM atc_legal_cases ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
         [...args, limit, offset],
       )

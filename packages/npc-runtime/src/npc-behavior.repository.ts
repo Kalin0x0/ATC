@@ -97,7 +97,7 @@ export class NpcBehaviorRepository {
     const conn = await this.pool.getConnection()
     try {
       const effectiveLimit = limit ?? 50
-      const [rows] = await conn.execute<NpcBehaviorRow[]>(
+      const [rows] = await conn.query<NpcBehaviorRow[]>(
         `SELECT * FROM atc_npc_behaviors
          WHERE npc_id = ?
          ORDER BY started_at DESC

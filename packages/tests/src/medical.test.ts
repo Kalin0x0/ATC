@@ -23,8 +23,14 @@ import { ATC_MEDICAL_EVENTS } from '@atc/shared-types'
 // ── Mock helpers ───────────────────────────────────────────────────────────────
 
 function makeConn(): PoolConnection {
+  // query and execute are the same mock on purpose. Paginated reads go through
+  // query — MySQL 8 rejects a bound LIMIT over the prepared-statement protocol
+  // — while writes still use execute, and a test that stubs one should not have
+  // to know which of the two the repository reached for.
+  const run = vi.fn().mockResolvedValue([[]])
   return {
-    execute:          vi.fn().mockResolvedValue([[]]),
+    execute:          run,
+    query:            run,
     beginTransaction: vi.fn().mockResolvedValue(undefined),
     commit:           vi.fn().mockResolvedValue(undefined),
     rollback:         vi.fn().mockResolvedValue(undefined),

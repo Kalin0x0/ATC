@@ -192,7 +192,7 @@ export class BoloRepository {
         `SELECT COUNT(*) AS total FROM atc_bolo_records ${where}`, args,
       )
       const total = countRows[0]?.total ?? 0
-      const [rows] = await conn.execute<BoloRow[]>(
+      const [rows] = await conn.query<BoloRow[]>(
         `SELECT * FROM atc_bolo_records ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
         [...args, limit, offset],
       )

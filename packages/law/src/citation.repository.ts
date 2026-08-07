@@ -166,7 +166,7 @@ export class CitationRepository {
         `SELECT COUNT(*) AS total FROM atc_citations ${where}`, args,
       )
       const total = countRows[0]?.total ?? 0
-      const [rows] = await conn.execute<CitationRow[]>(
+      const [rows] = await conn.query<CitationRow[]>(
         `SELECT * FROM atc_citations ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
         [...args, limit, offset],
       )

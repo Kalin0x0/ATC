@@ -84,7 +84,7 @@ export class ReviveAuditRepository {
   async listForCharacter(characterId: string, limit = 20): Promise<AtcReviveAudit[]> {
     const conn = await this.pool.getConnection()
     try {
-      const [rows] = await conn.execute<ReviveAuditRow[]>(
+      const [rows] = await conn.query<ReviveAuditRow[]>(
         `SELECT * FROM atc_ems_revive_audit WHERE character_id = ? ORDER BY revived_at DESC LIMIT ?`,
         [characterId, Math.min(limit, 100)],
       )

@@ -195,7 +195,7 @@ export class RuntimeSnapshotRepository {
   async deleteOld(entityId: string, keepCount: number): Promise<number> {
     const conn = await this.pool.getConnection()
     try {
-      const [result] = await conn.execute<ResultSetHeader>(
+      const [result] = await conn.query<ResultSetHeader>(
         `DELETE FROM atc_runtime_snapshots
          WHERE entity_id = ?
            AND id NOT IN (
