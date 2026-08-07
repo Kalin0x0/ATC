@@ -9,15 +9,38 @@ const MIGRATIONS_DIR = join(_dir, '..', 'migrations')
 
 const CREATE_MIGRATIONS_TABLE = `
   CREATE TABLE IF NOT EXISTS atc_migrations (
-    id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    filename    VARCHAR(255) NOT NULL UNIQUE,
-    applied_at  DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
+    id                 INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    filename           VARCHAR(255) NOT NULL UNIQUE,
+    applied_at         DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    -- How many of the file's statements have run. Only meaningful while
+    -- completed = 0; see the note on partial application in runMigrations.
+    statements_applied INT UNSIGNED NOT NULL DEFAULT 0,
+    completed          TINYINT(1) NOT NULL DEFAULT 1
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 `
+
+/**
+ * Columns added to atc_migrations after it first shipped.
+ *
+ * The table is created by this file rather than by a migration, so an existing
+ * database has the original two-column version and no migration will ever add
+ * to it. ADD COLUMN IF NOT EXISTS is MariaDB-only, so existence is checked
+ * against information_schema instead, which both engines answer the same way.
+ */
+const ADDED_COLUMNS: ReadonlyArray<{ name: string; ddl: string }> = [
+  { name: 'statements_applied', ddl: 'ADD COLUMN statements_applied INT UNSIGNED NOT NULL DEFAULT 0' },
+  { name: 'completed', ddl: 'ADD COLUMN completed TINYINT(1) NOT NULL DEFAULT 1' },
+]
 
 interface MigrationRow extends RowDataPacket {
   filename: string
   applied_at: Date
+  statements_applied: number
+  completed: number
+}
+
+interface ColumnRow extends RowDataPacket {
+  COLUMN_NAME: string
 }
 
 /**
@@ -97,40 +120,103 @@ export function splitSqlStatements(sql: string): string[] {
   return statements.map((s) => s.trim()).filter((s) => s.length > 0)
 }
 
+/** Bring atc_migrations up to the current shape on a database that predates it. */
+async function _ensureMigrationsTable(conn: Awaited<ReturnType<DbPool['getConnection']>>): Promise<void> {
+  await conn.query(CREATE_MIGRATIONS_TABLE)
+  const [cols] = await conn.query<ColumnRow[]>(
+    `SELECT COLUMN_NAME FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'atc_migrations'`,
+  )
+  const present = new Set(cols.map((c) => c.COLUMN_NAME))
+  for (const col of ADDED_COLUMNS) {
+    if (!present.has(col.name)) {
+      await conn.query(`ALTER TABLE atc_migrations ${col.ddl}`)
+    }
+  }
+}
+
+/**
+ * Apply every migration that has not run yet.
+ *
+ * ## On partial application
+ *
+ * There used to be a transaction around each file, with a rollback on failure.
+ * It did nothing. MySQL and MariaDB commit implicitly on DDL, so a file that
+ * created three tables and failed on the fourth left three tables behind and no
+ * row in atc_migrations — and the next run started that file from the top and
+ * died on "table already exists", with no way forward but hand-editing the
+ * database. The appearance of a rollback was worse than no rollback, because it
+ * suggested the failure had been contained.
+ *
+ * So there is no transaction here now, and progress is recorded instead: the
+ * row is written before the file runs, its statement counter is advanced as
+ * statements succeed, and it is marked completed at the end. A rerun resumes at
+ * the statement that failed.
+ *
+ * Resuming is sound because each statement is individually atomic — a CREATE
+ * TABLE or a multi-clause ALTER either applies whole or not at all — so the
+ * statement that failed changed nothing and is safe to repeat.
+ */
 export async function runMigrations(pool: DbPool): Promise<void> {
   const conn = await pool.getConnection()
   try {
-    await conn.execute(CREATE_MIGRATIONS_TABLE)
+    await _ensureMigrationsTable(conn)
 
     const files = (await readdir(MIGRATIONS_DIR))
       .filter((f) => f.endsWith('.sql'))
       .sort()
 
-    const [rows] = await conn.execute<MigrationRow[]>(
-      'SELECT filename FROM atc_migrations'
+    const [rows] = await conn.query<MigrationRow[]>(
+      'SELECT filename, statements_applied, completed FROM atc_migrations'
     )
-    const applied = new Set(rows.map((r) => r.filename))
+    const state = new Map(rows.map((r) => [r.filename, r]))
 
     for (const file of files) {
-      if (applied.has(file)) continue
+      const prior = state.get(file)
+      if (prior && prior.completed === 1) continue
 
       const sql = await readFile(join(MIGRATIONS_DIR, file), 'utf-8')
       const statements = splitSqlStatements(sql)
 
-      await conn.beginTransaction()
+      // Where to pick up. Non-zero only after a run that stopped part-way.
+      const from = prior ? Number(prior.statements_applied) : 0
+      if (from > 0) {
+        console.log(`[db:migrate] Resuming ${file} at statement ${from + 1}/${statements.length}`)
+      }
+
+      await conn.query(
+        `INSERT INTO atc_migrations (filename, statements_applied, completed)
+         VALUES (?, ?, 0)
+         ON DUPLICATE KEY UPDATE completed = 0`,
+        [file, from],
+      )
+
+      let i = from
       try {
-        for (const statement of statements) {
+        for (; i < statements.length; i++) {
           // query, not execute: these are DDL with no placeholders, and the
           // prepared-statement protocol refuses some of it outright.
-          await conn.query(statement)
+          await conn.query(statements[i] as string)
+          await conn.query(
+            'UPDATE atc_migrations SET statements_applied = ? WHERE filename = ?',
+            [i + 1, file],
+          )
         }
-        await conn.execute('INSERT INTO atc_migrations (filename) VALUES (?)', [file])
-        await conn.commit()
-        console.log(`[db:migrate] Applied: ${file}`)
       } catch (err) {
-        await conn.rollback()
-        throw new Error(`Migration failed (${file}): ${String(err)}`)
+        // Statement i failed and did nothing; 0..i-1 are applied and recorded.
+        const firstLine = (statements[i] ?? '').split('\n')[0]?.trim() ?? ''
+        throw new Error(
+          `Migration failed (${file}) at statement ${i + 1}/${statements.length}: ${String(err)}\n` +
+          `  statement began: ${firstLine.slice(0, 120)}\n` +
+          `  ${i} statement(s) from this file are applied and recorded; rerunning resumes here.`,
+        )
       }
+
+      await conn.query(
+        'UPDATE atc_migrations SET completed = 1, applied_at = NOW(3) WHERE filename = ?',
+        [file],
+      )
+      console.log(`[db:migrate] Applied: ${file}`)
     }
   } finally {
     conn.release()
@@ -140,23 +226,27 @@ export async function runMigrations(pool: DbPool): Promise<void> {
 export async function getMigrationStatus(pool: DbPool): Promise<void> {
   const conn = await pool.getConnection()
   try {
-    await conn.execute(CREATE_MIGRATIONS_TABLE)
+    await _ensureMigrationsTable(conn)
 
     const files = (await readdir(MIGRATIONS_DIR))
       .filter((f) => f.endsWith('.sql'))
       .sort()
 
-    const [rows] = await conn.execute<MigrationRow[]>(
-      'SELECT filename, applied_at FROM atc_migrations ORDER BY filename'
+    const [rows] = await conn.query<MigrationRow[]>(
+      'SELECT filename, applied_at, statements_applied, completed FROM atc_migrations ORDER BY filename'
     )
-    const applied = new Map(rows.map((r) => [r.filename, r.applied_at]))
+    const state = new Map(rows.map((r) => [r.filename, r]))
 
     for (const file of files) {
-      const appliedAt = applied.get(file)
-      if (appliedAt) {
-        console.log(`[✓] ${file} — applied at ${appliedAt.toISOString()}`)
-      } else {
+      const row = state.get(file)
+      if (!row) {
         console.log(`[ ] ${file} — pending`)
+      } else if (row.completed === 1) {
+        console.log(`[✓] ${file} — applied at ${row.applied_at.toISOString()}`)
+      } else {
+        // A file that stopped part-way. Shown distinctly because the database
+        // is neither at the old shape nor the new one.
+        console.log(`[!] ${file} — partial, ${row.statements_applied} statement(s) applied`)
       }
     }
   } finally {
