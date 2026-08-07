@@ -18,11 +18,57 @@ AddEventHandler('atc:vehicles:garage:list:response', function(data)
     })
 end)
 
+--- Create the vehicle entity and report its network id back to the server.
+--- The server can only park a car again if it knows which registered vehicle a
+--- network id belongs to, and the network id only exists once the entity does —
+--- so the client is the only place this mapping can start.
+--- Runs in its own thread: model loading yields, and the event handler must not.
+--- @param vehicleId string  Registered vehicle id the server just retrieved
+--- @param vehicle   table   Vehicle record from the API (model, plate, …)
+local function _createAndReport(vehicleId, vehicle)
+    CreateThread(function()
+        local model = vehicle and (vehicle.model or vehicle.modelName)
+        if type(model) ~= 'string' or model == '' then return end
+
+        local hash = GetHashKey(model)
+        RequestModel(hash)
+
+        -- Give up rather than spin forever on a model the client does not have.
+        local waited = 0
+        while not HasModelLoaded(hash) and waited < 5000 do
+            Wait(50)
+            waited = waited + 50
+        end
+        if not HasModelLoaded(hash) then
+            SetModelAsNoLongerNeeded(hash)
+            return
+        end
+
+        local ped    = PlayerPedId()
+        local pos    = GetEntityCoords(ped)
+        local head   = GetEntityHeading(ped)
+        local entity = CreateVehicle(hash, pos.x, pos.y, pos.z, head, true, false)
+        SetModelAsNoLongerNeeded(hash)
+        if not entity or entity == 0 then return end
+
+        if vehicle.plate then SetVehicleNumberPlateText(entity, tostring(vehicle.plate)) end
+
+        TriggerServerEvent('atc:vehicles:entity:registered', {
+            vehicleId = vehicleId,
+            netId     = NetworkGetNetworkIdFromEntity(entity),
+        })
+    end)
+end
+
 --- atc:vehicles:garage:retrieve:response
 --- Server reply after a garage retrieval request.
 RegisterNetEvent('atc:vehicles:garage:retrieve:response')
 AddEventHandler('atc:vehicles:garage:retrieve:response', function(data)
     if type(data) ~= 'table' then return end
+
+    if data.success and data.vehicleId then
+        _createAndReport(data.vehicleId, data.vehicle or {})
+    end
 
     if data.success and data.vehicle then
         SendNUIMessage({
