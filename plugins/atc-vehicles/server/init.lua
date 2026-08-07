@@ -161,6 +161,42 @@ ATC.Firewall.On('atc:vehicles:entity:registered', {
     })
 end)
 
+--- atc:vehicles:garage:capture
+--- Answers /atc_garage_here with a line ready to paste into
+--- ATC.VehiclesPlugin.Config.Garages, so garage positions can be taken from the
+--- map instead of guessed. Prints to the server console, which is where the
+--- config is edited anyway.
+--- Admin-gated: coordinates are harmless, but this should not be a command every
+--- player can spam.
+ATC.Firewall.On('atc:vehicles:garage:capture', {
+    clientAllowed  = true,
+    requireSession = true,
+    rateLimit      = { window = 5000, max = 5 },
+}, function(src, payload)
+    if not IsPlayerAceAllowed(tostring(src), 'atc.admin') then
+        ATC.Log.Warn('vehicles', 'garage:capture — denied, not an admin', { source = src })
+        return
+    end
+    if type(payload) ~= 'table' then return end
+
+    local id    = tostring(payload.id or ''):sub(1, 64)
+    local label = tostring(payload.label or id):sub(1, 64)
+    if id == '' then return end
+
+    local x = tonumber(payload.x) or 0.0
+    local y = tonumber(payload.y) or 0.0
+    local z = tonumber(payload.z) or 0.0
+
+    local line = ("        { id = '%s', label = '%s', x = %.1f, y = %.1f, z = %.1f },")
+        :format(id, label, x, y, z)
+
+    print('^2[ATC:garage]^7 Paste into plugins/atc-vehicles/shared/config.lua -> Config.Garages:')
+    print(line)
+
+    TriggerClientEvent('atc:vehicles:garage:capture:response', src, { line = line })
+    ATC.Log.Info('vehicles', 'Garage position captured', { source = src, id = id, x = x, y = y, z = z })
+end)
+
 -- ── Firewall Events ───────────────────────────────────────────────────────────
 
 --- atc:vehicles:garage:list

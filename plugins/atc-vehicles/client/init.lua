@@ -91,6 +91,23 @@ AddEventHandler('atc:vehicles:garage:retrieve:response', function(data)
     end
 end)
 
+--- atc:vehicles:garage:capture:response
+--- Server reply to /atc_garage_here. The line is also printed on the server
+--- console; this copy goes to the client console so it can be read in-game.
+RegisterNetEvent('atc:vehicles:garage:capture:response')
+AddEventHandler('atc:vehicles:garage:capture:response', function(data)
+    if type(data) ~= 'table' or type(data.line) ~= 'string' then return end
+    print('[ATC:garage] ' .. data.line)
+    SendNUIMessage({
+        type    = 'ATC_NOTIFICATION',
+        payload = {
+            message  = 'Garage position captured — see console (F8)',
+            level    = 'success',
+            duration = 4000,
+        },
+    })
+end)
+
 --- atc:vehicles:garage:store:response
 --- Server reply after a garage store request.
 RegisterNetEvent('atc:vehicles:garage:store:response')
@@ -139,6 +156,36 @@ RegisterCommand('garage', function()
 end, false)
 
 RegisterKeyMapping('garage', 'Open Garage', 'keyboard', 'F1')
+
+--- /atc_garage_here <id> [label]
+--- Prints the player's current position as a ready-to-paste line for
+--- ATC.VehiclesPlugin.Config.Garages. Stand where the garage belongs and run it.
+--- Admin-only: the server checks the atc.admin ace before answering, so an
+--- ordinary player running this gets nothing back.
+RegisterCommand('atc_garage_here', function(_, args)
+    local id    = args[1]
+    local label = table.concat(args, ' ', 2)
+    if not id or id == '' then
+        SendNUIMessage({
+            type    = 'ATC_NOTIFICATION',
+            payload = {
+                message  = 'Usage: /atc_garage_here <id> [label]',
+                level    = 'warning',
+                duration = 4000,
+            },
+        })
+        return
+    end
+
+    local coords = GetEntityCoords(PlayerPedId())
+    TriggerServerEvent('atc:vehicles:garage:capture', {
+        id    = id,
+        label = label ~= '' and label or id,
+        x     = coords.x,
+        y     = coords.y,
+        z     = coords.z,
+    })
+end, false)
 
 -- ── NUI Callbacks ─────────────────────────────────────────────────────────────
 
