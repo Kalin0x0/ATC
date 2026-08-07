@@ -11,6 +11,7 @@ import {
   endCombatSessionSchema,
   applyInjurySchema,
   seizeWeaponSchema,
+  setWeaponAttachmentSchema,
 } from '@atc/operations'
 import {
   CombatError,
@@ -133,6 +134,47 @@ export async function combatRoutes(
         if (err instanceof CombatError) return reply.status(combatErrorToResponse(err).status).send(combatErrorToResponse(err))
         throw err
       }
+    },
+  })
+
+  // ── Weapon attachments ────────────────────────────────────────────────────────
+  // atc_weapon_runtime.attachment_state has always held these; nothing exposed
+  // it. The game layer toggles a component client-side for instant feedback and
+  // records it here, so a relog restores the same weapon.
+
+  fastify.post('/api/v1/combat/weapons/:weaponId/attachments', {
+    preHandler: requireCapability(ctx, 'combat:weapon:sync'),
+    handler: async (req, reply) => {
+      if (!ctx.weaponStateService) return reply.status(503).send(NOT_CONFIGURED)
+      const { weaponId } = req.params as { weaponId: string }
+      const parsed = setWeaponAttachmentSchema.safeParse(req.body)
+      if (!parsed.success) return reply.status(400).send({ error: 'Validation', details: parsed.error.issues })
+      try {
+        const runtime = await ctx.weaponStateService.setAttachment(
+          weaponId,
+          parsed.data.holderPrincipalId,
+          parsed.data.component,
+          parsed.data.action === 'add',
+        )
+        return reply.status(200).send(runtime)
+      } catch (err) {
+        if (err instanceof CombatError) return reply.status(combatErrorToResponse(err).status).send(combatErrorToResponse(err))
+        throw err
+      }
+    },
+  })
+
+  // ── Weapons a holder currently carries ────────────────────────────────────────
+  // The game layer knows who the player is, not which weapon rows they own, so
+  // this is what it needs before it can address any of the :weaponId routes.
+
+  fastify.get('/api/v1/combat/weapons/holder/:principalId/equipped', {
+    preHandler: requireCapability(ctx, 'combat:weapon:read'),
+    handler: async (req, reply) => {
+      if (!ctx.weaponStateService) return reply.status(503).send(NOT_CONFIGURED)
+      const { principalId } = req.params as { principalId: string }
+      const weapons = await ctx.weaponStateService.getEquippedByHolder(principalId)
+      return reply.status(200).send({ principalId, weapons, total: weapons.length })
     },
   })
 

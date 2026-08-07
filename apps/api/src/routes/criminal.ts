@@ -97,6 +97,33 @@ export async function criminalRoutes(
     },
   })
 
+  // ── Gang memberships of one principal ─────────────────────────────────────────
+  // The reverse of :gangId/members. The game layer knows who the player is, not
+  // which gang they are in, so this is the lookup it needs to answer "what gang
+  // am I in" without walking every gang's roster.
+  // Registered before /gangs/:gangId so the literal segment is not swallowed by
+  // the parameter — Fastify prefers the static route, but keeping them in this
+  // order makes that independent of registration order.
+
+  fastify.get('/api/v1/criminal/gangs/member/:principalId', {
+    preHandler: requireCapability(ctx, 'criminal:gang:read'),
+    handler: async (req, reply) => {
+      const service = ctx.criminalRuntimeService
+      if (!service) return reply.status(503).send(NOT_CONFIGURED)
+      const { principalId } = req.params as { principalId: string }
+      const memberships = await service.getPrincipalGangs(principalId)
+      // Gangs are resolved here rather than by the caller: a membership on its
+      // own carries a gangId and a rank, which is not enough to show anything.
+      const gangs = await Promise.all(
+        memberships.map(async (m) => {
+          const gang = await service.getGang(m.gangId)
+          return { membership: m, gang }
+        }),
+      )
+      return reply.send({ principalId, memberships: gangs, total: gangs.length })
+    },
+  })
+
   // ── Add gang member ───────────────────────────────────────────────────────────
 
   fastify.post('/api/v1/criminal/gangs/:gangId/members', {

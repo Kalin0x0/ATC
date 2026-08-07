@@ -30,21 +30,43 @@ local function _recordViolation(source, reason, severity)
     ATC.Log.Security('anticheat', 'Violation recorded', { source=source, reason=reason, severity=severity, total=count })
     if count >= BAN_THRESHOLD then
         local identifier = GetPlayerIdentifierByType(source, 'license')
-        -- The ban is NOT persisted. There is no endpoint to create one: the
-        -- API's BanRepository exposes findActiveByAccountId and hasActiveBan
-        -- only, so bans can be read but never written through it. The call that
-        -- used to be here posted to /api/v1/accounts/ban, which does not exist,
-        -- and discarded the result — so this read as a working auto-ban while
-        -- only ever kicking. The player can reconnect immediately.
-        -- Logged at Security level so the gap is visible to whoever reviews the
-        -- logs, and so the identifier needed to ban by hand is recorded.
-        ATC.Log.Security('anticheat', 'Auto-ban threshold reached — NOT persisted, no ban endpoint exists; player kicked only', {
+        local banReason  = '[AutoBan] ' .. reason
+
+        -- The kick runs unconditionally and first: it is a local FiveM op that
+        -- needs no response, and putting it in the request callback once meant a
+        -- failed request left the player on the server.
+        DropPlayer(source, _tag()..' You have been banned: '..banReason)
+
+        ATC.Log.Security('anticheat', 'Auto-ban threshold reached', {
             source     = source,
             identifier = identifier or 'unknown',
             reason     = reason,
             violations = count,
         })
-        DropPlayer(source, _tag()..' You have been banned: '..reason)
+
+        -- Permanent: expiresAt is omitted. An auto-ban is a cheat finding, not a
+        -- timed penalty — it is lifted by an admin through
+        -- DELETE /api/v1/accounts/ban/:banId, not by waiting.
+        if identifier then
+            ATC.HTTP.Post('/api/v1/accounts/ban', {
+                identifier = identifier,
+                reason     = banReason,
+            }, function(ok, status, _data, err)
+                if not ok then
+                    -- The player is already off the server; what failed is the
+                    -- record that keeps them off. Logged with everything needed
+                    -- to apply it by hand.
+                    ATC.Log.Security('anticheat', 'Auto-ban NOT persisted — API call failed; player can reconnect', {
+                        source = source, identifier = identifier,
+                        reason = banReason, status = status, err = err,
+                    })
+                end
+            end)
+        else
+            ATC.Log.Security('anticheat', 'Auto-ban NOT persisted — no license identifier; player can reconnect', {
+                source = source, reason = banReason,
+            })
+        end
     elseif count >= KICK_THRESHOLD then
         DropPlayer(source, _tag()..' Anti-cheat violation: '..reason)
     else

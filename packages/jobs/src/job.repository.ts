@@ -146,6 +146,11 @@ export class JobRepository {
   async list(params: ListJobsParams = {}): Promise<AtcJobPage> {
     const limit = Math.min(params.limit ?? 20, 100)
     const offset = params.offset ?? 0
+    // Inlined rather than bound: MySQL 8 rejects a placeholder in LIMIT/OFFSET
+    // over the prepared-statement protocol where MariaDB accepts it. Both are
+    // clamped to integers just above, so nothing but a number reaches the SQL.
+    const safeLimit = Math.max(Math.trunc(limit) || 0, 1)
+    const safeOffset = Math.max(Math.trunc(offset) || 0, 0)
     const conditions: string[] = []
     const args: (string | number | null)[] = []
     if (params.type)           { conditions.push('type = ?');           args.push(params.type) }
@@ -159,8 +164,8 @@ export class JobRepository {
       )
       const total = countRows[0]?.total ?? 0
       const [rows] = await conn.execute<JobRow[]>(
-        `SELECT * FROM atc_jobs ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
-        [...args, limit, offset],
+        `SELECT * FROM atc_jobs ${where} ORDER BY created_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`,
+        args,
       )
       return { items: rows.map(rowToJob), total, offset, limit }
     } finally {

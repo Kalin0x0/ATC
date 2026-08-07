@@ -300,6 +300,7 @@ export {
   endCombatSessionSchema,
   applyInjurySchema,
   seizeWeaponSchema,
+  setWeaponAttachmentSchema,
 } from './schemas.js'
 export type {
   RegisterWeaponRequest,
@@ -311,6 +312,7 @@ export type {
   EndCombatSessionRequest,
   ApplyInjuryRequest,
   SeizeWeaponRequest,
+  SetWeaponAttachmentRequest,
 } from './schemas.js'
 export {
   createGangSchema,
@@ -504,6 +506,7 @@ export type {
 // ── Phase 42: Crafting Runtime ────────────────────────────────────────────────
 export {
   registerCraftingRecipeSchema,
+  craftItemSchema,
   acquireBlueprintSchema,
   registerStationSchema,
   startProductionJobSchema,
@@ -513,6 +516,7 @@ export {
 } from './schemas.js'
 export type {
   RegisterCraftingRecipeRequest,
+  CraftItemRequest,
   AcquireBlueprintRequest,
   RegisterStationRequest,
   StartProductionJobRequest,

@@ -9,6 +9,7 @@ import {
   WalletRepository,
   ItemDefinitionRepository,
   InventoryRepository,
+  GroundLootRepository,
   VitalsRepository,
 } from '@atc/db'
 import {
@@ -23,6 +24,11 @@ import { ItemRuntimeExecutor, ItemCooldownCache, createVitalsModifyHandler } fro
 import { AtcEventBus, AtcRedisEventBridge } from '@atc/events'
 import { AtcTelemetryService } from '@atc/telemetry'
 import { PhoneRepository } from '@atc/communication-runtime'
+import {
+  CraftingRecipeRepository,
+  CraftingRecipeService,
+  CraftService,
+} from '@atc/crafting-runtime'
 import {
   AtcPluginRegistry,
   AtcPluginLifecycleManager,
@@ -248,6 +254,12 @@ async function main() {
     logger.info('EventBus Redis bridge enabled')
   }
 
+  // Crafting. The recipe service reads the catalogue; the craft service turns a
+  // recipe into inventory movements, which is why it takes the inventory
+  // repository — see CraftInventoryPort for the slice it actually uses.
+  const craftingRecipeRepo = new CraftingRecipeRepository(pool)
+  const craftingRecipeService = new CraftingRecipeService(craftingRecipeRepo, eventBus)
+
   const ctx = {
     pool,
     redis,
@@ -258,9 +270,15 @@ async function main() {
     // Phone messaging. Wired here so the routes are live rather than
     // answering 503 for a feature that exists.
     phoneRepo: new PhoneRepository(pool),
+    craftingRecipeRepo,
+    craftingRecipeService,
+    craftService: new CraftService(craftingRecipeService, inventoryRepo, eventBus),
     wallets: walletsRepo,
     itemDefinitions: itemDefinitionsRepo,
     inventory: inventoryRepo,
+    // Ground loot. Wired so the pile contents live server-side; the game layer
+    // draws piles from what this returns rather than from client state.
+    groundLoot: new GroundLootRepository(pool),
     vitals: vitalsRepo,
     sessionCache: new SessionCache(redis),
     vitalsCache,

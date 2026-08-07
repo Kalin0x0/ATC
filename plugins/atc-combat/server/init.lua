@@ -140,6 +140,10 @@ end)
 -- The client toggles GTA weapon components locally for instant feedback; the
 -- server records the change but never trusts the client for combat math.
 -- Component string is hard-clamped to 64 chars to bound payload size.
+--
+-- Attachments live on the weapon runtime row, not on the player, so the weapon
+-- has to be resolved first: the client knows which component it toggled but not
+-- which atc_weapon_runtime row that is. The equipped weapon is that row.
 ATC.Firewall.On('atc:combat:weapon:attachment', {
     clientAllowed  = true,
     requireSession = true,
@@ -152,9 +156,38 @@ ATC.Firewall.On('atc:combat:weapon:attachment', {
     local principalId = ATC.Accounts.GetPrincipalId(src)
     if not principalId then return end
 
-    ATC.HTTP.Post('/api/v1/combat/weapons/attachment', {
-        principalId = principalId,
-        action      = action,
-        component   = component,
-    }, function() end)
+    ATC.HTTP.Get('/api/v1/combat/weapons/holder/' .. principalId .. '/equipped',
+    function(ok, status, data, err)
+        if not ok then
+            ATC.Log.Warn('combat', 'attachment not persisted — equipped lookup failed', {
+                source = src, principalId = principalId, status = status, err = err,
+            })
+            return
+        end
+
+        local weapons = type(data) == 'table' and data.weapons or nil
+        local weapon  = type(weapons) == 'table' and weapons[1] or nil
+        if not weapon or not weapon.weaponId then
+            -- Attaching a component to a weapon the server does not know the
+            -- player is holding is not something to guess at: the registry is
+            -- what /equip writes, and nothing here can stand in for it.
+            ATC.Log.Debug('combat', 'attachment ignored — no equipped weapon on record', {
+                source = src, principalId = principalId, component = component,
+            })
+            return
+        end
+
+        ATC.HTTP.Post('/api/v1/combat/weapons/' .. weapon.weaponId .. '/attachments', {
+            holderPrincipalId = principalId,
+            component         = component,
+            action            = action,
+        }, function(pok, pstatus, _pdata, perr)
+            if not pok then
+                ATC.Log.Warn('combat', 'attachment not persisted', {
+                    source = src, principalId = principalId, weaponId = weapon.weaponId,
+                    component = component, action = action, status = pstatus, err = perr,
+                })
+            end
+        end)
+    end)
 end)

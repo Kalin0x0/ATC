@@ -21,16 +21,31 @@ payload matches the schema. Those need a running API with a database.
 | | At audit time | Now |
 |---|---|---|
 | Lua call sites checked | **404** | 404 |
-| Route resolves | **358** (88%) | **369** (91%) |
-| Path exists, wrong method | **11** | 11 |
-| Path does not exist (404) | **35** | **24** |
+| Route resolves | **358** (88%) | **all of them** |
+| Path exists, wrong method | **11** | 0 |
+| Path does not exist (404) | **35** | 0 |
 
-Eleven of the 404s have since been fixed — see *Fixed since this audit* below.
-The entries in the list further down are kept as they were found; the ones now
-resolved are marked.
+Every path the Lua side builds now resolves to a handler. The entries in the
+list further down are kept as they were found; each is marked with how it was
+closed.
 
-Both failure classes reach the API and come back as an error rather than doing
+Both failure classes reached the API and came back as an error rather than doing
 anything: a wrong method or an unknown path is a 404 in Fastify.
+
+### How the last ones were closed
+
+The final group needed API work rather than a corrected path, so they are worth
+listing by what was actually built:
+
+| Was missing | Resolution |
+|---|---|
+| duty toggle | No new endpoint. On duty *is* an open work session, so the plugin now calls `POST /api/v1/work-sessions/clock-in` / `clock-out` and reads state from `GET /api/v1/work-sessions/character/{id}?status=active`. That is also what payroll is computed from, so any other notion of duty would pay for hours nobody recorded. |
+| payroll tick | No new endpoint. Payroll runs per organisation and period (`/payroll/preview` then `/commit`); the per-player tick had no counterpart and never could. The plugin now runs one aligned period per configured organisation, and runs nothing at all while none are configured. |
+| gang membership by principal | New `GET /api/v1/criminal/gangs/member/{principalId}`, over the existing `atc_gang_members`. Returns memberships with their gangs resolved. |
+| account bans | New `POST /api/v1/accounts/ban`, `DELETE /api/v1/accounts/ban/{banId}`, `GET /api/v1/accounts/{accountId}/bans`, plus the write path on `BanRepository`, which until now could only read. Bans could be checked at connect and never created, so `/atcban` and the anti-cheat auto-ban were kicks that the player could walk straight back from. |
+| weapon attachments | New `POST /api/v1/combat/weapons/{weaponId}/attachments` and `GET /api/v1/combat/weapons/holder/{principalId}/equipped`. `atc_weapon_runtime.attachment_state` already existed; nothing exposed it, and the game layer had no way to name the weapon row. |
+| instant crafting | New `POST /api/v1/crafting/craft` and migration 362 for recipe ingredients. `atc_crafting_recipes` described only the output, so the server had no record of what a recipe cost — an instant craft was impossible without taking the ingredient list from the client. Distinct from the production-job flow, which models stations and queues and never touches character inventory. |
+| ground loot pickup | New `POST/GET /api/v1/inventory/loot`, `GET /api/v1/inventory/loot/{lootId}`, `POST /api/v1/inventory/loot/{lootId}/pickup`, and migration 363. Piles existed only in each client's memory, so a pickup could not be granted and nothing knew when one had already been taken. |
 
 ---
 
@@ -54,14 +69,18 @@ Each of those also had payload problems that would have turned the 404 into a
 400 — missing required fields, and in the wallet case the wrong identifier
 entirely. Both were fixed alongside the paths.
 
-## Not fixable in Lua
+## Not fixable in Lua — since built
 
-Two calls have no counterpart at all, so no path change can help them. They need
-an API route or a change to the gameplay flow:
+Two calls had no counterpart at all, so no path change could help them. Both
+have since been built in the API:
 
-- `POST /api/v1/inventory/loot/{id}/pickup` — the API registers no loot routes.
-- `POST /api/v1/crafting/craft` — crafting is job-based (`POST /api/v1/crafting/jobs`),
-  not an instant craft.
+- `POST /api/v1/inventory/loot/{id}/pickup` — the API registered no loot routes.
+  Now backed by `atc_ground_loot` (migration 363), which is what makes a pickup
+  grantable: the pile's contents are the server's, not the picking client's.
+- `POST /api/v1/crafting/craft` — crafting was job-based
+  (`POST /api/v1/crafting/jobs`), with no instant craft and no ingredient list
+  anywhere in the schema. Now backed by migration 362 and a craft service that
+  consumes ingredients and grants the output.
 
 ## Replication: no findings
 
@@ -379,4 +398,28 @@ above and is straightforward to rebuild — load every module in
 - Query strings were stripped before matching; Fastify routes on the path only.
 - Calls are extracted statically, so a path assembled in an unusual way could be
   missed. The figures above are a lower bound on the problem, not an upper one.
+
+## What resolving does not mean
+
+Worth stating plainly, because "every path resolves" is easy to over-read.
+
+**A route can resolve and still answer 503.** Most optional services are
+declared on `AppContext` but never constructed in `apps/api/src/index.ts`, and
+each route begins with a `if (!ctx.thing) return 503` guard. Of the subsystems
+touched here, accounts/bans, inventory, ground loot, crafting and phone are
+wired; combat and criminal are not, so their routes — including the two added
+here — answer 503 until someone constructs those services. That is the state
+every other route in those files is already in, not something introduced by
+these endpoints.
+
+**The API application does not currently build.** `@atc/cache` is depended on by
+`apps/api` and `packages/runtime-items` and does not exist in the repository.
+Every other package builds; that one missing package stops the app.
+
+**Runtime queries are not MySQL-compatible even though the schema is.** 48
+statements across 40 files bind `LIMIT ?` / `OFFSET ?`, which MySQL 8 rejects
+over the prepared-statement protocol ("Incorrect arguments to
+mysqld_stmt_execute") and MariaDB accepts. The ones on the paths added or
+changed here were fixed; the rest were left alone and are listed by
+`grep -rl "LIMIT ?" --include=*.ts packages/ apps/`.
 

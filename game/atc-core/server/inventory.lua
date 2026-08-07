@@ -466,32 +466,105 @@ ATC.Firewall.On('atc:gathering:collect', {
     end)
 end)
 
--- ── Ground loot pickup ───────────────────────────────────────────────────────
--- There is no loot service. The API exposes no loot routes at all; the only
--- inventory mutations it offers are POST /api/v1/inventory/character/:characterId
--- /{add,remove,move,use}, all of which require the caller to already know which
--- items to grant.
+-- ── Ground loot ──────────────────────────────────────────────────────────────
+-- A pile's contents live in the API (atc_ground_loot), not on the clients that
+-- draw it. That is what makes a pickup grantable at all: the server resolves
+-- which items a pile holds instead of taking the list from whoever picks it up,
+-- and it decides who gets there first rather than trusting a client to say so.
 --
--- Ground loot piles are spawned and tracked entirely client-side
--- (game/atc-core/client/ground_loot.lua) and the server keeps no registry of them,
--- so it has no trustworthy record of what a pile contains. Granting the contents
--- would mean taking the item list from the client, which this handler deliberately
--- refuses to do — it accepts a lootId and nothing else. Pickup therefore cannot be
--- persisted, and the pile is NOT despawned while it cannot be: destroying it
--- without granting anything would delete the items outright. The picker is told
--- the truth instead of being shown a success message for nothing.
---
--- Flip this to true once a pickup route exists that resolves the pile server-side
--- and returns the resulting inventory.
-local LOOT_API_ENABLED = false
-local _lootApiWarned   = false
+-- game/atc-core/client/ground_loot.lua is a renderer — it draws what
+-- atc:loot:spawn tells it to and removes what atc:loot:remove names.
 
---- Despawn a ground-loot pile on every client. Pure event fan-out — it needs no
---- API response, so it lives outside the HTTP callback and both paths share it.
+ATC.Loot = ATC.Loot or {}
+
+--- Draw a pile on every client. Pure event fan-out; no API response needed.
+--- @param loot table Loot record as the API returns it
+local function _spawnLootForAll(loot)
+    TriggerClientEvent('atc:loot:spawn', -1, {
+        id    = loot.id,
+        x     = loot.x,
+        y     = loot.y,
+        z     = loot.z,
+        -- The client shows a bag, not a list, so the contents are deliberately
+        -- not sent: nothing on the client needs them, and anything sent there
+        -- is something a modified client can read.
+        items = nil,
+    })
+end
+
+--- Despawn a ground-loot pile on every client.
 --- @param lootId string Loot pile identifier
 local function _despawnLootForAll(lootId)
     -- -1 reaches every client, including the picker.
     TriggerClientEvent('atc:loot:remove', -1, { id = lootId })
+end
+
+--- Drop a pile of items on the ground.
+---
+--- The one way loot gets created. Callers pass what the pile holds; the API
+--- assigns its id and keeps the contents, so no client ever learns them.
+---
+--- @param coords table {x=,y=,z=}
+--- @param items table Array of { itemId = string, quantity = number }
+--- @param opts table|nil { droppedByCharacterId=, reason=, expiresInSeconds= }
+--- @param cb function|nil callback(ok, loot|nil)
+function ATC.Loot.Drop(coords, items, opts, cb)
+    opts = opts or {}
+    if type(coords) ~= 'table' or type(items) ~= 'table' or #items == 0 then
+        if cb then cb(false, nil) end
+        return
+    end
+
+    local expiresAt = nil
+    if tonumber(opts.expiresInSeconds) then
+        expiresAt = os.date('!%Y-%m-%dT%H:%M:%SZ', os.time() + tonumber(opts.expiresInSeconds))
+    end
+
+    ATC.HTTP.Post('/api/v1/inventory/loot', {
+        x                    = coords.x,
+        y                    = coords.y,
+        z                    = coords.z,
+        items                = items,
+        droppedByCharacterId = opts.droppedByCharacterId,
+        reason               = opts.reason,
+        expiresAt            = expiresAt,
+    }, function(ok, status, data, err)
+        if not ok or type(data) ~= 'table' or not data.id then
+            ATC.Log.Error('inventory', 'Loot drop failed — nothing was placed', {
+                status = status, err = err, reason = opts.reason,
+            })
+            if cb then cb(false, nil) end
+            return
+        end
+
+        -- Drawn only once it exists server-side, so no client ever shows a pile
+        -- that cannot be picked up.
+        _spawnLootForAll(data)
+        if cb then cb(true, data) end
+    end)
+end
+
+--- Draw every pile that is still on the ground, for one player or for all.
+--- Called on resource start and when a player joins: piles outlive the clients
+--- that drew them, so a fresh client would otherwise see an empty world.
+--- @param target number|nil player source, or nil for everyone
+function ATC.Loot.Resync(target)
+    ATC.HTTP.Get('/api/v1/inventory/loot', function(ok, status, data, err)
+        if not ok or type(data) ~= 'table' or type(data.loot) ~= 'table' then
+            ATC.Log.Warn('inventory', 'Loot resync failed — piles will not be drawn', {
+                status = status, err = err,
+            })
+            return
+        end
+        for _, loot in ipairs(data.loot) do
+            TriggerClientEvent('atc:loot:spawn', target or -1, {
+                id = loot.id, x = loot.x, y = loot.y, z = loot.z, items = nil,
+            })
+        end
+        ATC.Log.Debug('inventory', 'Loot resynced', {
+            target = target or 'all', count = #data.loot,
+        })
+    end)
 end
 
 ATC.Firewall.On('atc:loot:pickup', {
@@ -504,24 +577,27 @@ ATC.Firewall.On('atc:loot:pickup', {
     local characterId = ATC.Sessions.GetCharacterId(src)
     if not characterId then return end
 
-    if not LOOT_API_ENABLED then
-        if not _lootApiWarned then
-            _lootApiWarned = true
-            ATC.Log.Warn('inventory', 'Ground loot pickup disabled: the API exposes no loot routes and the server holds no record of pile contents', {
-                path = '/api/v1/inventory/loot/:lootId/pickup',
-            })
-        end
-        -- Nothing was granted, so nothing is claimed and the pile stays where it is.
-        TriggerClientEvent(ATC.Events.NOTIFY.SHOW, src, {
-            message  = 'Loot pickup is unavailable right now',
-            level    = 'warning',
-            duration = 3000,
-        })
-        return
-    end
-
     ATC.HTTP.Post('/api/v1/inventory/loot/' .. lootId .. '/pickup', { characterId = characterId }, function(ok, status, data, err)
         if not ok then
+            -- 409 means somebody else got there first, which is not an error
+            -- worth logging and needs a different message than a real failure.
+            if status == 409 then
+                _despawnLootForAll(lootId)
+                TriggerClientEvent(ATC.Events.NOTIFY.SHOW, src, {
+                    message  = 'Someone got there first',
+                    level    = 'info',
+                    duration = 2000,
+                })
+                return
+            end
+
+            -- 404 means the pile is not there at all; whatever this client is
+            -- still drawing is stale, so it is removed.
+            if status == 404 then
+                _despawnLootForAll(lootId)
+                return
+            end
+
             ATC.Log.Error('inventory', 'Loot pickup API error', {
                 source = src, lootId = lootId, status = status, err = err,
             })
@@ -545,6 +621,19 @@ ATC.Firewall.On('atc:loot:pickup', {
             duration = 2000,
         })
     end)
+end)
+
+-- Piles survive restarts, so both a fresh server and a fresh client need to be
+-- told what is already on the ground.
+AddEventHandler('onResourceStart', function(resource)
+    if resource ~= GetCurrentResourceName() then return end
+    -- Deferred: the API may not be reachable the instant the resource starts.
+    SetTimeout(5000, function() ATC.Loot.Resync(nil) end)
+end)
+
+AddEventHandler('playerJoining', function()
+    local src = source
+    SetTimeout(5000, function() ATC.Loot.Resync(src) end)
 end)
 
 ATC.Firewall.On(ATC.Events.INVENTORY.REQUEST, {

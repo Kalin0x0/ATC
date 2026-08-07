@@ -514,6 +514,42 @@ export class InventoryRepository {
     return rows.map(rowToTransaction)
   }
 
+  /**
+   * The transaction written under an idempotency key, if any.
+   *
+   * addItem and removeItem already replay by key, but they only tell a caller
+   * that after performing the call. A caller that composes several mutations
+   * into one operation — a craft, for instance — needs to know before it starts
+   * whether that operation has already run, because its own precondition checks
+   * would otherwise fail against the world the first run left behind.
+   */
+  async findTransactionByIdempotencyKey(key: string): Promise<AtcInventoryTransaction | null> {
+    const [rows] = await this.pool.execute<InventoryTransactionRow[]>(
+      'SELECT * FROM atc_inventory_transactions WHERE idempotency_key = ? LIMIT 1',
+      [key],
+    )
+    const row = rows[0]
+    return row ? rowToTransaction(row) : null
+  }
+
+  /**
+   * Whether any transaction exists whose key starts with this prefix.
+   *
+   * For composite operations again: the parts of a craft are keyed
+   * `<nonce>:in:<item>`, `<nonce>:out`, `<nonce>:rb:<item>`, so this answers
+   * "has this nonce been used at all", which is what distinguishes a fresh
+   * attempt from the remains of one that failed and was rolled back.
+   */
+  async hasTransactionWithPrefix(prefix: string): Promise<boolean> {
+    // LIKE with an escaped prefix: nonces may legitimately contain % or _.
+    const escaped = prefix.replace(/([\\%_])/g, '\\$1')
+    const [rows] = await this.pool.execute<(RowDataPacket & { one: number })[]>(
+      "SELECT 1 AS one FROM atc_inventory_transactions WHERE idempotency_key LIKE CONCAT(?, '%') LIMIT 1",
+      [escaped],
+    )
+    return rows.length > 0
+  }
+
   // ── Validation helpers ──────────────────────────────────────────────────────
 
   validateMetadata(

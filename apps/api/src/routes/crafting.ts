@@ -3,6 +3,7 @@ import type { AppContext } from '../context.js'
 import { requireCapability } from '../middleware/authorization.js'
 import {
   registerCraftingRecipeSchema,
+  craftItemSchema,
   acquireBlueprintSchema,
   registerStationSchema,
   startProductionJobSchema,
@@ -10,7 +11,7 @@ import {
   failProductionJobSchema,
   cancelProductionJobSchema,
 } from '@atc/operations'
-import { CraftingRuntimeError } from '@atc/crafting-runtime'
+import { CraftingRuntimeError, InsufficientMaterialsError } from '@atc/crafting-runtime'
 
 function craftingErrorToStatus(err: CraftingRuntimeError): number {
   const name = err.constructor.name
@@ -21,9 +22,21 @@ function craftingErrorToStatus(err: CraftingRuntimeError): number {
   ) return 409
   if (
     name === 'ProductionJobNotActiveError' ||
-    name === 'ManufacturingQueueOfflineError'
+    name === 'ManufacturingQueueOfflineError' ||
+    // The request was well-formed and the recipe exists; the state does not
+    // permit the craft. 422 rather than 400 so the caller can tell "you asked
+    // for something impossible" from "you asked wrongly".
+    name === 'RecipeInactiveError' ||
+    name === 'RecipeHasNoIngredientsError' ||
+    name === 'RecipeRequiresStationError' ||
+    name === 'InsufficientMaterialsError'
   ) return 422
+  // The nonce was spent by an attempt that rolled back. Retrying needs a new
+  // one, which is a conflict with existing state rather than a bad request.
+  if (name === 'CraftNonceConsumedError') return 409
   if (name.endsWith('NotFoundError')) return 404
+  // CraftCompensationFailedError lands on 500 deliberately: materials were lost
+  // and no retry by the caller can put them back.
   return 500
 }
 
@@ -53,10 +66,39 @@ export async function craftingRoutes(
           craftingTimeSeconds: parsed.data.craftingTimeSeconds,
           ...(parsed.data.requiredStation !== undefined   ? { requiredStation: parsed.data.requiredStation }     : {}),
           ...(parsed.data.isDiscoverable !== undefined    ? { isDiscoverable: parsed.data.isDiscoverable }       : {}),
+          ...(parsed.data.ingredients !== undefined       ? { ingredients: parsed.data.ingredients }             : {}),
         })
         return reply.status(201).send(result)
       } catch (err) {
         if (err instanceof CraftingRuntimeError) return reply.status(craftingErrorToStatus(err)).send({ error: err.constructor.name, message: err.message })
+        throw err
+      }
+    },
+  })
+
+  // ── Craft from a character's inventory ────────────────────────────────────────
+  // The character action, as opposed to the production-job flow below: consume
+  // the recipe's ingredients from what the character is carrying and grant the
+  // output. Nothing served this before, so atc-inventory and atc-criminal both
+  // had their crafting handlers switched off.
+
+  fastify.post('/api/v1/crafting/craft', {
+    preHandler: requireCapability(ctx, 'crafting:write'),
+    handler: async (req, reply) => {
+      if (!ctx.craftService) return reply.status(503).send(NOT_CONFIGURED)
+      const parsed = craftItemSchema.safeParse(req.body)
+      if (!parsed.success) return reply.status(400).send({ error: 'Validation', details: parsed.error.issues })
+      try {
+        const result = await ctx.craftService.craft(parsed.data)
+        return reply.status(201).send(result)
+      } catch (err) {
+        if (err instanceof CraftingRuntimeError) {
+          const status = craftingErrorToStatus(err)
+          // The missing list is what a client needs to say why a craft failed;
+          // the message alone would have to be parsed to get at it.
+          const missing = err instanceof InsufficientMaterialsError ? { missing: err.missing } : {}
+          return reply.status(status).send({ error: err.constructor.name, message: err.message, ...missing })
+        }
         throw err
       }
     },
@@ -68,7 +110,9 @@ export async function craftingRoutes(
     preHandler: requireCapability(ctx, 'crafting:read'),
     handler: async (req, reply) => {
       if (!ctx.craftingRecipeService) return reply.status(503).send(NOT_CONFIGURED)
-      const recipes = await ctx.craftingRecipeService.listActiveRecipes()
+      // With ingredients: a crafting UI cannot show what anything costs
+      // otherwise, and fetching them per recipe would be a request per row.
+      const recipes = await ctx.craftingRecipeService.listActiveRecipesWithIngredients()
       return reply.send({ recipes })
     },
   })

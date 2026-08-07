@@ -193,6 +193,70 @@ export class WeaponRuntimeRepository {
     }
   }
 
+  /**
+   * Attach or detach one weapon component.
+   *
+   * Read-modify-write on the JSON column, inside a transaction with the row
+   * locked: two components toggled in the same tick would otherwise each write
+   * the map they read and one would be lost.
+   *
+   * The map's value is the ISO timestamp the component was attached, which is
+   * what the Record<string, string> shape is for — the key alone says whether
+   * it is on, the value says since when.
+   *
+   * @returns the updated runtime row, or null when the holder has no runtime
+   *          row for that weapon (nothing to attach to)
+   */
+  async setAttachment(
+    weaponId: string,
+    holderPrincipalId: string,
+    component: string,
+    attached: boolean,
+  ): Promise<AtcWeaponRuntime | null> {
+    const conn = await this.pool.getConnection()
+    try {
+      await conn.beginTransaction()
+
+      const [rows] = await conn.execute<WeaponRuntimeRow[]>(
+        `SELECT * FROM atc_weapon_runtime
+         WHERE weapon_id = ? AND holder_principal_id = ? LIMIT 1 FOR UPDATE`,
+        [weaponId, holderPrincipalId],
+      )
+      const row = rows[0]
+      if (!row) {
+        await conn.rollback()
+        return null
+      }
+
+      const current = rowToRuntime(row).attachmentState ?? {}
+      if (attached) {
+        current[component] = new Date().toISOString()
+      } else {
+        delete current[component]
+      }
+
+      // An empty map is stored as NULL, so "no attachments" reads the same
+      // whether the weapon never had any or had them all removed.
+      const next = Object.keys(current).length > 0 ? JSON.stringify(current) : null
+
+      await conn.execute(
+        `UPDATE atc_weapon_runtime
+         SET attachment_state = ?, last_sync_at = NOW(3)
+         WHERE weapon_id = ? AND holder_principal_id = ?`,
+        [next, weaponId, holderPrincipalId],
+      )
+
+      const updated = await this._findByWeaponAndHolder(conn, weaponId, holderPrincipalId)
+      await conn.commit()
+      return updated
+    } catch (err) {
+      try { await conn.rollback() } catch { /* best-effort */ }
+      throw err
+    } finally {
+      conn.release()
+    }
+  }
+
   async updateAmmo(
     weaponId: string,
     holderPrincipalId: string,

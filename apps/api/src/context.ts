@@ -8,6 +8,7 @@ import type {
   WalletRepository,
   ItemDefinitionRepository,
   InventoryRepository,
+  GroundLootRepository,
   VitalsRepository,
 } from '@atc/db'
 import type { SessionCache, VitalsCache, RateLimiter, StatusEffectCache } from '@atc/cache'
@@ -246,6 +247,7 @@ import type {
   BlueprintService,
   ManufacturingQueueService,
   ProductionJobService,
+  CraftService,
   CraftingRecipeRepository,
   CraftingBlueprintRepository,
   ManufacturingQueueRepository,
@@ -794,6 +796,9 @@ export interface AppContext {
   wallets: WalletRepository
   itemDefinitions: ItemDefinitionRepository
   inventory: InventoryRepository
+  // Ground loot piles. Optional so a deployment that does not use them simply
+  // answers 503 on the loot routes rather than failing to start.
+  groundLoot?: GroundLootRepository
   vitals: VitalsRepository
   sessionCache: SessionCache
   vitalsCache: VitalsCache
@@ -996,6 +1001,10 @@ export interface AppContext {
   environmentalExposureRepo?: EnvironmentalExposureRepository
   environmentalHazardRepo?: EnvironmentalHazardRepository
   craftingRecipeService?: CraftingRecipeService
+  // Instant crafting from a character's inventory, as opposed to the
+  // production-job services below — those model stations and queues and never
+  // touch character inventory.
+  craftService?: CraftService
   blueprintService?: BlueprintService
   manufacturingQueueService?: ManufacturingQueueService
   productionJobService?: ProductionJobService

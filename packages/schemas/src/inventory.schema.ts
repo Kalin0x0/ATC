@@ -94,6 +94,33 @@ export const inventoryTransactionQuerySchema = z.object({
   offset: z.coerce.number().int().min(0).default(0),
 })
 
+// ── Ground loot schemas ───────────────────────────────────────────────────────
+// Piles on the floor. The contents are set when the pile is dropped and are
+// never sent by whoever picks it up — that is the whole point of the server
+// holding them.
+
+export const groundLootDropSchema = z.object({
+  x: z.number().finite(),
+  y: z.number().finite(),
+  z: z.number().finite(),
+  items: z.array(z.object({
+    itemId: itemIdSchema,
+    quantity: inventoryQuantitySchema,
+  })).min(1).max(32),
+  droppedByCharacterId: uuidV7Schema.optional(),
+  reason: z.string().trim().min(1).max(64).optional(),
+  /** Omitted means the pile stays until somebody takes it. */
+  expiresAt: z.string().datetime().optional(),
+})
+
+export const groundLootPickupSchema = z.object({
+  characterId: uuidV7Schema,
+})
+
+export const groundLootIdParamSchema = z.object({
+  lootId: uuidV7Schema,
+})
+
 // ── Settings schemas ──────────────────────────────────────────────────────────
 
 export const inventoryUpdateSettingsSchema = z

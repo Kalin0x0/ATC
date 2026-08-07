@@ -80,6 +80,29 @@ ATC.Firewall.On('atc:criminal:robbery:complete', {
 end)
 
 -- ── Drug Crafting ─────────────────────────────────────────────────────────────
+-- Runs through the same POST /api/v1/crafting/craft as ordinary crafting: the
+-- API resolves the recipe, takes its ingredients from the character's inventory
+-- and grants the output. What is criminal about it is the recipe, not the
+-- mechanism.
+--
+-- The client names a drug, not a recipe, so the two are mapped here. An entry
+-- must exist as a recipe_id in the crafting catalogue (POST
+-- /api/v1/crafting/recipes) with its ingredients, or the craft answers 404 —
+-- which is the correct answer for a drug this server does not produce.
+local DRUG_RECIPES = {
+    weed    = 'drug_weed',
+    coke    = 'drug_coke',
+    meth    = 'drug_meth',
+    heroin  = 'drug_heroin',
+}
+
+--- Unique per craft attempt; see the same helper in atc-inventory.
+local _drugCraftSeq = 0
+local function _drugCraftNonce(characterId)
+    _drugCraftSeq = _drugCraftSeq + 1
+    if _drugCraftSeq > 0xFFFFFF then _drugCraftSeq = 1 end
+    return ('atc:craft:drug:%s:%d:%d'):format(characterId, os.time(), _drugCraftSeq)
+end
 
 ATC.Firewall.On('atc:criminal:drug:craft', {
     clientAllowed  = true,
@@ -92,24 +115,39 @@ ATC.Firewall.On('atc:criminal:drug:craft', {
     local characterId = ATC.Sessions.GetCharacterId(src)
     if not characterId then return end
 
-    -- There is no one-call craft endpoint. POST /api/v1/crafting/craft does not
-    -- exist, so this always failed. The API models crafting as a production job
-    -- against a registered station (POST /api/v1/crafting/jobs, then a separate
-    -- /complete), and that runtime never touches character inventory — it
-    -- neither consumes ingredients nor grants the output. Repointing this at the
-    -- job model would mean inventing stations, queues and an ingredient list, so
-    -- it is not attempted; the same gap is documented in atc-inventory.
-    if not _warnedCraft then
-        _warnedCraft = true
-        ATC.Log.Warn('criminal', 'Drug crafting has no API backing: no craft endpoint exists, and the job-based crafting runtime does not move inventory. See the note in plugins/atc-inventory/server/init.lua.')
+    local recipeId = DRUG_RECIPES[drugType]
+    if not recipeId then
+        -- An unmapped drug is a client sending something this server does not
+        -- make, so it is refused here rather than forwarded as a guess.
+        TriggerClientEvent('atc:criminal:drug:crafted', src, {
+            success  = false,
+            drugType = drugType,
+            reason   = 'unknown_drug',
+        })
+        return
     end
 
-    -- Answer the client rather than leaving it waiting: the craft did not happen.
-    TriggerClientEvent('atc:criminal:drug:crafted', src, {
-        success  = false,
-        drugType = drugType,
-        reason   = 'not_supported',
-    })
+    ATC.HTTP.Post('/api/v1/crafting/craft', {
+        characterId = characterId,
+        recipeId    = recipeId,
+        craftNonce  = _drugCraftNonce(characterId),
+    }, function(ok, status, data)
+        TriggerClientEvent('atc:criminal:drug:crafted', src, {
+            success  = ok,
+            drugType = drugType,
+            quantity = ok and type(data) == 'table' and data.outputQuantity or nil,
+            reason   = (not ok) and type(data) == 'table' and data.error or nil,
+            missing  = (not ok) and type(data) == 'table' and data.missing or nil,
+        })
+
+        if not ok then
+            ATC.Log.Debug('criminal', 'drug craft failed', {
+                source = src, characterId = characterId, drugType = drugType,
+                recipeId = recipeId, status = status,
+                error = type(data) == 'table' and data.error or nil,
+            })
+        end
+    end)
 end)
 
 -- ── Smuggling ─────────────────────────────────────────────────────────────────

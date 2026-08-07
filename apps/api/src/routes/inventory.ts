@@ -9,6 +9,9 @@ import {
   inventoryTransactionQuerySchema,
   inventoryUpdateSettingsSchema,
   itemUseSchema,
+  groundLootDropSchema,
+  groundLootPickupSchema,
+  groundLootIdParamSchema,
 } from '@atc/schemas'
 import {
   InventoryItemNotFoundError,
@@ -316,6 +319,121 @@ export const inventoryRoutes: FastifyPluginAsync<{ ctx: AppContext }> = async (f
       } catch (err) {
         await handleInventoryError(err, reply)
       }
+    },
+  )
+
+  // ── Ground loot ───────────────────────────────────────────────────────────
+  // Piles on the floor, with their contents held here rather than on the
+  // clients that draw them. Before this the game layer had a pickup handler
+  // calling a route that did not exist, and no way to grant anything even if it
+  // had: only the client knew what a pile contained.
+
+  // ── POST /api/v1/inventory/loot ───────────────────────────────────────────
+  fastify.post('/api/v1/inventory/loot', async (req, reply) => {
+    if (!ctx.groundLoot) return reply.code(503).send({ error: 'Ground loot not configured' })
+    const bodyResult = validate(groundLootDropSchema, req.body)
+    if (!bodyResult.success) {
+      return reply.code(400).send({ error: 'Validation failed', details: bodyResult.errors })
+    }
+    const d = bodyResult.data
+    const loot = await ctx.groundLoot.create({
+      x: d.x, y: d.y, z: d.z,
+      items: d.items,
+      ...(d.droppedByCharacterId !== undefined ? { droppedByCharacterId: d.droppedByCharacterId } : {}),
+      ...(d.reason !== undefined ? { reason: d.reason } : {}),
+      ...(d.expiresAt !== undefined ? { expiresAt: new Date(d.expiresAt) } : {}),
+    })
+    logger.info({ lootId: loot.id, items: loot.items.length }, 'ground loot dropped')
+    return reply.code(201).send(loot)
+  })
+
+  // ── GET /api/v1/inventory/loot ────────────────────────────────────────────
+  // Everything still on the ground — what a game server reads on boot to draw
+  // the piles that outlived the last restart.
+  fastify.get('/api/v1/inventory/loot', async (_req, reply) => {
+    if (!ctx.groundLoot) return reply.code(503).send({ error: 'Ground loot not configured' })
+    const loot = await ctx.groundLoot.listActive()
+    return reply.code(200).send({ loot, total: loot.length })
+  })
+
+  // ── GET /api/v1/inventory/loot/:lootId ────────────────────────────────────
+  fastify.get<{ Params: { lootId: string } }>(
+    '/api/v1/inventory/loot/:lootId',
+    async (req, reply) => {
+      if (!ctx.groundLoot) return reply.code(503).send({ error: 'Ground loot not configured' })
+      const paramResult = validate(groundLootIdParamSchema, req.params)
+      if (!paramResult.success) {
+        return reply.code(400).send({ error: 'Validation failed', details: paramResult.errors })
+      }
+      const loot = await ctx.groundLoot.findById(paramResult.data.lootId)
+      if (!loot) return reply.code(404).send({ error: 'Loot not found' })
+      return reply.code(200).send(loot)
+    },
+  )
+
+  // ── POST /api/v1/inventory/loot/:lootId/pickup ────────────────────────────
+  fastify.post<{ Params: { lootId: string } }>(
+    '/api/v1/inventory/loot/:lootId/pickup',
+    async (req, reply) => {
+      if (!ctx.groundLoot) return reply.code(503).send({ error: 'Ground loot not configured' })
+      const paramResult = validate(groundLootIdParamSchema, req.params)
+      if (!paramResult.success) {
+        return reply.code(400).send({ error: 'Validation failed', details: paramResult.errors })
+      }
+      const bodyResult = validate(groundLootPickupSchema, req.body)
+      if (!bodyResult.success) {
+        return reply.code(400).send({ error: 'Validation failed', details: bodyResult.errors })
+      }
+      const { lootId } = paramResult.data
+      const { characterId } = bodyResult.data
+      if (!await requireActiveCharacter(characterId, ctx, reply)) return
+
+      // Claim first. The claim is the race: whoever's UPDATE changes a row owns
+      // the pile, so two players reaching for it cannot both be granted it.
+      const claimed = await ctx.groundLoot.claim(lootId, characterId)
+      if (!claimed) {
+        // Either gone or never there. Told apart so the caller can distinguish
+        // "somebody beat you to it" from "that pile does not exist".
+        const existing = await ctx.groundLoot.findById(lootId)
+        if (!existing) return reply.code(404).send({ error: 'Loot not found' })
+        return reply.code(409).send({ error: 'Loot has already been taken', status: existing.status })
+      }
+
+      // Grant. Idempotent per pile and item, so a retried pickup of the same
+      // pile cannot grant twice even though the claim already succeeded.
+      const granted: string[] = []
+      try {
+        for (const item of claimed.items) {
+          await inventory.addItem({
+            characterId,
+            itemId: item.itemId,
+            quantity: item.quantity,
+            reason: claimed.reason ?? 'loot:pickup',
+            source: 'gameplay',
+            idempotencyKey: `loot:${lootId}:${item.itemId}`,
+          })
+          granted.push(item.itemId)
+        }
+      } catch (err) {
+        // The pile was claimed but not fully granted — a full inventory, an
+        // unknown item. Put it back so its contents are not destroyed, then
+        // report the failure. Items already granted stay granted: taking them
+        // away again would need a removal that could fail in turn.
+        const remaining = claimed.items.filter((i) => !granted.includes(i.itemId))
+        if (remaining.length > 0 && granted.length === 0) {
+          await ctx.groundLoot.release(lootId, characterId)
+        }
+        logger.warn(
+          { lootId, characterId, granted, remaining: remaining.map((i) => i.itemId) },
+          'ground loot pickup partially failed',
+        )
+        await handleInventoryError(err, reply)
+        return
+      }
+
+      const updated = await inventory.getByCharacter(characterId)
+      logger.info({ lootId, characterId, items: claimed.items.length }, 'ground loot picked up')
+      return reply.code(200).send({ ...updated, loot: claimed })
     },
   )
 }

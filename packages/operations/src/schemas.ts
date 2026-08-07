@@ -1232,6 +1232,19 @@ export const seizeWeaponSchema = z.object({
   seizedByPrincipalId: COMBAT_PRINCIPAL_ID,
 })
 
+/**
+ * Toggle one weapon component. Single component rather than the whole map:
+ * a player attaches one scope at a time, and taking the full map from the game
+ * layer would mean trusting the client for every other component as well.
+ * The component name is a GTA weapon-component hash name such as
+ * COMPONENT_AT_SCOPE_MEDIUM.
+ */
+export const setWeaponAttachmentSchema = z.object({
+  holderPrincipalId: COMBAT_PRINCIPAL_ID,
+  component:         z.string().min(1).max(64),
+  action:            z.enum(['add', 'remove']),
+})
+
 export type RegisterWeaponRequest    = z.infer<typeof registerWeaponSchema>
 export type EquipWeaponRequest       = z.infer<typeof equipWeaponSchema>
 export type UnequipWeaponRequest     = z.infer<typeof unequipWeaponSchema>
@@ -1241,6 +1254,7 @@ export type StartCombatSessionRequest = z.infer<typeof startCombatSessionSchema>
 export type EndCombatSessionRequest  = z.infer<typeof endCombatSessionSchema>
 export type ApplyInjuryRequest       = z.infer<typeof applyInjurySchema>
 export type SeizeWeaponRequest       = z.infer<typeof seizeWeaponSchema>
+export type SetWeaponAttachmentRequest = z.infer<typeof setWeaponAttachmentSchema>
 
 // ── Criminal schemas ──────────────────────────────────────────────────────────
 
@@ -1872,6 +1886,29 @@ export const registerCraftingRecipeSchema = z.object({
   requiredStation:      z.string().max(128).optional(),
   craftingTimeSeconds:  z.number().int().positive(),
   isDiscoverable:       z.boolean().optional(),
+  // What the recipe consumes. Omitted leaves an existing list untouched; an
+  // empty array clears it, which makes the recipe uncraftable by
+  // POST /api/v1/crafting/craft rather than free.
+  ingredients:          z.array(z.object({
+    itemId:   z.string().min(1).max(128),
+    quantity: z.number().int().positive().max(9999),
+  })).max(32).optional(),
+})
+
+/**
+ * Craft a recipe from what a character is carrying, immediately.
+ *
+ * Separate from the production-job flow: that models a station with a queue and
+ * a timed job, and never touches character inventory.
+ *
+ * craftNonce makes the whole craft idempotent — every inventory mutation it
+ * performs derives its key from it, so a retried request replays rather than
+ * charging the character twice.
+ */
+export const craftItemSchema = z.object({
+  characterId: z.string().min(1).max(128),
+  recipeId:    z.string().min(1).max(128),
+  craftNonce:  z.string().min(1).max(128),
 })
 
 export const acquireBlueprintSchema = z.object({
@@ -1909,6 +1946,7 @@ export const cancelProductionJobSchema = z.object({
 })
 
 export type RegisterCraftingRecipeRequest = z.infer<typeof registerCraftingRecipeSchema>
+export type CraftItemRequest              = z.infer<typeof craftItemSchema>
 export type AcquireBlueprintRequest       = z.infer<typeof acquireBlueprintSchema>
 export type RegisterStationRequest        = z.infer<typeof registerStationSchema>
 export type StartProductionJobRequest     = z.infer<typeof startProductionJobSchema>

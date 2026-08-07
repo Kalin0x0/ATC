@@ -112,9 +112,13 @@ export {
   accountUpsertRequestSchema,
   accountUpsertResponseSchema,
   banCheckResponseSchema,
+  banCreateRequestSchema,
+  banResponseSchema,
+  banIdParamSchema,
   identifierParamSchema,
   type AccountUpsertRequestInput,
   type AccountUpsertResponseOutput,
+  type BanCreateRequestInput,
 } from './account-api.schema.js'
 
 export {
@@ -229,6 +233,9 @@ export {
   itemUseSchema,
   itemEffectResultSchema,
   cooldownSchema,
+  groundLootDropSchema,
+  groundLootPickupSchema,
+  groundLootIdParamSchema,
   type InventoryAddInput,
   type InventoryRemoveInput,
   type InventoryMoveInput,

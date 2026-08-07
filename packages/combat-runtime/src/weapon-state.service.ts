@@ -159,6 +159,27 @@ export class WeaponStateService {
     }
   }
 
+  /**
+   * Attach or detach one component on a weapon the holder carries.
+   *
+   * Unlike syncRuntime, which replaces the whole attachment map, this changes a
+   * single component — which is what the game layer produces: a player toggles
+   * one scope, not a whole loadout. Sending the map would mean trusting the
+   * client's idea of every other component too.
+   */
+  async setAttachment(
+    weaponId: string,
+    holderPrincipalId: string,
+    component: string,
+    attached: boolean,
+  ): Promise<AtcWeaponRuntime> {
+    const runtime = await this.runtimeRepo.setAttachment(
+      weaponId, holderPrincipalId, component, attached,
+    )
+    if (!runtime) throw new WeaponNotFoundError(weaponId)
+    return runtime
+  }
+
   async seizeWeapon(weaponId: string, seizedByPrincipalId: string): Promise<AtcWeaponRegistration> {
     const weapon = await this.weaponRepo.updateStatus(
       weaponId,

@@ -7,11 +7,22 @@ ATC.HTTP = ATC.HTTP or {}
 local _BASE_URL = ATC.Config.ApiUrl
 local _TOKEN    = ATC.Config.ApiToken
 
-local function _headers()
-    return {
+-- The API resolves the acting principal from this header (see
+-- apps/api/src/middleware/authorization.ts). Routes guarded by requirePermission
+-- or requireCapability answer 401 without it once an auth engine is configured.
+local _PRINCIPAL_HEADER = 'X-ATC-Principal-Id'
+
+--- Request headers, optionally naming the principal the call acts as.
+--- @param opts table|nil { principalId = string }
+local function _headers(opts)
+    local headers = {
         ['Content-Type']  = 'application/json',
         ['Authorization'] = 'Bearer ' .. _TOKEN,
     }
+    if type(opts) == 'table' and type(opts.principalId) == 'string' and opts.principalId ~= '' then
+        headers[_PRINCIPAL_HEADER] = opts.principalId
+    end
+    return headers
 end
 
 -- FiveM may call the callback with statusCode=0 and body='' on connection failure.
@@ -27,7 +38,8 @@ local function _parseResponse(statusCode, body)
     return success, code, data
 end
 
-function ATC.HTTP.Get(path, callback)
+--- @param opts table|nil Optional { principalId = string }; see _headers.
+function ATC.HTTP.Get(path, callback, opts)
     PerformHttpRequest(
         _BASE_URL .. path,
         function(statusCode, body, _responseHeaders)
@@ -36,11 +48,11 @@ function ATC.HTTP.Get(path, callback)
         end,
         'GET',
         '',
-        _headers()
+        _headers(opts)
     )
 end
 
-function ATC.HTTP.Post(path, payload, callback)
+function ATC.HTTP.Post(path, payload, callback, opts)
     local encodeOk, encoded = pcall(json.encode, payload)
     local body = (encodeOk and encoded) or '{}'
     PerformHttpRequest(
@@ -51,11 +63,11 @@ function ATC.HTTP.Post(path, payload, callback)
         end,
         'POST',
         body,
-        _headers()
+        _headers(opts)
     )
 end
 
-function ATC.HTTP.Delete(path, callback)
+function ATC.HTTP.Delete(path, callback, opts)
     PerformHttpRequest(
         _BASE_URL .. path,
         function(statusCode, body, _responseHeaders)
@@ -64,11 +76,11 @@ function ATC.HTTP.Delete(path, callback)
         end,
         'DELETE',
         '',
-        _headers()
+        _headers(opts)
     )
 end
 
-function ATC.HTTP.Patch(path, payload, callback)
+function ATC.HTTP.Patch(path, payload, callback, opts)
     local encodeOk, encoded = pcall(json.encode, payload)
     local body = (encodeOk and encoded) or '{}'
     PerformHttpRequest(
@@ -79,6 +91,6 @@ function ATC.HTTP.Patch(path, payload, callback)
         end,
         'PATCH',
         body,
-        _headers()
+        _headers(opts)
     )
 end

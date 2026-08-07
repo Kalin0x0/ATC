@@ -1,8 +1,9 @@
 -- atc-admin — Server Init
 -- In-game admin commands gated by the 'atc.admin' ace permission.
 -- All actions are logged via ATC.Log.Security / ATC.Log.Info.
--- Bans are NOT persisted — the API has no ban-creation endpoint (see /atcban);
--- kick/ban/bring/goto/freeze are all local FiveM ops.
+-- /atcban persists through POST /api/v1/accounts/ban and also kicks; the kick
+-- runs first so a failed request cannot leave the target on the server.
+-- bring/goto/freeze are local FiveM ops with no API side.
 
 -- ── Branding ──────────────────────────────────────────────────────────────────
 
@@ -94,26 +95,48 @@ RegisterCommand('atcban', function(source, args)
         expiresAt = os.date('!%Y-%m-%dT%H:%M:%SZ', os.time() + duration * 86400)
     end
 
-    -- The ban is NOT persisted. There is no endpoint that creates one: the API's
-    -- BanRepository exposes findActiveByAccountId and hasActiveBan only, so a ban
-    -- can be read at connect time but never written through the API. The call that
-    -- used to be here posted to /api/v1/accounts/ban, which does not exist — and
-    -- the DropPlayer sat inside that call's success branch, so the request 404'd
-    -- and the target was never even removed from the server. Kicking is a local
-    -- FiveM op that needs no response, so it now runs unconditionally.
-    -- Logged at Security level with the license identifier and the expiry the
-    -- admin asked for, so the ban can be applied by hand (server.cfg / txAdmin)
-    -- until a write endpoint exists.
+    -- Kicking is a local FiveM op that needs no response, so it runs first and
+    -- unconditionally. It used to sit inside the request callback, which meant a
+    -- failed request left the target on the server.
     DropPlayer(tostring(targetId), _tag() .. ' You have been banned: ' .. reason)
 
-    ATC.Log.Security('admin', 'Player banned — NOT persisted, no ban endpoint exists; player kicked only', {
-        admin      = source,
-        target     = targetId,
-        identifier = identifier,
-        duration   = duration,
-        reason     = reason,
-        expiresAt  = expiresAt,
-    })
+    -- Recorded against the admin's principal where one is resolvable, so the
+    -- ban row names who issued it. Console (source 0) has none.
+    local actingPrincipal = (source ~= 0) and ATC.Accounts.GetPrincipalId(source) or nil
+
+    ATC.HTTP.Post('/api/v1/accounts/ban', {
+        identifier          = identifier,
+        reason              = reason,
+        expiresAt           = expiresAt,     -- nil = permanent
+        bannedByPrincipalId = actingPrincipal,
+    }, function(ok, status, data, err)
+        if not ok then
+            -- Everything needed to apply the ban by hand (server.cfg / txAdmin)
+            -- is in this line, because the kick already happened and only the
+            -- record is missing — the player can otherwise reconnect.
+            ATC.Log.Security('admin', 'Ban NOT persisted — API call failed; player kicked only and can reconnect', {
+                admin      = source,
+                target     = targetId,
+                identifier = identifier,
+                duration   = duration,
+                reason     = reason,
+                expiresAt  = expiresAt,
+                status     = status,
+                err        = err,
+            })
+            return
+        end
+
+        ATC.Log.Security('admin', 'Player banned', {
+            admin      = source,
+            target     = targetId,
+            identifier = identifier,
+            duration   = duration,
+            reason     = reason,
+            expiresAt  = expiresAt,
+            banId      = type(data) == 'table' and data.id or nil,
+        })
+    end, { principalId = actingPrincipal })
 end, true)
 
 -- ── /atcbring ─────────────────────────────────────────────────────────────────
@@ -285,19 +308,38 @@ ATC.Firewall.On('atc:admin:ban', {
     local reason   = type(d) == 'table' and tostring(d.reason or 'Admin ban'):sub(1, 256) or 'Admin ban'
     if not targetId then return end
     local identifier = GetPlayerIdentifierByType(tostring(targetId), 'license')
-    if identifier then
-        -- Same as /atcban above: no ban-creation endpoint exists, so the ban is
-        -- not persisted. The POST to /api/v1/accounts/ban that used to sit here
-        -- discarded its result and could only ever 404, so it has been removed —
-        -- the kick below was, and remains, the whole of the effect.
-        DropPlayer(tostring(targetId), _tag() .. ' Banned: ' .. reason)
-        ATC.Log.Security('admin', 'NUI ban — NOT persisted, no ban endpoint exists; player kicked only', {
+    if not identifier then
+        ATC.Log.Security('admin', 'NUI ban ignored — could not resolve license identifier', {
+            admin = src, target = targetId, reason = reason,
+        })
+        return
+    end
+
+    -- Kick first, unconditionally — see /atcban above.
+    DropPlayer(tostring(targetId), _tag() .. ' Banned: ' .. reason)
+
+    -- Permanent: the admin panel offers no duration. /atcban takes one.
+    local actingPrincipal = ATC.Accounts.GetPrincipalId(src)
+    ATC.HTTP.Post('/api/v1/accounts/ban', {
+        identifier          = identifier,
+        reason              = reason,
+        bannedByPrincipalId = actingPrincipal,
+    }, function(ok, status, data, err)
+        if not ok then
+            ATC.Log.Security('admin', 'NUI ban NOT persisted — API call failed; player kicked only and can reconnect', {
+                admin = src, target = targetId, identifier = identifier,
+                reason = reason, status = status, err = err,
+            })
+            return
+        end
+        ATC.Log.Security('admin', 'NUI ban', {
             admin      = src,
             target     = targetId,
             identifier = identifier,
             reason     = reason,
+            banId      = type(data) == 'table' and data.id or nil,
         })
-    end
+    end, { principalId = actingPrincipal })
 end)
 
 ATC.Firewall.On('atc:admin:announce', {

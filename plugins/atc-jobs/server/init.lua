@@ -1,15 +1,11 @@
 -- ATC Jobs Plugin — Server
--- Duty toggling, job-state synchronisation and server-side payroll tick.
+-- Duty toggling, job-state synchronisation and the payroll run loop.
 -- Character IDs are resolved from the server session — never from client payload.
 
 ATC           = ATC           or {}
 ATC.JobsPlugin = ATC.JobsPlugin or {}
 
 -- ── Internal helpers ──────────────────────────────────────────────────────────
-
--- Set once the disabled-feature warning has been emitted, so a player mashing
--- the duty key does not flood the log with the same line.
-local _warnedDuty = false
 
 --- Safely resolve characterId from session.
 --- Returns nil (and logs) if no session or no character is selected.
@@ -28,11 +24,116 @@ local function _getCharacterId(source)
     return session.characterId
 end
 
+--- First item of a paged API response, whatever the page is called.
+--- @param data table|nil Decoded response body
+--- @return table|nil
+local function _firstItem(data)
+    if type(data) ~= 'table' then return nil end
+    local items = data.items or data.data or data.rows
+    if type(items) ~= 'table' then return nil end
+    return items[1]
+end
+
+-- Job catalogue cache, so a duty toggle does not fetch the whole catalogue.
+-- Job definitions change through admin action, not during play, so a long TTL
+-- costs nothing: a renamed job shows its new label on the next refresh.
+local _jobNames    = {}
+local _jobNamesAt  = 0
+
+--- Refresh the jobId → name map from the job catalogue.
+--- Best-effort: on failure the previous map is kept and callers fall back to
+--- the raw jobId, which is a worse label but never a wrong one.
+local function _refreshJobNames(cb)
+    local ttl = ATC.JobsPlugin.Config.JobCatalogueTtlSeconds
+    if _jobNamesAt > 0 and (os.time() - _jobNamesAt) < ttl then
+        if cb then cb() end
+        return
+    end
+    ATC.HTTP.Get('/api/v1/jobs?limit=100', function(ok, _status, data)
+        if ok and type(data) == 'table' then
+            local items = data.items or data.data or data.rows
+            if type(items) == 'table' then
+                local names = {}
+                for _, job in ipairs(items) do
+                    if type(job) == 'table' and job.id then
+                        names[job.id] = job.name or job.slug or job.id
+                    end
+                end
+                _jobNames   = names
+                _jobNamesAt = os.time()
+            end
+        end
+        if cb then cb() end
+    end)
+end
+
+--- Human-readable name for a job, falling back to its id.
+local function _jobLabel(jobId)
+    if not jobId then return nil end
+    return _jobNames[jobId] or jobId
+end
+
+--- The character's active employment contract, or nil when unemployed.
+--- @param characterId string
+--- @param cb function(ok, contract|nil)
+local function _activeContract(characterId, cb)
+    ATC.HTTP.Get('/api/v1/employment/character/' .. characterId .. '?status=active&limit=1',
+    function(ok, status, data, err)
+        if not ok then
+            ATC.Log.Error('jobs', 'employment lookup failed', {
+                characterId = characterId, status = status, err = err,
+            })
+            cb(false, nil)
+            return
+        end
+        cb(true, _firstItem(data))
+    end)
+end
+
+--- The character's open work session, or nil when clocked out.
+--- An active work session *is* being on duty: the API has no separate duty
+--- state, and atc_work_sessions is what payroll is computed from, so anything
+--- else would pay for hours nobody recorded.
+--- @param characterId string
+--- @param cb function(ok, session|nil)
+local function _activeSession(characterId, cb)
+    ATC.HTTP.Get('/api/v1/work-sessions/character/' .. characterId .. '?status=active&limit=1',
+    function(ok, status, data, err)
+        if not ok then
+            ATC.Log.Error('jobs', 'work-session lookup failed', {
+                characterId = characterId, status = status, err = err,
+            })
+            cb(false, nil)
+            return
+        end
+        cb(true, _firstItem(data))
+    end)
+end
+
+--- Push the duty state to one player. The client reads onDuty and jobLabel, so
+--- both are always set rather than being passed through from an API body that
+--- carries neither.
+--- @param src number
+--- @param onDuty boolean
+--- @param jobId string|nil
+--- @param reason string|nil Why the state did not change, when it did not
+local function _pushDuty(src, onDuty, jobId, reason)
+    TriggerClientEvent('atc:jobs:duty:update', src, {
+        onDuty   = onDuty,
+        jobLabel = _jobLabel(jobId),
+        reason   = reason,
+    })
+end
+
 -- ── Firewall Events ───────────────────────────────────────────────────────────
 
 --- atc:jobs:duty:toggle
 --- Client requests to flip their on-duty / off-duty state.
---- The API is authoritative: it returns the new job state on success.
+--- On duty is modelled as an open work session:
+---   clocked out → POST /api/v1/work-sessions/clock-in  (needs the contract)
+---   clocked in  → POST /api/v1/work-sessions/clock-out
+--- The API is authoritative — the resulting state comes from its response, not
+--- from what the client asked for.
 ATC.Firewall.On('atc:jobs:duty:toggle', {
     clientAllowed  = true,
     requireSession = true,
@@ -41,28 +142,59 @@ ATC.Firewall.On('atc:jobs:duty:toggle', {
     local characterId = _getCharacterId(src)
     if not characterId then return end
 
-    if not ATC.JobsPlugin.Config.DutyApiEnabled then
-        -- No duty endpoint exists, so there is nothing to call. Warn once per
-        -- boot instead of per toggle: repeating it for every button press would
-        -- bury the one message that matters.
-        if not _warnedDuty then
-            _warnedDuty = true
-            ATC.Log.Warn('jobs', 'Duty toggling is disabled: the API serves no duty endpoint. See DutyApiEnabled in the plugin config.')
-        end
-        return
-    end
+    _refreshJobNames(function()
+        _activeSession(characterId, function(ok, session)
+            if not ok then return end
 
-    ATC.HTTP.Post('/api/v1/jobs/duty/toggle', {
-        characterId = characterId,
-    }, function(ok, status, data, err)
-        if not ok then
-            ATC.Log.Error('jobs', 'duty:toggle API error', {
-                source = src, characterId = characterId, status = status, err = err,
-            })
-            return
-        end
-        -- Broadcast the new duty state back to the client.
-        TriggerClientEvent('atc:jobs:duty:update', src, data)
+            if session then
+                ATC.HTTP.Post('/api/v1/work-sessions/clock-out', {
+                    characterId = characterId,
+                }, function(cok, status, _data, err)
+                    if not cok then
+                        ATC.Log.Error('jobs', 'clock-out failed', {
+                            source = src, characterId = characterId, status = status, err = err,
+                        })
+                        -- Still on duty: the session was not closed.
+                        _pushDuty(src, true, session.jobId, 'clock_out_failed')
+                        return
+                    end
+                    _pushDuty(src, false, session.jobId)
+                end)
+                return
+            end
+
+            _activeContract(characterId, function(cok, contract)
+                if not cok then return end
+                if not contract then
+                    -- Nothing to clock into. Told plainly rather than silently
+                    -- ignored, so the player knows why the key did nothing.
+                    _pushDuty(src, false, nil, 'no_contract')
+                    return
+                end
+
+                local ped    = GetPlayerPed(src)
+                local coords = ped and GetEntityCoords(ped) or nil
+
+                ATC.HTTP.Post('/api/v1/work-sessions/clock-in', {
+                    contractId       = contract.id,
+                    characterId      = characterId,
+                    jobId            = contract.jobId,
+                    locationMetadata = coords and {
+                        x = coords.x, y = coords.y, z = coords.z,
+                    } or nil,
+                }, function(iok, status, _data, err)
+                    if not iok then
+                        ATC.Log.Error('jobs', 'clock-in failed', {
+                            source = src, characterId = characterId,
+                            contractId = contract.id, status = status, err = err,
+                        })
+                        _pushDuty(src, false, contract.jobId, 'clock_in_failed')
+                        return
+                    end
+                    _pushDuty(src, true, contract.jobId)
+                end)
+            end)
+        end)
     end)
 end)
 
@@ -80,71 +212,113 @@ ATC.Firewall.On('atc:jobs:state:request', {
     -- is the job catalogue (definitions and grades), not who works where.
     -- The response is a page of contracts, so the active one is picked out here
     -- rather than handing the raw page to the client.
-    ATC.HTTP.Get('/api/v1/employment/character/' .. characterId .. '?status=active&limit=1',
-    function(ok, status, data, err)
+    _refreshJobNames(function()
+        _activeContract(characterId, function(ok, contract)
+            if not ok then return end
+
+            _activeSession(characterId, function(sok, session)
+                -- A failed session lookup is reported as off duty, which is what
+                -- the client would show anyway; it is not evidence of the state.
+                TriggerClientEvent('atc:jobs:state:response', src, {
+                    onDuty   = sok and session ~= nil,
+                    jobLabel = contract and _jobLabel(contract.jobId) or nil,
+                    contract = contract,
+                    session  = session,
+                })
+            end)
+        end)
+    end)
+end)
+
+-- ── Payroll ───────────────────────────────────────────────────────────────────
+
+--- Run payroll for one organisation over the period that just closed.
+--- Two calls, as the API models it: /preview builds the run from the active
+--- contracts, /commit posts it to the ledger. Preview is idempotent on the key,
+--- so a retry after a failed commit reuses the same run instead of paying twice.
+--- @param org table Entry from Config.PayrollOrganisations
+--- @param periodStart string ISO 8601
+--- @param periodEnd string ISO 8601
+local function _runPayroll(org, periodStart, periodEnd)
+    -- Derived from the period, not from a counter: two servers running the same
+    -- period produce the same key and therefore the same run.
+    local key = ('atc:payroll:%s:%s'):format(org.organizationId, periodStart)
+
+    ATC.HTTP.Post('/api/v1/payroll/preview', {
+        organizationId       = org.organizationId,
+        periodStart          = periodStart,
+        periodEnd            = periodEnd,
+        currency             = org.currency,
+        idempotencyKey       = key,
+        createdByPrincipalId = org.createdByPrincipalId,
+    }, function(ok, status, data, err)
         if not ok then
-            ATC.Log.Error('jobs', 'state:request API error', {
-                source = src, characterId = characterId, status = status, err = err,
+            ATC.Log.Error('jobs', 'payroll preview failed', {
+                organizationId = org.organizationId, status = status, err = err,
             })
             return
         end
 
-        local items    = (type(data) == 'table' and (data.items or data.data or data.rows)) or nil
-        local contract = (type(items) == 'table' and items[1]) or nil
+        local run = type(data) == 'table' and data.run or nil
+        local runId = run and run.id or nil
+        if not runId then
+            ATC.Log.Error('jobs', 'payroll preview returned no run id', {
+                organizationId = org.organizationId,
+            })
+            return
+        end
 
-        -- onDuty has no server-side source: no duty endpoint, and no duty
-        -- column on atc_employment_contracts. It is reported as false so the
-        -- client keeps a defined state, not because the player is known to be
-        -- off duty. Revisit together with DutyApiEnabled.
-        TriggerClientEvent('atc:jobs:state:response', src, {
-            onDuty   = false,
-            jobLabel = contract and (contract.jobLabel or contract.jobId) or nil,
-            contract = contract,
-        })
+        ATC.HTTP.Post('/api/v1/payroll/commit', {
+            runId            = runId,
+            orgAccountId     = org.orgAccountId,
+            payrollAccountId = org.payrollAccountId,
+        }, function(cok, cstatus, _cdata, cerr)
+            if not cok then
+                ATC.Log.Error('jobs', 'payroll commit failed', {
+                    organizationId = org.organizationId, runId = runId,
+                    status = cstatus, err = cerr,
+                })
+                return
+            end
+            ATC.Log.Info('jobs', 'Payroll committed', {
+                organizationId = org.organizationId, runId = runId,
+                periodStart = periodStart, periodEnd = periodEnd,
+            })
+        end)
     end)
-end)
+end
 
--- ── Payroll Thread ────────────────────────────────────────────────────────────
-
---- Fires a payroll tick for every player that has an active character session,
---- every PayrollIntervalMs (default 30 min).
---- Dormant unless PayrollApiEnabled is set: the endpoint it posts to does not
---- exist, and the note that once stood here — that the API filters by duty
---- state so only on-duty characters are paid — was not true of any endpoint the
---- API serves. Payroll there runs per organisation and period.
+--- Payroll runs per organisation and period, which is how the API models it —
+--- there is no per-player tick, and the old one posted to a route that never
+--- existed. Nothing fires unless PayrollOrganisations is filled in: an empty
+--- list means this server does not run payroll, which is a valid setup and not
+--- an error.
 CreateThread(function()
-    if not ATC.JobsPlugin.Config.PayrollApiEnabled then
-        ATC.Log.Warn('jobs', 'Payroll ticks are disabled: the API models payroll per organisation and period (POST /api/v1/payroll/preview, then /commit), not per character. See PayrollApiEnabled in the plugin config.')
+    local orgs = ATC.JobsPlugin.Config.PayrollOrganisations
+    if type(orgs) ~= 'table' or #orgs == 0 then
+        ATC.Log.Info('jobs', 'Payroll is idle: no organisations configured. Add entries to PayrollOrganisations to run it.')
         return
     end
 
+    local intervalMs  = ATC.JobsPlugin.Config.PayrollIntervalMs
+    local intervalSec = math.floor(intervalMs / 1000)
+
+    -- Aligned to the interval so restarts do not shift period boundaries and
+    -- produce overlapping runs. The first run covers the period that closed
+    -- most recently, so a restart mid-period does not skip it.
+    local periodEndAt = math.floor(os.time() / intervalSec) * intervalSec
+
     while true do
-        Wait(ATC.JobsPlugin.Config.PayrollIntervalMs)
+        Wait(intervalMs)
 
-        local players = GetPlayers()
-        local ticked  = 0
+        local periodStart = os.date('!%Y-%m-%dT%H:%M:%S.000Z', periodEndAt)
+        periodEndAt = periodEndAt + intervalSec
+        local periodEnd = os.date('!%Y-%m-%dT%H:%M:%S.000Z', periodEndAt)
 
-        for _, playerId in ipairs(players) do
-            local src         = tonumber(playerId)
-            local characterId = _getCharacterId(src)
-
-            if characterId then
-                ticked = ticked + 1
-                ATC.HTTP.Post('/api/v1/jobs/payroll/tick', {
-                    characterId = characterId,
-                }, function(ok, status, _data, err)
-                    if not ok then
-                        ATC.Log.Warn('jobs', 'payroll:tick API error', {
-                            source = src, characterId = characterId,
-                            status = status, err = err,
-                        })
-                    end
-                end)
+        for _, org in ipairs(orgs) do
+            if type(org) == 'table' and org.organizationId then
+                _runPayroll(org, periodStart, periodEnd)
             end
-        end
-
-        if ticked > 0 then
-            ATC.Log.Info('jobs', 'Payroll tick dispatched', { count = ticked })
         end
     end
 end)

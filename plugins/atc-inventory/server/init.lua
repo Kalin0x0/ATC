@@ -160,29 +160,34 @@ ATC.Firewall.On(
 )
 
 -- ── Crafting server handlers ─────────────────────────────────────────────────
--- There is no one-call craft endpoint. POST /api/v1/crafting/craft does not
--- exist, so every craft attempt 404'd and nothing was ever made.
+-- POST /api/v1/crafting/craft resolves the recipe server-side, consumes its
+-- ingredients from the character's inventory and grants the output. The recipe
+-- and its cost both come from the API — nothing here takes an ingredient list
+-- from the client.
 --
--- The API models crafting as industrial production jobs rather than as a
--- character action: POST /api/v1/crafting/jobs wants a queueId (a registered
--- manufacturing station), an initiatedByPrincipalId, a quantityOrdered and a
--- jobNonce, and the job is then settled by a separate /complete, /fail or
--- /cancel call. That runtime never touches character inventory — it neither
--- consumes ingredients nor grants the output — and atc_crafting_recipes has no
--- ingredient columns at all (recipe_id, recipe_name, output_item_id,
--- output_quantity, recipe_type, required_station, crafting_time_seconds), so
--- the server has no record of what a recipe costs. Repointing this handler at
--- the job model would mean inventing stations, queues, timed completion and an
--- ingredient list: a gameplay redesign, not a path fix, so it is not attempted
--- here. Hand-rolling the craft from inventory add/remove is out for the same
--- reason — the ingredients would have to come from the client.
---
--- The recipe list endpoint is real and is called normally below.
---
--- A switch, not a TODO: set it to true once a craft route exists that resolves
--- the recipe server-side and mutates the character's inventory.
-local CRAFTING_API_ENABLED = false
-local _warnedCraft         = false
+-- Distinct from POST /api/v1/crafting/jobs, which is industrial production: a
+-- registered station, a queue and a timed job settled by a separate call. That
+-- flow never touches character inventory and is not what this handler is for.
+
+--- Unique per craft attempt. The API derives every inventory mutation's
+--- idempotency key from it, so a retried request replays the same craft instead
+--- of charging the character twice.
+local _craftSeq = 0
+local function _craftNonce(characterId)
+    _craftSeq = _craftSeq + 1
+    if _craftSeq > 0xFFFFFF then _craftSeq = 1 end
+    return ('atc:craft:%s:%d:%d'):format(characterId, os.time(), _craftSeq)
+end
+
+-- Why a craft failed, in words the player can act on. Anything not listed here
+-- is reported generically rather than guessed at.
+local CRAFT_ERRORS = {
+    InsufficientMaterialsError  = 'Not enough materials',
+    RecipeRequiresStationError  = 'That recipe needs a workstation',
+    RecipeInactiveError         = 'That recipe is not available',
+    RecipeHasNoIngredientsError = 'That recipe is not available',
+    RecipeNotFoundError         = 'Unknown recipe',
+}
 
 ATC.Firewall.On('atc:crafting:recipes:get', {clientAllowed=true,requireSession=true,rateLimit={window=5000,max=5}}, function(src)
     ATC.HTTP.Get('/api/v1/crafting/recipes', function(ok, _, data)
@@ -195,32 +200,43 @@ ATC.Firewall.On('atc:crafting:craft', {clientAllowed=true,requireSession=true,ra
     local characterId = ATC.Sessions.GetCharacterId(src)
     if recipeId=='' or not characterId then return end
 
-    if not CRAFTING_API_ENABLED then
-        if not _warnedCraft then
-            _warnedCraft = true
-            ATC.Log.Warn('inventory', 'Crafting is disabled: no craft endpoint exists and the crafting runtime never touches character inventory. See CRAFTING_API_ENABLED in this file.', {
-                path = '/api/v1/crafting/craft',
-            })
-        end
-        -- Nothing was crafted, so nothing is claimed. The crafting NUI prints
-        -- every failed result as 'Not enough materials', which is not the
-        -- reason, so the player is told the truth over the notify channel
-        -- rather than handed a wrong explanation.
-        TriggerClientEvent(ATC.Events.NOTIFY.SHOW, src, {
-            message  = 'Crafting is unavailable right now',
-            level    = 'warning',
-            duration = 3000,
-        })
-        return
-    end
+    ATC.HTTP.Post('/api/v1/crafting/craft', {
+        characterId = characterId,
+        recipeId    = recipeId,
+        craftNonce  = _craftNonce(characterId),
+    }, function(ok, status, data)
+        local errName = (not ok) and type(data) == 'table' and data.error or nil
 
-    ATC.HTTP.Post('/api/v1/crafting/craft', { characterId=characterId, recipeId=recipeId }, function(ok, _, data)
-        TriggerClientEvent('atc:crafting:result', src, { success=ok, resultItem=ok and data and data.itemName, data=data })
-        if ok then
-            ATC.HTTP.Get('/api/v1/inventory/character/'..characterId, function(iok,_,idata)
-                if iok then TriggerClientEvent(ATC.Events.INVENTORY.UPDATE, src, idata) end
-            end)
+        TriggerClientEvent('atc:crafting:result', src, {
+            success    = ok,
+            resultItem = ok and data and data.outputItemId or nil,
+            quantity   = ok and data and data.outputQuantity or nil,
+            reason     = errName,
+            missing    = (not ok) and type(data) == 'table' and data.missing or nil,
+            data       = data,
+        })
+
+        if not ok then
+            -- The crafting NUI prints every failure as 'Not enough materials',
+            -- which is only sometimes the reason, so the real one goes over the
+            -- notify channel.
+            TriggerClientEvent(ATC.Events.NOTIFY.SHOW, src, {
+                message  = CRAFT_ERRORS[errName] or 'Crafting failed',
+                level    = 'warning',
+                duration = 3000,
+            })
+            if not errName then
+                ATC.Log.Warn('inventory', 'craft failed', {
+                    source = src, characterId = characterId,
+                    recipeId = recipeId, status = status,
+                })
+            end
+            return
         end
+
+        ATC.HTTP.Get('/api/v1/inventory/character/'..characterId, function(iok,_,idata)
+            if iok then TriggerClientEvent(ATC.Events.INVENTORY.UPDATE, src, idata) end
+        end)
     end)
 end)
 

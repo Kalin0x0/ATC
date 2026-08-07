@@ -74,3 +74,11 @@ export type {
   UseItemParams,
   UseItemResult,
 } from './repositories/inventory.repository.js'
+
+export { GroundLootRepository } from './repositories/ground-loot.repository.js'
+export type {
+  GroundLootRecord,
+  GroundLootItem,
+  GroundLootStatus,
+  CreateGroundLootParams,
+} from './repositories/ground-loot.repository.js'

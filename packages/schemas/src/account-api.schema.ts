@@ -39,5 +39,37 @@ export const identifierParamSchema = z.object({
   identifier: z.string().min(1).max(128),
 })
 
+/**
+ * Ban an account. The caller may name the account by id or by any identifier it
+ * is known under — the game server has a Rockstar license in hand, not an
+ * account id, and looking it up first would be a round trip for nothing.
+ * Exactly one of the two is required.
+ *
+ * expiresAt omitted or null is a permanent ban.
+ */
+export const banCreateRequestSchema = z.object({
+  accountId: uuidV7Schema.optional(),
+  identifier: z.string().min(1).max(128).optional(),
+  reason: z.string().min(1).max(512),
+  expiresAt: z.string().datetime().nullable().optional(),
+  bannedByPrincipalId: z.string().min(1).max(128).nullable().optional(),
+}).refine(
+  (data) => data.accountId !== undefined || data.identifier !== undefined,
+  { message: 'Either accountId or identifier is required' }
+)
+
+export const banResponseSchema = z.object({
+  id: z.string().min(1),
+  accountId: uuidV7Schema,
+  reason: z.string().nullable(),
+  expiresAt: z.string().nullable(),
+  createdAt: z.string(),
+})
+
+export const banIdParamSchema = z.object({
+  banId: z.string().min(1).max(64),
+})
+
 export type AccountUpsertRequestInput = z.input<typeof accountUpsertRequestSchema>
 export type AccountUpsertResponseOutput = z.output<typeof accountUpsertResponseSchema>
+export type BanCreateRequestInput = z.input<typeof banCreateRequestSchema>

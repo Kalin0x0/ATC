@@ -13,8 +13,17 @@ local _jobLabel = nil
 
 -- ── Event Handlers ────────────────────────────────────────────────────────────
 
+-- Why a toggle did not take effect. The server sends `reason` only when the
+-- state it reports is not the one the player asked for, so a plain toggle
+-- carries none of these.
+local DUTY_REASONS = {
+    no_contract      = { text = 'No job to clock into',      level = 'warning' },
+    clock_in_failed  = { text = 'Could not clock in',        level = 'error'   },
+    clock_out_failed = { text = 'Could not clock out',       level = 'error'   },
+}
+
 --- atc:jobs:duty:update
---- Sent by server after a successful duty toggle.
+--- Sent by server after a duty toggle, successful or not.
 RegisterNetEvent('atc:jobs:duty:update')
 AddEventHandler('atc:jobs:duty:update', function(data)
     if type(data) ~= 'table' then return end
@@ -22,15 +31,18 @@ AddEventHandler('atc:jobs:duty:update', function(data)
     _onDuty   = data.onDuty   == true
     _jobLabel = type(data.jobLabel) == 'string' and data.jobLabel or _jobLabel
 
-    local message = _onDuty
-        and ('On duty' .. (_jobLabel and (' — ' .. _jobLabel) or ''))
-        or  'Off duty'
+    local reason = type(data.reason) == 'string' and DUTY_REASONS[data.reason] or nil
+
+    local message = reason and reason.text
+        or (_onDuty
+            and ('On duty' .. (_jobLabel and (' — ' .. _jobLabel) or ''))
+            or  'Off duty')
 
     SendNUIMessage({
         type    = 'ATC_NOTIFICATION',
         payload = {
             message  = message,
-            level    = _onDuty and 'success' or 'info',
+            level    = reason and reason.level or (_onDuty and 'success' or 'info'),
             duration = 3000,
         },
     })

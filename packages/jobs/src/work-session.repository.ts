@@ -188,6 +188,11 @@ export class WorkSessionRepository {
   async list(params: ListWorkSessionsParams = {}): Promise<AtcWorkSessionPage> {
     const limit = Math.min(params.limit ?? 20, 100)
     const offset = params.offset ?? 0
+    // Inlined rather than bound: MySQL 8 rejects a placeholder in LIMIT/OFFSET
+    // over the prepared-statement protocol where MariaDB accepts it. Both are
+    // clamped to integers just above, so nothing but a number reaches the SQL.
+    const safeLimit = Math.max(Math.trunc(limit) || 0, 1)
+    const safeOffset = Math.max(Math.trunc(offset) || 0, 0)
     const conditions: string[] = []
     const args: (string | number | null)[] = []
     if (params.characterId) { conditions.push('character_id = ?'); args.push(params.characterId) }
@@ -202,8 +207,8 @@ export class WorkSessionRepository {
       )
       const total = countRows[0]?.total ?? 0
       const [rows] = await conn.execute<WorkSessionRow[]>(
-        `SELECT * FROM atc_work_sessions ${where} ORDER BY clocked_in_at DESC LIMIT ? OFFSET ?`,
-        [...args, limit, offset],
+        `SELECT * FROM atc_work_sessions ${where} ORDER BY clocked_in_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`,
+        args,
       )
       return { items: rows.map(rowToSession), total, offset, limit }
     } finally {

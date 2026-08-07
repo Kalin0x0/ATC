@@ -3,7 +3,7 @@
 --  An open project by Naiemi Group.
 --
 --  Import this file into a fresh database named `atc` (MariaDB 11 / MySQL 8).
---  Built from 366 ordered schema migrations. See database/README.md
+--  Built from 363 ordered schema migrations. See database/README.md
 --  for step-by-step instructions (English / فارسی / Türkçe / Español / Deutsch).
 -- ============================================================================
 
@@ -7953,6 +7953,101 @@ CREATE TABLE IF NOT EXISTS atc_phone_contacts (
     REFERENCES atc_characters (id) ON DELETE CASCADE,
   CONSTRAINT fk_phone_contact_target FOREIGN KEY (contact_character_id)
     REFERENCES atc_characters (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------------
+-- 362_create_crafting_recipe_ingredients.sql
+-- ---------------------------------------------------------------------------
+-- Phase 98 — What a recipe costs.
+--
+-- atc_crafting_recipes has only ever described the output (output_item_id,
+-- output_quantity) and how long it takes. Nothing recorded the input, so the
+-- server could not tell whether a character was able to craft something, and
+-- POST /api/v1/crafting/craft could not exist: the ingredient list would have
+-- had to come from the client.
+--
+-- A row per ingredient rather than a JSON column so the cost of a recipe can be
+-- queried and joined like any other data.
+
+CREATE TABLE IF NOT EXISTS atc_crafting_recipe_ingredients (
+  id         CHAR(26)     NOT NULL,
+  -- References atc_crafting_recipes.recipe_id (the stable public id), not its
+  -- surrogate id — that is what every other crafting table refers to a recipe by.
+  recipe_id  VARCHAR(128) NOT NULL,
+  -- References atc_item_definitions.id. Deliberately not a foreign key: recipes
+  -- are seeded before the item catalogue in some deployments, and a missing
+  -- item surfaces as a failed craft rather than a failed migration.
+  item_id    VARCHAR(128) NOT NULL,
+  quantity   INT UNSIGNED NOT NULL,
+  created_at DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
+                          ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  -- One row per item per recipe; a recipe needing two of something says so in
+  -- quantity rather than in a second row.
+  UNIQUE KEY uq_recipe_ingredient (recipe_id, item_id),
+  INDEX idx_recipe_ingredient_recipe (recipe_id),
+  CONSTRAINT fk_recipe_ingredient_recipe FOREIGN KEY (recipe_id)
+    REFERENCES atc_crafting_recipes (recipe_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------------
+-- 363_create_ground_loot.sql
+-- ---------------------------------------------------------------------------
+-- Phase 98 — Ground loot piles.
+--
+-- Piles used to exist only in each client's memory: game/atc-core/client/
+-- ground_loot.lua drew a bag and the server kept no record of it, so a pickup
+-- could not be granted — the item list would have had to come from the client,
+-- and nothing but the client knew when a pile had already been taken.
+--
+-- With the contents here, the server decides what a pile holds and who gets it,
+-- and a pile survives a restart instead of vanishing with the clients that drew it.
+
+CREATE TABLE IF NOT EXISTS atc_ground_loot (
+  id                        CHAR(26)     NOT NULL,
+  -- World position. DOUBLE rather than DECIMAL: these are game coordinates,
+  -- compared by distance and never summed, so binary floats are exactly right.
+  world_x                   DOUBLE       NOT NULL,
+  world_y                   DOUBLE       NOT NULL,
+  world_z                   DOUBLE       NOT NULL,
+  -- Who dropped it, when that is known. NULL for piles the world produced —
+  -- a raid reward, a wreck, an admin spawn.
+  dropped_by_character_id   CHAR(26)     NULL,
+  -- Free-text origin, mirrored into the inventory transaction on pickup so the
+  -- item history says where a thing came from.
+  reason                    VARCHAR(64)  NULL,
+  status                    ENUM('active','picked_up','expired') NOT NULL DEFAULT 'active',
+  picked_up_by_character_id CHAR(26)     NULL,
+  picked_up_at              DATETIME(3)  NULL,
+  -- NULL never expires. Sweeping expired piles is a separate concern; the
+  -- column is what makes it possible.
+  expires_at                DATETIME(3)  NULL,
+  created_at                DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at                DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
+                                         ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id),
+  -- Resync on boot reads active piles and nothing else.
+  INDEX idx_ground_loot_status (status, expires_at),
+  INDEX idx_ground_loot_dropped_by (dropped_by_character_id)
+  -- No foreign key on the character columns: a pile outlives the character who
+  -- dropped it, and deleting a character must not delete loot other players can
+  -- already see on the ground.
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS atc_ground_loot_items (
+  id         CHAR(26)     NOT NULL,
+  loot_id    CHAR(26)     NOT NULL,
+  -- References atc_item_definitions.id. Not a foreign key for the same reason
+  -- as the recipe ingredients: an unknown item fails the pickup, not the write.
+  item_id    VARCHAR(128) NOT NULL,
+  quantity   INT UNSIGNED NOT NULL,
+  PRIMARY KEY (id),
+  -- One row per item in a pile; two of a thing is a quantity, not two rows.
+  UNIQUE KEY uq_ground_loot_item (loot_id, item_id),
+  INDEX idx_ground_loot_item_loot (loot_id),
+  CONSTRAINT fk_ground_loot_item_loot FOREIGN KEY (loot_id)
+    REFERENCES atc_ground_loot (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;

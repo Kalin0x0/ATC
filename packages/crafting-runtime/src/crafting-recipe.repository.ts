@@ -52,8 +52,78 @@ function rowToRecipe(row: RecipeRow): AtcCraftingRecipe {
   }
 }
 
+/** One input a recipe consumes. */
+export interface AtcRecipeIngredient {
+  recipeId: string
+  itemId: string
+  quantity: number
+}
+
+interface IngredientRow extends RowDataPacket {
+  recipe_id: string
+  item_id: string
+  quantity: number
+}
+
 export class CraftingRecipeRepository {
   constructor(private readonly pool: CraftingRuntimePool) {}
+
+  /** What a recipe consumes. Empty when nothing has been recorded for it. */
+  async listIngredients(recipeId: string): Promise<AtcRecipeIngredient[]> {
+    const conn = await this.pool.getConnection()
+    try {
+      const [rows] = await conn.execute<IngredientRow[]>(
+        `SELECT recipe_id, item_id, quantity
+           FROM atc_crafting_recipe_ingredients
+          WHERE recipe_id = ?
+          ORDER BY item_id ASC`,
+        [recipeId],
+      )
+      return rows.map((row) => ({
+        recipeId: row.recipe_id,
+        itemId: row.item_id,
+        quantity: Number(row.quantity),
+      }))
+    } finally {
+      conn.release()
+    }
+  }
+
+  /**
+   * Replace a recipe's ingredient list.
+   *
+   * Replace rather than merge: a recipe's cost is defined as a whole, and an
+   * ingredient dropped from the list must disappear rather than linger. Done in
+   * one transaction so a recipe is never briefly free.
+   */
+  async setIngredients(
+    recipeId: string,
+    ingredients: ReadonlyArray<{ itemId: string; quantity: number }>,
+  ): Promise<AtcRecipeIngredient[]> {
+    const conn = await this.pool.getConnection()
+    try {
+      await conn.beginTransaction()
+      await conn.execute(
+        'DELETE FROM atc_crafting_recipe_ingredients WHERE recipe_id = ?',
+        [recipeId],
+      )
+      for (const ing of ingredients) {
+        await conn.execute(
+          `INSERT INTO atc_crafting_recipe_ingredients
+             (id, recipe_id, item_id, quantity)
+           VALUES (?, ?, ?, ?)`,
+          [generateId(), recipeId, ing.itemId, ing.quantity],
+        )
+      }
+      await conn.commit()
+      return ingredients.map((ing) => ({ recipeId, itemId: ing.itemId, quantity: ing.quantity }))
+    } catch (err) {
+      try { await conn.rollback() } catch { /* best-effort */ }
+      throw err
+    } finally {
+      conn.release()
+    }
+  }
 
   async findByRecipeId(recipeId: string): Promise<AtcCraftingRecipe | null> {
     const conn = await this.pool.getConnection()
