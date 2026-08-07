@@ -33,9 +33,12 @@ ATC.VehiclesPlugin.Config = {
     -- How close the player must be to a garage to park there, in metres.
     GarageRadius = 40.0,
 
-    -- Fallback used when a player parks outside every garage radius. Set to nil
-    -- to refuse the request instead of storing to a default.
-    DefaultGarageId = 'garage_downtown',
+    -- Fallback used when a player parks outside every garage radius.
+    -- nil on purpose: parking away from a garage is refused rather than being
+    -- silently filed under some default one, which would put a car in a garage
+    -- the player never drove to. Set a garage id here to allow it instead.
+    -- (A nil field is simply absent from the table — that is the intent.)
+    DefaultGarageId = nil,
 
     -- How long a spawned vehicle's network id stays resolvable, in seconds.
     -- Entries are dropped after this so the registry cannot grow without bound
