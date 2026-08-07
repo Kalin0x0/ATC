@@ -67,8 +67,14 @@ ATC.Firewall.On('atc:marketplace:buy', {
 
     if listingId == '' or not principalId then return end
 
-    ATC.HTTP.Post('/api/v1/market/listings/' .. listingId .. '/buy', {
+    -- The API calls it purchase, not buy, and purchaseListingSchema also wants
+    -- the listing id in the body and an idempotency key so a retried request
+    -- cannot charge the buyer twice.
+    ATC.HTTP.Post('/api/v1/market/listings/' .. listingId .. '/purchase', {
+        listingId        = listingId,
         buyerPrincipalId = principalId,
+        idempotencyKey   = ('atc:market:buy:%s:%d:%d')
+            :format(listingId, os.time(), math.random(1, 999999999)),
     }, function(ok, _, data)
         TriggerClientEvent('atc:marketplace:buy:response', src,
             { success = ok, data = data })

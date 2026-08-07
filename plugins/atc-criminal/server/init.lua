@@ -92,16 +92,24 @@ ATC.Firewall.On('atc:criminal:drug:craft', {
     local characterId = ATC.Sessions.GetCharacterId(src)
     if not characterId then return end
 
-    ATC.HTTP.Post('/api/v1/crafting/craft', {
-        characterId = characterId,
-        recipeId    = 'drug_' .. drugType
-    }, function(ok, _, data)
-        TriggerClientEvent('atc:criminal:drug:crafted', src, {
-            success  = ok,
-            drugType = drugType,
-            data     = data
-        })
-    end)
+    -- There is no one-call craft endpoint. POST /api/v1/crafting/craft does not
+    -- exist, so this always failed. The API models crafting as a production job
+    -- against a registered station (POST /api/v1/crafting/jobs, then a separate
+    -- /complete), and that runtime never touches character inventory — it
+    -- neither consumes ingredients nor grants the output. Repointing this at the
+    -- job model would mean inventing stations, queues and an ingredient list, so
+    -- it is not attempted; the same gap is documented in atc-inventory.
+    if not _warnedCraft then
+        _warnedCraft = true
+        ATC.Log.Warn('criminal', 'Drug crafting has no API backing: no craft endpoint exists, and the job-based crafting runtime does not move inventory. See the note in plugins/atc-inventory/server/init.lua.')
+    end
+
+    -- Answer the client rather than leaving it waiting: the craft did not happen.
+    TriggerClientEvent('atc:criminal:drug:crafted', src, {
+        success  = false,
+        drugType = drugType,
+        reason   = 'not_supported',
+    })
 end)
 
 -- ── Smuggling ─────────────────────────────────────────────────────────────────

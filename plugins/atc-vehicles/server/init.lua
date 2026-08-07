@@ -373,8 +373,12 @@ ATC.Firewall.On('atc:vehicles:garage:payFine', {
     local principalId = ATC.Accounts.GetPrincipalId(src)
     if not principalId then return end
 
-    ATC.HTTP.Post('/api/v1/vehicles/' .. vehicleId .. '/impound/pay', {
-        principalId = principalId,
+    -- Paying the fine is what releases the vehicle from the impound lot; there
+    -- is no separate impound/pay endpoint. releaseVehicleSchema names the field
+    -- releasedByPrincipalId, and garageId is left unset so the API applies its
+    -- own default rather than this handler inventing one.
+    ATC.HTTP.Post('/api/v1/vehicles/' .. vehicleId .. '/release', {
+        releasedByPrincipalId = principalId,
     }, function(ok, status, data, err)
         if not ok then
             ATC.Log.Error('vehicles', 'payFine API error', {

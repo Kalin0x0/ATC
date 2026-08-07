@@ -54,11 +54,17 @@ CreateThread(function()
                 if #(pCoords - zone.coords) <= zone.radius then
                     local characterId = ATC.Sessions.GetCharacterId(src)
                     if characterId then
-                        ATC.HTTP.Post(
-                            '/api/v1/vitals/' .. characterId .. '/damage',
-                            { amount = zone.dpt, source = 'hazard_' .. tostring(zone.type) },
-                            function() end
-                        )
+                        -- There is no vitals damage endpoint. Damage is a health
+                        -- decrement through the normal mutation route, which
+                        -- ATC.Vitals.Mutate already wraps — the hand-built
+                        -- /api/v1/vitals/{id}/damage never existed.
+                        -- vitalsMutationSchema caps amount at 0..100 and wants an
+                        -- integer, so the per-tick damage is clamped here.
+                        local amount = math.floor(tonumber(zone.dpt) or 0)
+                        if amount > 0 then
+                            ATC.Vitals.Mutate(src, 'health', 'decrement',
+                                math.min(100, amount), function() end)
+                        end
                         TriggerClientEvent('atc:hazard:damage', src, {
                             hazardType = zone.type,
                             amount     = zone.dpt,

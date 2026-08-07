@@ -54,11 +54,18 @@ ATC.Firewall.On('atc:housing:property:enter', {
     local principalId = ATC.Accounts.GetPrincipalId(src)
     if not principalId then return end
 
+    -- There is no access/check endpoint. Entering is the access check: the API
+    -- validates the principal's access and records the entry in one call, and
+    -- rejects the request when they are not allowed in.
     ATC.HTTP.Post(
-        '/api/v1/properties/' .. propertyId .. '/access/check',
+        '/api/v1/properties/' .. propertyId .. '/enter',
         { principalId = principalId },
         function(ok, status, data, err)
-            local allowed = ok and data and data.allowed == true
+            -- Success IS the grant. /enter returns the interior runtime record,
+            -- not an { allowed = true } flag, and refuses with an error status
+            -- when the principal has no access — so reading data.allowed would
+            -- have denied entry even when the API let the player in.
+            local allowed = ok == true
             if not ok then
                 ATC.Log.Error('housing', 'enter — API error', {
                     source = src, propertyId = propertyId, status = status, err = err,
@@ -67,6 +74,7 @@ ATC.Firewall.On('atc:housing:property:enter', {
             TriggerClientEvent('atc:housing:property:enter:response', src, {
                 allowed    = allowed,
                 propertyId = propertyId,
+                interior   = ok and data or nil,
             })
         end
     )
