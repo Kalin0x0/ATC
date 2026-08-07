@@ -1,7 +1,7 @@
 {
   "name": "atc",
   "private": true,
-  "description": "Atlantic Core — ATC FiveM MMO Framework",
+  "description": "Atlantic Core \u2014 ATC FiveM MMO Framework",
   "version": "0.1.0",
   "engines": {
     "node": ">=22.0.0",
@@ -17,10 +17,10 @@
     "typecheck": "turbo run typecheck",
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\" --ignore-path .gitignore",
     "format:check": "prettier --check \"**/*.{ts,tsx,json,md}\" --ignore-path .gitignore",
-    "db:migrate": "turbo run db:migrate --filter=@atc/db",
-    "db:migrate:status": "turbo run db:migrate:status --filter=@atc/db",
-    "db:migrate:rollback": "turbo run db:migrate:rollback --filter=@atc/db",
-    "db:seed": "turbo run db:seed --filter=@atc/db",
+    "db:migrate": "turbo run db:migrate --filter=@atc/api",
+    "db:migrate:status": "turbo run db:migrate:status --filter=@atc/api",
+    "db:migrate:rollback": "turbo run db:migrate:rollback --filter=@atc/api",
+    "db:seed": "turbo run db:seed --filter=@atc/api",
     "locale:check": "node tools/scripts/locale-check.js",
     "generate:plugin": "plop plugin",
     "generate:service": "plop service",

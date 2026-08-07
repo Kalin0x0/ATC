@@ -25,6 +25,10 @@ function positiveInt(name: string, fallback: number): number {
   return parsed
 }
 
+import { dbConfig } from './db-config.js'
+
+export { dbConfig }
+
 export const config = {
   nodeEnv: optional('NODE_ENV', 'development'),
   port: optionalInt('PORT', 3000),
@@ -33,14 +37,7 @@ export const config = {
   apiToken: required('ATC_API_TOKEN'),
   failOpen: optional('ATC_FAIL_OPEN', 'false') === 'true',
 
-  db: {
-    host: optional('DB_HOST', '127.0.0.1'),
-    port: optionalInt('DB_PORT', 3306),
-    database: required('DB_NAME'),
-    user: required('DB_USER'),
-    password: required('DB_PASSWORD'),
-    connectionLimit: optionalInt('DB_CONNECTION_LIMIT', 10),
-  },
+  db: dbConfig,
 
   redis: {
     host: optional('REDIS_HOST', '127.0.0.1'),

@@ -1,8 +1,8 @@
 import { createPool, runMigrations, getMigrationStatus } from '@atc/db'
-import { config } from './config.js'
+import { dbConfig } from './db-config.js'
 
 async function main() {
-  const pool = createPool(config.db)
+  const pool = createPool(dbConfig)
   const args = process.argv.slice(2)
 
   try {

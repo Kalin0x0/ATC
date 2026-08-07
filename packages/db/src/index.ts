@@ -5,6 +5,9 @@ export { generateId } from './id.js'
 
 export { runMigrations, getMigrationStatus } from './migrate.js'
 
+export { runSeed } from './seed.js'
+export type { SeedResult } from './seed.js'
+
 export { AccountRepository } from './repositories/account.repository.js'
 export type { AccountRecord } from './repositories/account.repository.js'
 

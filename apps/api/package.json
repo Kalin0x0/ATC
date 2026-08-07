@@ -7,12 +7,13 @@
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsc --project tsconfig.json",
-    "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
-    "start": "node dist/index.js",
-    "dev": "tsc --watch & node --watch dist/index.js",
     "db:migrate": "node dist/run-migrate.js",
-    "test": "vitest run"
+    "db:seed": "node dist/run-seed.js",
+    "dev": "tsc --watch & node --watch dist/index.js",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@atc/cache": "workspace:*",
