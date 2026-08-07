@@ -14,7 +14,13 @@ services:
       MARIADB_PASSWORD: ${DB_PASSWORD}
     volumes:
       - db_data:/var/lib/mysql
-      - ./init.d:/docker-entrypoint-initdb.d:ro
+      # The schema, applied by MariaDB's entrypoint the first time the data
+      # volume is initialised. This previously mounted ./init.d, which does not
+      # exist — Docker created it empty, and since nothing in this stack runs
+      # the migrations either, the API came up against a database with no
+      # tables. Mounting the generated schema directly avoids duplicating it.
+      # Re-running is a no-op: the entrypoint only executes this on first init.
+      - ../database/atc.sql:/docker-entrypoint-initdb.d/01-atc-schema.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -u \"${DB_USER:-atc}\" -p\"${DB_PASSWORD}\""]
       interval: 10s
